@@ -1,11 +1,11 @@
 export const lightTheme = {
     token: {
-        colorPrimary: '#1890ff', // สีหลัก
+        colorPrimary: '#0067ff', // สีหลัก
         colorTextBase: '#000000', // สีข้อความหลัก
         colorTextSecondary: '#999999', // สีข้อความรอง
         colorBgContainer: '#ffffff', // พื้นหลังของคอนเทนเนอร์
         colorBgBase: '#ffffff', // พื้นหลังหลัก
-        colorBgLayout: '#0062ff', // พื้นหลังเลย์เอาต์
+        colorBgLayout: '#ffffff', // พื้นหลังเลย์เอาต์
         colorLink: '#1890ff', // สีของลิงก์
         colorError: '#ff4d4f', // สีข้อความผิดพลาด
         colorSuccess: '#52c41a', // สีสำเร็จ
@@ -15,12 +15,10 @@ export const lightTheme = {
         boxShadowBase: '0 2px 8px rgba(0, 0, 0, 0.15)', // เงาพื้นฐาน
         paddingBase: '8px', // ระยะห่างพื้นฐาน
         marginBase: '8px', // ระยะห่างจากขอบ
-        siderWidth: 2400, // ความกว้างของ Sider สำหรับ Dark Theme
-        siderCollapsedWidth: 800, // ความกว้างเมื่อ Sider ถูกย่อ
-        
+        siderWidth: 240, // ความกว้างของ Sider สำหรับ Dark Theme
+        siderCollapsedWidth: 80, // ความกว้างเมื่อ Sider ถูกย่อ
     },
 };
-
 export const darkTheme = {
     token: {
         colorPrimary: '#1890ff', // สีหลัก
