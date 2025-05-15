@@ -2,19 +2,26 @@ import {Layout, Menu} from "antd";
 import {DashboardOutlined, LogoutOutlined, SettingOutlined, UserOutlined} from "@ant-design/icons";
 import {useSession, signOut} from 'next-auth/react';
 import {useRouter} from "next/navigation";
+import {useEffect} from "react";
 
 const {Sider} = Layout;
+
 export default function SidebarComponent({collapsed, setCollapsed}) {
     const {data: session, status} = useSession();
     const router = useRouter();
+    
+    useEffect(() => {
+        if (status === 'unauthenticated') {
+            router.push('/login');
+        }
+    }, [status, router]);
+    
     const handleSignOut = async () => {
         await signOut({redirect: false});
         router.push('/login');
     };
-    if (status === 'unauthenticated') {
-        router.push('/login');
-        return null;
-    }
+    
+    if (status === 'unauthenticated') return null;
     
     if (status === 'loading') {
         return (
@@ -52,7 +59,7 @@ export default function SidebarComponent({collapsed, setCollapsed}) {
             label: 'Logout',
             onClick: handleSignOut
         }
-    ]
+    ];
     
     return (
         <Sider
@@ -70,7 +77,6 @@ export default function SidebarComponent({collapsed, setCollapsed}) {
                 justifyContent: 'center',
                 color: 'white'
             }}>
-                
                 <div onClick={() => router.push('/')}>
                     {session?.user?.username || 'ADMIN'}
                 </div>

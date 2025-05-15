@@ -1,4 +1,6 @@
 'use client';
+import { useTranslation } from 'react-i18next';
 export default function DashboardPage() {
-    return <>5555</>
+    const { t } = useTranslation();
+    return <>{t('welcome')}</>
 }

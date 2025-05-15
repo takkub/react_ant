@@ -11,7 +11,7 @@ import ContentComponent from "../components/ContentComponent";
 export default function MainLayout({ children }) {
     const [collapsed, setCollapsed] = useState(false);
     return (
-        <ConfigProvider theme={lightTheme}>
+        <ConfigProvider theme={darkTheme}>
             <AntdRegistry>
                 <SessionProvider>
                     <Layout style={{minHeight: '100vh'}}>
