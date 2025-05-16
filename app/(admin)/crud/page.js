@@ -1,9 +1,9 @@
 'use client';
 import React, {useState} from 'react';
-import {Card, message, Alert, Divider, Typography, Space} from 'antd';
+import {Card, message, Divider, Typography, Space} from 'antd';
 import CrudTable from '@/components/CrudTable';
 import {useTitleContext} from "@/components/TitleContext";
-import {DatabaseOutlined, TableOutlined, CodeOutlined, SettingOutlined} from "@ant-design/icons";
+import {DatabaseOutlined, TableOutlined} from "@ant-design/icons";
 import dayjs from 'dayjs';
 
 // Helper functions for date filters
@@ -40,26 +40,33 @@ export default function CrudPage() {
             dataIndex: 'userId',
             key: 'userId',
             width: 100,
-            type: 'key',
-            fixed: 'left'
+            fixed: 'left',
+            type: 'key'
         },
         {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            type: 'string',
+            type: 'text',
         },
         {
             title: 'Email',
             dataIndex: 'email',
             key: 'email',
-            type: 'string',
+            type: 'email',
         },
         {
             title: 'Status',
             dataIndex: 'status',
             key: 'status',
-            type: 'string',
+            type: {
+                type: 'select', // or checkbox or radio
+                options: [
+                    {label: 'Active', value: 'active'},
+                    {label: 'Inactive', value: 'inactive'},
+                    {label: 'Pending', value: 'pending'}
+                ]
+            }
         },
         {
             title: 'Created Date',
@@ -75,6 +82,15 @@ export default function CrudPage() {
             dataIndex: 'role',
             key: 'role',
             type: 'tags',
+        },
+        {
+            title: 'Description',
+            dataIndex: 'description',
+            key: 'description',
+            type: 'textArea',
+            render: (text) => {
+                return <Text>{text}</Text>;
+            }
         }
     ];
     
@@ -160,13 +176,10 @@ export default function CrudPage() {
                                     {lable: 'Last 3 Months', key: 'last3Months', value: 'last3Months'},
                                     {lable: 'Last 6 Months', key: 'last6Months', value: 'last6Months'},
                                     {lable: 'This Year', key: 'thisYear', value: 'thisYear'},
-                                    {lable: 'Today', key: 'today', value: getTodayDate()},
-                                    {lable: 'Last 7 days', key: 'weekly', value: getLastWeekDate()},
-                                    {lable: 'This Month', key: 'thisMonth', value: [dayjs().startOf('month'), dayjs().endOf('month')]},
-                                    {lable: 'This Year', key: 'thisYear', value: [dayjs().startOf('year'), dayjs().endOf('year')]}
+                                    {lable: 'Last 7 days', key: 'weekly', value: 'thisWeek'},
+                                    {lable: 'Today', key: 'today', value: 'thisToday'},
                                 ]
                             }
-                            
                         ]}
                     />
                 </div>

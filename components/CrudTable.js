@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useRef } from 'react';
+import dayjs from 'dayjs';
 import {
     Card,
     Table,
@@ -406,15 +407,32 @@ export default function CrudTable({
     // Handle edit record
     const handleEdit = (record) => {
         setEditingRecord(record);
-        form.setFieldsValue({
-            user: record.user,
-            type: record.type,
-            status: record.status,
-            amount: record.amount,
-            tags: record.tags,
-            description: record.description,
-            ...record
+        
+        // Create a clean copy of the record for form values
+        const formValues = {};
+        
+        // For each form field, ensure we set the proper values
+        fieldsToUse.forEach(field => {
+            const fieldName = field.name;
+            
+            // Handle special types or formatting
+            if (field.type === 'date' || field.type === 'datepicker') {
+                // Convert to dayjs if it's a date
+                if (record[fieldName] && (record[fieldName] instanceof Date || !isNaN(new Date(record[fieldName])))) {
+                    formValues[fieldName] = dayjs(record[fieldName]);
+                } else {
+                    formValues[fieldName] = undefined;
+                }
+            } else if (field.type === 'dateRange') {
+                // Skip date ranges - usually not directly editable as a range
+                formValues[fieldName] = record[fieldName] ? dayjs(record[fieldName]) : undefined;
+            } else {
+                // For all other fields, just copy the value directly
+                formValues[fieldName] = record[fieldName];
+            }
         });
+        
+        form.setFieldsValue(formValues);
         setIsModalOpen(true);
     };
     
@@ -422,6 +440,35 @@ export default function CrudTable({
     const handleModalOk = () => {
         form.validateFields()
         .then(values => {
+            // Process form values to convert Dayjs objects to Dates, etc.
+            const processedValues = {};
+            
+            // Process each field value according to its type
+            fieldsToUse.forEach(field => {
+                const fieldName = field.name;
+                const value = values[fieldName];
+                
+                if (value === undefined || value === null) {
+                    processedValues[fieldName] = value;
+                    return;
+                }
+                
+                // Process based on field type
+                if (field.type === 'date' || field.type === 'datepicker' || field.type === 'dateRange') {
+                    // Convert dayjs objects to Date objects
+                    if (value && typeof value.toDate === 'function') {
+                        processedValues[fieldName] = value.toDate();
+                    } else {
+                        processedValues[fieldName] = value;
+                    }
+                } else if (field.type === 'number') {
+                    // Convert string numbers to actual numbers
+                    processedValues[fieldName] = value === '' ? null : Number(value);
+                } else {
+                    processedValues[fieldName] = value;
+                }
+            });
+            
             if (editingRecord) {
                 // Update existing record
                 const newData = [...data];
@@ -429,29 +476,58 @@ export default function CrudTable({
                 
                 if (index > -1) {
                     const item = newData[index];
-                    newData.splice(index, 1, {
+                    const updatedRecord = {
                         ...item,
-                        ...values,
-                    });
+                        ...processedValues,
+                    };
+                    
+                    newData.splice(index, 1, updatedRecord);
                     
                     if (typeof onEdit === 'function') {
-                        onEdit(editingRecord.key, { ...item, ...values });
+                        onEdit(editingRecord.key, updatedRecord);
                     }
                     
                     if (typeof setData === 'function') {
                         setData(newData);
                     }
                     
-                    message.success(`Record ${item.id} updated successfully`);
+                    const recordId = item.id || item.userId || item.key;
+                    message.success(`Record ${recordId} updated successfully`);
                 }
             } else {
                 // Add new record
-                const newId = Math.max(...data.map(item => item.key), 0) + 1;
+                const newId = Math.max(...data.map(item => parseInt(item.key) || 0), 0) + 1;
+                
+                // Generate an appropriate ID based on column pattern
+                let recordId;
+                if (customColumns.length > 0) {
+                    const idColumn = customColumns.find(col => 
+                        col.dataIndex === 'id' || 
+                        col.dataIndex === 'userId' || 
+                        col.dataIndex === 'productId'
+                    );
+                    
+                    if (idColumn) {
+                        // Use the pattern from existing data
+                        const idField = idColumn.dataIndex;
+                        const existingIds = data.map(item => item[idField] || '');
+                        const prefix = existingIds.length > 0 
+                            ? existingIds[0].replace(/[0-9]+/g, '')
+                            : 'ID-';
+                        
+                        recordId = `${prefix}${String(newId).padStart(5, '0')}`;
+                        processedValues[idField] = recordId;
+                    }
+                }
+                
+                if (!recordId) {
+                    recordId = `ID-${String(newId).padStart(5, '0')}`;
+                }
+                
                 const newRecord = {
                     key: newId,
-                    id: `INV-${String(newId).padStart(5, '0')}`,
                     createdAt: new Date(),
-                    ...values,
+                    ...processedValues,
                 };
                 
                 if (typeof onAdd === 'function') {
@@ -499,7 +575,97 @@ export default function CrudTable({
         message.success('Filters applied');
     };
     
-    // Default form fields for modal
+    // Generate form fields from customColumns
+    const generateFormFieldsFromColumns = () => {
+        if (customColumns.length === 0) {
+            return [];
+        }
+    
+        return customColumns.map(column => {
+            // Skip 'action' columns and key columns that shouldn't be editable
+            if (column.key === 'action' || column.type === 'key') {
+                return null;
+            }
+            
+            // Basic form field properties
+            const formField = {
+                name: column.dataIndex,
+                label: column.title,
+                required: column.required || false,
+                placeholder: `Enter ${column.title.toLowerCase()}`,
+            };
+            
+            // Handle different column types
+            if (typeof column.type === 'object' && column.type !== null) {
+                // Complex type definition (like for select fields)
+                if (column.type.type === 'select') {
+                    formField.type = 'select';
+                    formField.options = column.type.options || [];
+                } else if (column.type.type === 'checkbox') {
+                    formField.type = 'checkbox';
+                    formField.options = column.type.options || [];
+                } else if (column.type.type === 'radio') {
+                    formField.type = 'radio';
+                    formField.options = column.type.options || [];
+                } else {
+                    formField.type = 'input';
+                }
+            } else {
+                // Simple type string
+                switch (column.type) {
+                    case 'text':
+                    case 'string':
+                        formField.type = 'input';
+                        break;
+                    case 'number':
+                        formField.type = 'number';
+                        formField.min = 0;
+                        formField.step = 1;
+                        break;
+                    case 'email':
+                        formField.type = 'input';
+                        formField.rules = [
+                            { type: 'email', message: 'Please enter a valid email!' }
+                        ];
+                        break;
+                    case 'date':
+                    case 'dateTime':
+                    case 'dateRange':
+                        formField.type = 'datepicker';
+                        break;
+                    case 'tags':
+                    case 'array':
+                        formField.type = 'multiselect';
+                        // Try to extract options from data
+                        if (data.length > 0) {
+                            const allValues = data
+                                .map(item => item[column.dataIndex])
+                                .filter(Boolean)
+                                .flat();
+                            const uniqueValues = [...new Set(allValues)];
+                            formField.options = uniqueValues.map(value => ({ 
+                                label: value, 
+                                value 
+                            }));
+                        } else {
+                            formField.options = [];
+                        }
+                        break;
+                    case 'textArea':
+                    case 'textarea':
+                        formField.type = 'textarea';
+                        formField.rows = 4;
+                        break;
+                    default:
+                        formField.type = 'input';
+                }
+            }
+            
+            return formField;
+        }).filter(Boolean); // Remove null values
+    };
+    
+    // Default form fields for modal (fallback if no customColumns)
     const defaultFormFields = [
         {
             name: "user",
@@ -571,20 +737,41 @@ export default function CrudTable({
         },
     ];
     
-    // Use custom form fields if provided, otherwise use default
-    const fieldsToUse = formFields.length > 0 ? formFields : defaultFormFields;
+    // Generate form fields from columns if available
+    const generatedFormFields = generateFormFieldsFromColumns();
+    
+    // Use custom form fields if provided, otherwise use generated fields or default
+    const fieldsToUse = formFields.length > 0 
+        ? formFields 
+        : (generatedFormFields.length > 0 ? generatedFormFields : defaultFormFields);
     
     // Render form fields based on their type
     const renderFormField = (field) => {
-        const { name, label, type, required, placeholder, options, prefix, min, step, rows } = field;
+        const { name, label, type, required, placeholder, options, prefix, min, step, rows, rules: fieldRules = [] } = field;
         
-        const rules = required ? [{ required: true, message: `Please input ${label.toLowerCase()}!` }] : [];
+        // Combine required rule with any custom rules
+        const rules = required 
+            ? [{ required: true, message: `Please input ${label.toLowerCase()}!` }, ...fieldRules] 
+            : fieldRules;
         
         switch (type) {
             case 'input':
+            case 'text':
+            case 'string':
                 return (
                     <Form.Item key={name} name={name} label={label} rules={rules}>
                         <Input placeholder={placeholder} prefix={prefix} />
+                    </Form.Item>
+                );
+            case 'email':
+                return (
+                    <Form.Item 
+                        key={name} 
+                        name={name} 
+                        label={label} 
+                        rules={[...rules, { type: 'email', message: 'Please enter a valid email!' }]}
+                    >
+                        <Input placeholder={placeholder || 'example@domain.com'} />
                     </Form.Item>
                 );
             case 'number':
@@ -605,22 +792,50 @@ export default function CrudTable({
                         <Select placeholder={placeholder} options={options} />
                     </Form.Item>
                 );
+            case 'radio':
+                return (
+                    <Form.Item key={name} name={name} label={label} rules={rules}>
+                        <Radio.Group options={options} />
+                    </Form.Item>
+                );
+            case 'checkbox':
+                return (
+                    <Form.Item key={name} name={name} label={label} rules={rules} valuePropName="checked">
+                        <Checkbox.Group options={options} />
+                    </Form.Item>
+                );
             case 'multiselect':
+            case 'tags':
+            case 'array':
                 return (
                     <Form.Item key={name} name={name} label={label} rules={rules}>
                         <Select mode="multiple" placeholder={placeholder} options={options} />
                     </Form.Item>
                 );
             case 'textarea':
+            case 'textArea':
                 return (
                     <Form.Item key={name} name={name} label={label} rules={rules}>
-                        <Input.TextArea rows={rows} placeholder={placeholder} />
+                        <Input.TextArea rows={rows || 4} placeholder={placeholder} />
                     </Form.Item>
                 );
             case 'datepicker':
+            case 'date':
                 return (
                     <Form.Item key={name} name={name} label={label} rules={rules}>
                         <DatePicker placeholder={placeholder} style={{ width: '100%' }} />
+                    </Form.Item>
+                );
+            case 'dateRange':
+                return (
+                    <Form.Item key={name} name={name} label={label} rules={rules}>
+                        <DatePicker.RangePicker style={{ width: '100%' }} />
+                    </Form.Item>
+                );
+            case 'switch':
+                return (
+                    <Form.Item key={name} name={name} label={label} rules={rules} valuePropName="checked">
+                        <Switch />
                     </Form.Item>
                 );
             default:
