@@ -1,18 +1,11 @@
 'use client';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Card, Space, Table, Tag } from 'antd';
-import { useTitle } from '@/components/TitleContext';
+import { useTitleContext } from '@/components/TitleContext';
 import {DashboardOutlined} from "@ant-design/icons";
 
 export default function DashboardPage() {
-    const { setTitle } = useTitle();
-    useEffect(() => {
-        setTitle({
-            title: 'dashboard',
-            icon: <DashboardOutlined />
-        });
-    }, [setTitle]);
-    
+    useTitleContext({title: 'dashboard',icon: <DashboardOutlined />});
     const columns = [
         {
             title: 'Name',

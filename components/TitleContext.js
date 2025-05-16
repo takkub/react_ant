@@ -1,7 +1,5 @@
 'use client';
-
-import React, { createContext, useContext, useState } from 'react';
-
+import React, {createContext, useContext, useEffect, useState} from 'react';
 const TitleContext = createContext({
   title: {
       title: '',
@@ -19,6 +17,14 @@ export const TitleProvider = ({ children }) => {
   );
 };
 
-
+export const useTitleContext = (data) => {
+    const { setTitle } = useTitle();
+    useEffect(() => {
+        setTitle({
+            title: data.title,
+            icon: data.icon,
+        });
+    }, [setTitle]);
+}
 
 export const useTitle = () => useContext(TitleContext);

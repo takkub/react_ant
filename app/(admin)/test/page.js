@@ -1,16 +1,10 @@
 'use client';
-import React, {useEffect} from "react";
-import { useTitle } from '@/components/TitleContext';
-import { UserOutlined} from "@ant-design/icons";
+import React from "react";
+import { useTitleContext } from '@/components/TitleContext';
+import {UserOutlined} from "@ant-design/icons";
 
 export default function TestPage() {
-    const { setTitle } = useTitle();
-    useEffect(() => {
-        setTitle({
-            title: 'Fuck',
-            icon: <UserOutlined />
-        });
-    }, [setTitle]);
+    useTitleContext({title: 'Fuck',icon: <UserOutlined />});
     return (
         <div>
             <h1>Test</h1>
