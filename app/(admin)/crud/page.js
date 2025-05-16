@@ -98,15 +98,9 @@ export default function CrudPage() {
             dataIndex: 'createdAt',
             key: 'createdAt',
             form: {
-                type: 'dateRangePicker',
+                type: 'date',
                 rules: [
                     {required: true, message: 'Please select a date!'}
-                ],
-                options: [
-                    {label: 'Today', value: getTodayDate()},
-                    {label: 'Last 7 days', value: getLastWeekDate()},
-                    {label: 'This Month', value: [dayjs().startOf('month'), dayjs().endOf('month')]},
-                    {label: 'Last Month', value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')]}
                 ]
             },
             render: (text) => {
@@ -223,15 +217,7 @@ export default function CrudPage() {
                             {
                                 title: 'Date Range',
                                 field: ['createdAt'],
-                                key: 'dateRange',
-                                options: [
-                                    {lable: 'This Month', key: 'thisMonth'},
-                                    {lable: 'Last 3 Months', key: 'last3Months'},
-                                    {lable: 'Last 6 Months', key: 'last6Months'},
-                                    {lable: 'This Year', key: 'thisYear'},
-                                    {lable: 'Last 7 days', key: 'weekly'},
-                                    {lable: 'Today', key: 'today'},
-                                ]
+                                key: 'date',
                             }
                         ]}
                     />

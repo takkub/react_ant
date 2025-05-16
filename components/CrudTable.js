@@ -910,13 +910,13 @@ export default function CrudTable({
             case 'radio':
                 return (
                     <Form.Item key={name} name={name} label={label} rules={fieldRules}>
-                        <Radio.Group options={fieldOptions} />
+                        <Select options={fieldOptions} />
                     </Form.Item>
                 );
             case 'checkbox':
                 return (
                     <Form.Item key={name} name={name} label={label} rules={fieldRules} valuePropName="checked">
-                        <Checkbox.Group options={fieldOptions} />
+                        <Select mode="multiple" options={fieldOptions} />
                     </Form.Item>
                 );
             case 'multiselect':
@@ -950,7 +950,12 @@ export default function CrudTable({
             case 'switch':
                 return (
                     <Form.Item key={name} name={name} label={label} rules={fieldRules} valuePropName="checked">
-                        <Switch />
+                        <Select
+                            options={[
+                                { label: 'On', value: true },
+                                { label: 'Off', value: false }
+                            ]}
+                        />
                     </Form.Item>
                 );
             default:
