@@ -415,15 +415,35 @@ export default function CrudTable({
         fieldsToUse.forEach(field => {
             const fieldName = field.name;
             
+            // Skip if the field doesn't exist in the record
+            if (!(fieldName in record) && fieldName !== 'key') {
+                return;
+            }
+            
+            // Extract field type, handling nested objects
+            let fieldType = field.type;
+            
+            // Handle object type definitions (from the new format)
+            if (typeof fieldType === 'object' && fieldType !== null) {
+                if (fieldType.type) {
+                    fieldType = fieldType.type;
+                }
+            }
+            
+            // Special handling for dateRangePicker (new format)
+            if (fieldType === 'dateRangePicker') {
+                fieldType = 'dateRange';
+            }
+            
             // Handle special types or formatting
-            if (field.type === 'date' || field.type === 'datepicker') {
+            if (fieldType === 'date' || fieldType === 'datepicker') {
                 // Convert to dayjs if it's a date
                 if (record[fieldName] && (record[fieldName] instanceof Date || !isNaN(new Date(record[fieldName])))) {
                     formValues[fieldName] = dayjs(record[fieldName]);
                 } else {
                     formValues[fieldName] = undefined;
                 }
-            } else if (field.type === 'dateRange') {
+            } else if (fieldType === 'dateRange') {
                 // Skip date ranges - usually not directly editable as a range
                 formValues[fieldName] = record[fieldName] ? dayjs(record[fieldName]) : undefined;
             } else {
@@ -453,15 +473,28 @@ export default function CrudTable({
                     return;
                 }
                 
+                // Extract field type from field definition
+                let fieldType = field.type;
+                
+                // For the new format with form property, type can be nested
+                if (typeof fieldType === 'object' && fieldType !== null && fieldType.type) {
+                    fieldType = fieldType.type;
+                }
+                
+                // Special handling for dateRangePicker (new format)
+                if (fieldType === 'dateRangePicker') {
+                    fieldType = 'dateRange';
+                }
+                
                 // Process based on field type
-                if (field.type === 'date' || field.type === 'datepicker' || field.type === 'dateRange') {
+                if (fieldType === 'date' || fieldType === 'datepicker' || fieldType === 'dateRange') {
                     // Convert dayjs objects to Date objects
                     if (value && typeof value.toDate === 'function') {
                         processedValues[fieldName] = value.toDate();
                     } else {
                         processedValues[fieldName] = value;
                     }
-                } else if (field.type === 'number') {
+                } else if (fieldType === 'number') {
                     // Convert string numbers to actual numbers
                     processedValues[fieldName] = value === '' ? null : Number(value);
                 } else {
@@ -587,7 +620,59 @@ export default function CrudTable({
                 return null;
             }
             
-            // Basic form field properties
+            // Check if the column has a form property with configuration
+            if (column.form) {
+                // Create base field properties
+                const formField = {
+                    name: column.dataIndex,
+                    label: column.title,
+                    placeholder: `Enter ${column.title.toLowerCase()}`,
+                };
+                
+                // Copy all form properties
+                if (typeof column.form === 'object') {
+                    // Extract type - handle both simple and complex types
+                    if (column.form.type) {
+                        if (typeof column.form.type === 'string') {
+                            formField.type = column.form.type;
+                        } else if (typeof column.form.type === 'object' && column.form.type.type) {
+                            // Handle the nested type object
+                            formField.type = column.form.type.type;
+                            if (column.form.type.options) {
+                                formField.options = column.form.type.options;
+                            }
+                        }
+                    }
+                    
+                    // Copy options if they exist at the top level
+                    if (column.form.options) {
+                        formField.options = column.form.options;
+                    }
+                    
+                    // Copy rules
+                    if (column.form.rules && Array.isArray(column.form.rules)) {
+                        formField.rules = [...column.form.rules];
+                        
+                        // Check if any rule has required=true
+                        const hasRequiredRule = column.form.rules.some(rule => rule.required === true);
+                        if (hasRequiredRule) {
+                            formField.required = true;
+                        }
+                    }
+                    
+                    // Copy any other properties
+                    if (column.form.placeholder) formField.placeholder = column.form.placeholder;
+                    if (column.form.min !== undefined) formField.min = column.form.min;
+                    if (column.form.max !== undefined) formField.max = column.form.max;
+                    if (column.form.step !== undefined) formField.step = column.form.step;
+                    if (column.form.rows !== undefined) formField.rows = column.form.rows;
+                    if (column.form.prefix !== undefined) formField.prefix = column.form.prefix;
+                }
+                
+                return formField;
+            }
+            
+            // Legacy format - Basic form field properties
             const formField = {
                 name: column.dataIndex,
                 label: column.title,
@@ -747,36 +832,66 @@ export default function CrudTable({
     
     // Render form fields based on their type
     const renderFormField = (field) => {
-        const { name, label, type, required, placeholder, options, prefix, min, step, rows, rules: fieldRules = [] } = field;
+        // Extract all field properties
+        const { 
+            name, 
+            label, 
+            type, 
+            required, 
+            placeholder, 
+            options, 
+            prefix, 
+            min, 
+            step, 
+            rows, 
+            rules = [] 
+        } = field;
         
-        // Combine required rule with any custom rules
-        const rules = required 
-            ? [{ required: true, message: `Please input ${label.toLowerCase()}!` }, ...fieldRules] 
-            : fieldRules;
+        // Ensure rules is an array and handle required properly
+        let fieldRules = Array.isArray(rules) ? [...rules] : [];
         
-        switch (type) {
+        // Add required rule if not already included
+        if (required && !fieldRules.some(rule => rule.required === true)) {
+            fieldRules.unshift({ required: true, message: `Please input ${label.toLowerCase()}!` });
+        }
+        
+        // Handle the field type - it could be a string or an object
+        let fieldType = type;
+        let fieldOptions = options;
+        
+        // Special case for dateRangePicker (used in new format)
+        if (fieldType === 'dateRangePicker') {
+            fieldType = 'dateRange';
+        }
+        
+        switch (fieldType) {
             case 'input':
             case 'text':
             case 'string':
                 return (
-                    <Form.Item key={name} name={name} label={label} rules={rules}>
+                    <Form.Item key={name} name={name} label={label} rules={fieldRules}>
                         <Input placeholder={placeholder} prefix={prefix} />
                     </Form.Item>
                 );
             case 'email':
+                // Check if email validation rule already exists
+                if (!fieldRules.some(rule => rule.type === 'email')) {
+                    fieldRules.push({ type: 'email', message: 'Please enter a valid email!' });
+                }
+                
                 return (
                     <Form.Item 
                         key={name} 
                         name={name} 
                         label={label} 
-                        rules={[...rules, { type: 'email', message: 'Please enter a valid email!' }]}
+                        rules={fieldRules}
                     >
                         <Input placeholder={placeholder || 'example@domain.com'} />
                     </Form.Item>
                 );
             case 'number':
                 return (
-                    <Form.Item key={name} name={name} label={label} rules={rules}>
+                    <Form.Item key={name} name={name} label={label} rules={fieldRules}>
                         <Input 
                             type="number" 
                             placeholder={placeholder} 
@@ -788,59 +903,59 @@ export default function CrudTable({
                 );
             case 'select':
                 return (
-                    <Form.Item key={name} name={name} label={label} rules={rules}>
-                        <Select placeholder={placeholder} options={options} />
+                    <Form.Item key={name} name={name} label={label} rules={fieldRules}>
+                        <Select placeholder={placeholder} options={fieldOptions} />
                     </Form.Item>
                 );
             case 'radio':
                 return (
-                    <Form.Item key={name} name={name} label={label} rules={rules}>
-                        <Radio.Group options={options} />
+                    <Form.Item key={name} name={name} label={label} rules={fieldRules}>
+                        <Radio.Group options={fieldOptions} />
                     </Form.Item>
                 );
             case 'checkbox':
                 return (
-                    <Form.Item key={name} name={name} label={label} rules={rules} valuePropName="checked">
-                        <Checkbox.Group options={options} />
+                    <Form.Item key={name} name={name} label={label} rules={fieldRules} valuePropName="checked">
+                        <Checkbox.Group options={fieldOptions} />
                     </Form.Item>
                 );
             case 'multiselect':
             case 'tags':
             case 'array':
                 return (
-                    <Form.Item key={name} name={name} label={label} rules={rules}>
-                        <Select mode="multiple" placeholder={placeholder} options={options} />
+                    <Form.Item key={name} name={name} label={label} rules={fieldRules}>
+                        <Select mode="multiple" placeholder={placeholder} options={fieldOptions} />
                     </Form.Item>
                 );
             case 'textarea':
             case 'textArea':
                 return (
-                    <Form.Item key={name} name={name} label={label} rules={rules}>
+                    <Form.Item key={name} name={name} label={label} rules={fieldRules}>
                         <Input.TextArea rows={rows || 4} placeholder={placeholder} />
                     </Form.Item>
                 );
             case 'datepicker':
             case 'date':
                 return (
-                    <Form.Item key={name} name={name} label={label} rules={rules}>
+                    <Form.Item key={name} name={name} label={label} rules={fieldRules}>
                         <DatePicker placeholder={placeholder} style={{ width: '100%' }} />
                     </Form.Item>
                 );
             case 'dateRange':
                 return (
-                    <Form.Item key={name} name={name} label={label} rules={rules}>
-                        <DatePicker.RangePicker style={{ width: '100%' }} />
+                    <Form.Item key={name} name={name} label={label} rules={fieldRules}>
+                        <DatePicker.RangePicker style={{ width: '100%' }} options={fieldOptions} />
                     </Form.Item>
                 );
             case 'switch':
                 return (
-                    <Form.Item key={name} name={name} label={label} rules={rules} valuePropName="checked">
+                    <Form.Item key={name} name={name} label={label} rules={fieldRules} valuePropName="checked">
                         <Switch />
                     </Form.Item>
                 );
             default:
                 return (
-                    <Form.Item key={name} name={name} label={label} rules={rules}>
+                    <Form.Item key={name} name={name} label={label} rules={fieldRules}>
                         <Input placeholder={placeholder} />
                     </Form.Item>
                 );

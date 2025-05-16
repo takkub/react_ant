@@ -33,7 +33,7 @@ export default function CrudPage() {
             description: 'This is a sample invoice for business services rendered in September.'
         }
     ]);
-    // Custom columns example for when you need specific column configuration
+    
     const customUserColumns = [
         {
             title: 'ID',
@@ -41,30 +41,55 @@ export default function CrudPage() {
             key: 'userId',
             width: 100,
             fixed: 'left',
-            type: 'key'
+            form:{
+                type: 'text',
+                rules: [
+                    {required: true, message: 'Please input your ID!'},
+                    {min: 3, message: 'ID must be at least 3 characters!'},
+                    {max: 10, message: 'ID must be at most 10 characters!'}
+                ]
+            }
         },
         {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            type: 'text',
+            form: {
+                type: 'text',
+                rules: [
+                    {required: true, message: 'Please input your name!'},
+                    {min: 3, message: 'Name must be at least 3 characters!'},
+                    {max: 50, message: 'Name must be at most 50 characters!'}
+                ]
+            }
         },
         {
             title: 'Email',
             dataIndex: 'email',
             key: 'email',
-            type: 'email',
+            form: {
+                type: 'email',
+                rules: [
+                    {required: true, message: 'Please input your email!'},
+                    {type: 'email', message: 'The input is not valid E-mail!'}
+                ]
+            }
         },
         {
             title: 'Status',
             dataIndex: 'status',
             key: 'status',
-            type: {
-                type: 'select', // or checkbox or radio
-                options: [
-                    {label: 'Active', value: 'active'},
-                    {label: 'Inactive', value: 'inactive'},
-                    {label: 'Pending', value: 'pending'}
+            form: {
+                type: {
+                    type: 'select', // or checkbox or radio
+                    options: [
+                        {label: 'Active', value: 'active'},
+                        {label: 'Inactive', value: 'inactive'},
+                        {label: 'Pending', value: 'pending'}
+                    ]
+                },
+                rules: [
+                    {required: true, message: 'Please select a status!'}
                 ]
             }
         },
@@ -72,7 +97,18 @@ export default function CrudPage() {
             title: 'Created Date',
             dataIndex: 'createdAt',
             key: 'createdAt',
-            type: 'dateRange',
+            form: {
+                type: 'dateRangePicker',
+                rules: [
+                    {required: true, message: 'Please select a date!'}
+                ],
+                options: [
+                    {label: 'Today', value: getTodayDate()},
+                    {label: 'Last 7 days', value: getLastWeekDate()},
+                    {label: 'This Month', value: [dayjs().startOf('month'), dayjs().endOf('month')]},
+                    {label: 'Last Month', value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')]}
+                ]
+            },
             render: (text) => {
                 return dayjs(text).format('YYYY-MM-DD');
             }
@@ -81,13 +117,30 @@ export default function CrudPage() {
             title: 'Role',
             dataIndex: 'role',
             key: 'role',
-            type: 'tags',
+            form: {
+                type: 'tags',
+                options: [
+                    {label: 'Admin', value: 'Admin'},
+                    {label: 'Manager', value: 'Manager'},
+                    {label: 'User', value: 'User'}
+                ],
+                rules: [
+                    {required: true, message: 'Please select a role!'}
+                ]
+            },
         },
         {
             title: 'Description',
             dataIndex: 'description',
             key: 'description',
-            type: 'textArea',
+            form: {
+                type: 'textArea',
+                rules: [
+                    {required: true, message: 'Please input a description!'},
+                    {min: 10, message: 'Description must be at least 10 characters!'},
+                    {max: 200, message: 'Description must be at most 200 characters!'}
+                ]
+            },
             render: (text) => {
                 return <Text>{text}</Text>;
             }
@@ -172,12 +225,12 @@ export default function CrudPage() {
                                 field: ['createdAt'],
                                 key: 'dateRange',
                                 options: [
-                                    {lable: 'This Month', key: 'thisMonth', value: 'thisMonth'},
-                                    {lable: 'Last 3 Months', key: 'last3Months', value: 'last3Months'},
-                                    {lable: 'Last 6 Months', key: 'last6Months', value: 'last6Months'},
-                                    {lable: 'This Year', key: 'thisYear', value: 'thisYear'},
-                                    {lable: 'Last 7 days', key: 'weekly', value: 'thisWeek'},
-                                    {lable: 'Today', key: 'today', value: 'thisToday'},
+                                    {lable: 'This Month', key: 'thisMonth'},
+                                    {lable: 'Last 3 Months', key: 'last3Months'},
+                                    {lable: 'Last 6 Months', key: 'last6Months'},
+                                    {lable: 'This Year', key: 'thisYear'},
+                                    {lable: 'Last 7 days', key: 'weekly'},
+                                    {lable: 'Today', key: 'today'},
                                 ]
                             }
                         ]}
