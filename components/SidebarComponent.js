@@ -46,7 +46,8 @@ export default function SidebarComponent({collapsed, setCollapsed}) {
         {
             key: '2',
             icon: <UserOutlined/>,
-            label: 'Users'
+            label: 'Users',
+            onClick: () => router.push('/test')
         },
         {
             key: '3',

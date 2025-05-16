@@ -3,11 +3,14 @@ import {DashboardOutlined, MenuFoldOutlined, MenuUnfoldOutlined} from "@ant-desi
 import ProfileDropdown from "./ProfileDropdown";
 import LanguageSwitcher from "./LanguageSwitcher";
 import {useTranslation} from "react-i18next";
+import { useTitle } from "./TitleContext";
 const {Title} = Typography;
 const { Header } = Layout;
 
 export default function HeaderComponent({ collapsed, setCollapsed }) {
     const {t} = useTranslation();
+    const { title } = useTitle();
+    
     return (
         <Header 
             style={{
@@ -28,7 +31,7 @@ export default function HeaderComponent({ collapsed, setCollapsed }) {
             </div>
             <div className="header-left">
                 <Typography>
-                    <Title level={3} className={'mb-5'}><DashboardOutlined /> {t('dashboard')}</Title>
+                    <Title level={3} className={'mb-5'}>{title.icon} {t(title.title)}</Title>
                 </Typography>
             </div>
             <Space className="header-right" size={16}>

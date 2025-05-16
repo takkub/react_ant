@@ -3,7 +3,7 @@ export const lightTheme = {
         colorPrimary: '#0067ff', // สีหลัก
         colorTextBase: '#000000', // สีข้อความหลัก
         colorTextSecondary: '#999999', // สีข้อความรอง
-        colorBgContainer: '#00ffff', // พื้นหลังของคอนเทนเนอร์
+        colorBgContainer: '#59ffff', // พื้นหลังของคอนเทนเนอร์
         colorBgBase: '#ffffff', // พื้นหลังหลัก
         colorBgLayout: '#ff0000', // พื้นหลังเลย์เอาต์
         colorLink: '#1890ff', // สีของลิงก์

@@ -1,7 +1,18 @@
 'use client';
-import React from 'react';
-import {Card,  Space, Table, Tag} from 'antd';
+import React, { useEffect } from 'react';
+import { Card, Space, Table, Tag } from 'antd';
+import { useTitle } from '@/components/TitleContext';
+import {DashboardOutlined} from "@ant-design/icons";
+
 export default function DashboardPage() {
+    const { setTitle } = useTitle();
+    useEffect(() => {
+        setTitle({
+            title: 'dashboard',
+            icon: <DashboardOutlined />
+        });
+    }, [setTitle]);
+    
     const columns = [
         {
             title: 'Name',
@@ -75,7 +86,6 @@ export default function DashboardPage() {
     ];
     return (
         <>
-           
             <Card variant="outline">
                 <Table columns={columns} dataSource={data} />
             </Card>
