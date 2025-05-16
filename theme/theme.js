@@ -3,11 +3,11 @@ export const lightTheme = {
         colorPrimary: '#0067ff', // สีหลัก
         colorTextBase: '#000000', // สีข้อความหลัก
         colorTextSecondary: '#999999', // สีข้อความรอง
-        colorBgContainer: '#ffffff', // พื้นหลังของคอนเทนเนอร์
+        colorBgContainer: '#00ffff', // พื้นหลังของคอนเทนเนอร์
         colorBgBase: '#ffffff', // พื้นหลังหลัก
-        colorBgLayout: '#ffffff', // พื้นหลังเลย์เอาต์
+        colorBgLayout: '#ff0000', // พื้นหลังเลย์เอาต์
         colorLink: '#1890ff', // สีของลิงก์
-        colorError: '#ff4d4f', // สีข้อความผิดพลาด
+        colorError: '#fff6f6', // สีข้อความผิดพลาด
         colorSuccess: '#52c41a', // สีสำเร็จ
         colorWarning: '#fadb14', // สีคำเตือน
         fontSizeBase: '14px', // ขนาดฟอนต์พื้นฐาน
@@ -17,6 +17,15 @@ export const lightTheme = {
         marginBase: '8px', // ระยะห่างจากขอบ
         siderWidth: 240, // ความกว้างของ Sider สำหรับ Dark Theme
         siderCollapsedWidth: 80, // ความกว้างเมื่อ Sider ถูกย่อ
+    },
+    components: {
+        Menu: {
+            itemBg:'#ffffff', // พื้นหลังของเมนู
+        },
+        Typography: {
+            titleMarginBottom:0,
+            titleMarginTop:0,
+        },
     },
 };
 export const darkTheme = {
