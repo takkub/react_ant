@@ -10,12 +10,13 @@ const { Header } = Layout;
 export default function HeaderComponent({ collapsed, setCollapsed }) {
     const {t} = useTranslation();
     const { title } = useTitle();
+    const colorText = "white"
     
     return (
         <Header 
             style={{
                 padding: "0 24px",
-                background: '#f0f2f5',
+                // background: '#f0f2f5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -27,11 +28,12 @@ export default function HeaderComponent({ collapsed, setCollapsed }) {
                     type="text"
                     icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                     onClick={() => setCollapsed(!collapsed)}
+                    style={{color: colorText}}
                 />
             </div>
             <div className="header-left">
-                <Typography>
-                    <Title level={3} className={'mb-5'}>{title.icon} {t(title.title)}</Title>
+                <Typography >
+                    <Title style={{color: colorText}} level={3} className={'mb-5'}>{title.icon} {t(title.title)}</Title>
                 </Typography>
             </div>
             <Space className="header-right" size={16}>

@@ -58,7 +58,7 @@ export default function LanguageSwitcher() {
                     options={languages}
                     variant={'outlined'}
                     style={{ width: 100 }}
-                    suffixIcon={<GlobalOutlined style={{ color: "#1890ff" }} />}
+                    suffixIcon={<GlobalOutlined style={{ color: "black" }} />}
                     dropdownStyle={{ minWidth: 120 }}
                     disabled
                 />
@@ -74,7 +74,7 @@ export default function LanguageSwitcher() {
                 options={languages}
                 variant={'outlined'}
                 style={{ width: 100 }}
-                suffixIcon={<GlobalOutlined style={{ color: "#1890ff" }} />}
+                suffixIcon={<GlobalOutlined style={{ color: "black" }} />}
                 dropdownStyle={{ minWidth: 120 }}
             />
         </Tooltip>
