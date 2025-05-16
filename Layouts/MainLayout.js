@@ -7,6 +7,7 @@ import { lightTheme } from "../theme/theme";
 import SidebarComponent from "../components/SidebarComponent";
 import HeaderComponent from "../components/HeaderComponent";
 import ContentComponent from "../components/ContentComponent";
+import '../app/i18n'; // ✅ สำคัญ ต้องมาก่อน component อื่นๆ
 
 export default function MainLayout({ children }) {
     const [collapsed, setCollapsed] = useState(false);
