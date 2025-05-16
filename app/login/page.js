@@ -1,16 +1,17 @@
 'use client';
 
-import { Form, Input, Button, Card, message } from 'antd';
+import { Form, Input, Button, Card, App } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 
-export default function LoginPage() {
+const LoginContent = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [form] = Form.useForm();
+  const { message } = App.useApp();
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -111,5 +112,13 @@ export default function LoginPage() {
         </Form>
       </Card>
     </div>
+  );
+};
+
+export default function LoginPage() {
+  return (
+    <App>
+      <LoginContent />
+    </App>
   );
 }

@@ -1,12 +1,7 @@
 'use client';
 import React from 'react';
-import {Card, Divider, Space, Table, Tag, Typography} from 'antd';
-const {Title} = Typography;
-import {useTranslation} from "react-i18next";
-import {DashboardOutlined} from "@ant-design/icons";
-
+import {Card,  Space, Table, Tag} from 'antd';
 export default function DashboardPage() {
-    const {t} = useTranslation('common'); // ตรงกับการตั้งค่า namespace ใน i18n.js
     const columns = [
         {
             title: 'Name',
@@ -80,10 +75,7 @@ export default function DashboardPage() {
     ];
     return (
         <>
-            <Typography>
-                <Title level={3} className={'mb-5'}><DashboardOutlined /> {t('dashboard')}</Title>
-                <Divider/>
-            </Typography>
+           
             <Card variant="outline">
                 <Table columns={columns} dataSource={data} />
             </Card>
