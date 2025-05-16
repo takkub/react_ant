@@ -52,7 +52,8 @@ export default function SidebarComponent({collapsed, setCollapsed}) {
         {
             key: '3',
             icon: <SettingOutlined/>,
-            label: 'Settings'
+            label: 'Settings',
+            onClick: () => router.push('/crud')
         },
         {
             key: '4',

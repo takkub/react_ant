@@ -22,6 +22,7 @@
     "next-i18next": "^15.4.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-highlight-words": "^0.20.0",
     "react-i18next": "^15.5.1",
     "typescript": "^5.8.3"
   },

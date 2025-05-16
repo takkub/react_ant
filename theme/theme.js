@@ -3,13 +3,14 @@ export const lightTheme = {
         colorPrimary: '#0067ff', // สีหลัก
         colorTextBase: '#000000', // สีข้อความหลัก
         colorTextSecondary: '#999999', // สีข้อความรอง
-        colorBgContainer: '#59ffff', // พื้นหลังของคอนเทนเนอร์
+        colorBgContainer: '#ffffff', // พื้นหลังของคอนเทนเนอร์
         colorBgBase: '#ffffff', // พื้นหลังหลัก
-        colorBgLayout: '#ff0000', // พื้นหลังเลย์เอาต์
+        colorBgLayout: '#dadada', // พื้นหลังเลย์เอาต์
         colorLink: '#1890ff', // สีของลิงก์
-        colorError: '#fff6f6', // สีข้อความผิดพลาด
+        colorError: '#ff0000', // สีข้อความผิดพลาด
         colorSuccess: '#52c41a', // สีสำเร็จ
         colorWarning: '#fadb14', // สีคำเตือน
+        colorInfo: '#0067ff', // สีข้อมูล
         fontSizeBase: '14px', // ขนาดฟอนต์พื้นฐาน
         borderRadiusBase: '4px', // มุมโค้งพื้นฐาน
         boxShadowBase: '0 2px 8px rgba(0, 0, 0, 0.15)', // เงาพื้นฐาน

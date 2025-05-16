@@ -17,14 +17,18 @@ export const TitleProvider = ({ children }) => {
   );
 };
 
-export const useTitleContext = (data) => {
-    const { setTitle } = useTitle();
-    useEffect(() => {
-        setTitle({
-            title: data.title,
-            icon: data.icon,
-        });
-    }, [setTitle]);
-}
-
+// Original hook for manual setting
 export const useTitle = () => useContext(TitleContext);
+
+// New simplified hook that handles title setting automatically
+export const useTitleContext = (titleConfig) => {
+  const context = useContext(TitleContext);
+  
+  useEffect(() => {
+    if (titleConfig && context.setTitle) {
+      context.setTitle(titleConfig);
+    }
+  }, []);
+  
+  return context;
+};
