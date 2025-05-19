@@ -94,11 +94,12 @@ export default function TestPage() {
                             placeholder="Select a option and change input text above"
                             // onChange={onGenderChange}
                             allowClear
-                        >
-                            <Option value="male">male</Option>
-                            <Option value="female">female</Option>
-                            <Option value="other">other</Option>
-                        </Select>
+                            options={[
+                                { value: 'male', label: 'male' },
+                                { value: 'female', label: 'female' },
+                                { value: 'other', label: 'other' }
+                            ]}
+                        />
                     </Form.Item>
                     <Form.Item name="date" label="Date">
                         <DatePicker onChange={onChangeDatePicker} />

@@ -4,7 +4,7 @@ import { SessionProvider } from 'next-auth/react';
 import { ConfigProvider, Layout } from 'antd';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import React, { useState } from "react";
-import { lightTheme, WSOLTheme } from "@/theme/theme";
+import {WSOLTheme } from "@/theme/theme";
 import SidebarComponent from "@/components/SidebarComponent";
 import HeaderComponent from "@/components/HeaderComponent";
 import ContentComponent from "@/components/ContentComponent";

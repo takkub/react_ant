@@ -3,6 +3,7 @@ import { Dropdown, Avatar, Space, Typography } from "antd";
 import { UserOutlined, SettingOutlined, LogoutOutlined, DownOutlined } from "@ant-design/icons";
 import { useRouter } from 'next/navigation';
 import { useDrawer } from "@/store/context/DrawerContext";
+import {signOut} from "next-auth/react";
 
 const { Text } = Typography;
 
@@ -20,15 +21,11 @@ export default function ProfileDropdown() {
     useEffect(() => {
         setIsMounted(true);
     }, []);
-
-    const handleLogout = () => {
-        // Handle logout logic here
-        console.log("User logged out");
-        // if (isMounted && router.isReady) {
-        //     router.push("/login");
-        // }
+    
+    const handleLogout = async () => {
+        await signOut({ redirect: false });
+        router.push('/login');
     };
-
     const navigateTo = (path) => {
         if (isMounted && router.isReady) {
             router.push(path);

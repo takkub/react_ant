@@ -38,11 +38,6 @@ export default function SidebarComponent({ collapsed, setCollapsed }) {
         }
     }, [collapsed])
 
-    const handleSignOut = async () => {
-        await signOut({ redirect: false });
-        router.push('/login');
-    };
-
     if (status === 'unauthenticated') return null;
 
     if (status === 'loading') {
@@ -82,7 +77,7 @@ export default function SidebarComponent({ collapsed, setCollapsed }) {
         {
             key: '4',
             icon: <LogoutOutlined />,
-            label: 'Logout',
+            label: 'CRUD',
             onClick: () => router.push('/crud')
         }
     ];
