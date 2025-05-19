@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useTitleContext } from '@/components/TitleContext';
 import { UserOutlined } from "@ant-design/icons";
-import { Button, Card, DatePicker, Drawer, Form, Input, Modal, Radio, Select, Space, Spin, Switch, Tabs, message } from "antd";
+import { Button, Card, Checkbox, DatePicker, Drawer, Form, Input, Modal, Radio, Select, Space, Spin, Switch, Tabs, message } from "antd";
 
 export default function TestPage() {
     useTitleContext({ title: 'User', icon: <UserOutlined /> });
@@ -101,20 +101,21 @@ export default function TestPage() {
                             ]}
                         />
                     </Form.Item>
-                    <Form.Item name="date" label="Date">
-                        <DatePicker onChange={onChangeDatePicker} />
+                    <Form.Item name="dateRange" label="dateRange">
+                        <DatePicker.RangePicker onChange={onChangeDatePicker} />
                     </Form.Item>
                     <Form.Item name="status" label="Status">
-                        <Radio defaultChecked={false} >
-                            Disabled
-                        </Radio>
-                        <Radio defaultChecked >
-                            Disabled
-                        </Radio>
+                        <Radio.Group>
+                            <Radio value={false}>Disabled</Radio>
+                            <Radio value={true}>Enabled</Radio>
+                        </Radio.Group>
+                    </Form.Item>
+                    <Form.Item name="check" label="Check">
+                        <Checkbox>Check this</Checkbox>
                     </Form.Item>
                     <Form.Item>
                         <Space>
-                            <Button type="primary" htmlType="submit">
+                            <Button htmlType="submit" style={{ background: '#1890ff', color: 'white' }}>
                                 Submit
                             </Button>
                             <Button htmlType="button" onClick={onReset}>
@@ -126,7 +127,7 @@ export default function TestPage() {
 
                 <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
 
-                <Button type="primary" onClick={showDrawer}>
+                <Button onClick={showDrawer} style={{ background: '#1890ff', color: 'white' }}>
                     Open
                 </Button>
                 <Drawer
@@ -140,7 +141,7 @@ export default function TestPage() {
                     <p>Some contents...</p>
                 </Drawer>
 
-                <Button type="primary" onClick={showModal}>
+                <Button onClick={showModal} style={{ background: '#1890ff', color: 'white' }}>
                     Open Modal
                 </Button>
                 <Modal

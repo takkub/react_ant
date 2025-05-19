@@ -1,166 +1,346 @@
 'use client';
-import React, {useState} from 'react';
-import {Card, message, Divider, Typography, Space} from 'antd';
+import React, {useEffect, useState} from 'react';
+import {Card, message, Typography} from 'antd';
 import CrudTable from '@/components/CrudTable';
 import {useTitleContext} from "@/components/TitleContext";
 import {DatabaseOutlined} from "@ant-design/icons";
 import dayjs from 'dayjs';
+import axios from "axios";
+import api from "@/lib/api";
+
 const {Text} = Typography;
 export default function UserManagement() {
-    useTitleContext({title: 'UserManagement', icon: <DatabaseOutlined />});
+    useTitleContext({title: 'UserManagement', icon: <DatabaseOutlined/>});
     // Basic invoice data example
-    const [userData, setUserData] = useState([
-        {
-            key: 1,
-            userId: 'takkub01',
-            name: 'Monchai M.',
-            email: 'monchai.m@sabuytech.com',
-            status: 'active',
-            createdAt: new Date('2023-09-15'),
-            role: ['Admin', 'Manager'],
-            description: 'This is a sample invoice for business services rendered in September.'
-        }
-    ]);
-    
-    const customUserColumns = [
-        {
-            title: 'ID',
-            dataIndex: 'userId',
-            key: 'userId',
-            width: 100,
-            fixed: 'left',
-            form:{
-                type: 'text',
-                rules: [
-                    {required: true, message: 'Please input your ID!'},
-                    {min: 3, message: 'ID must be at least 3 characters!'},
-                    {max: 10, message: 'ID must be at most 10 characters!'}
-                ]
+    const [userData, setUserData] = useState([]);
+    const options = {
+        columns: [
+            {
+                title: 'ID',
+                dataIndex: 'id',
+                key: 'id',
+                width: 100,
+                fixed: 'left',
+                filterable: true,
+                form: {
+                    type: 'text',
+                    rules: [
+                        {required: true, message: 'Please input your ID!'},
+                        {min: 3, message: 'ID must be at least 3 characters!'},
+                        {max: 10, message: 'ID must be at most 10 characters!'}
+                    ]
+                }
+            },
+            {
+                title: 'Name',
+                dataIndex: 'name',
+                key: 'name',
+                filterable: true,
+                sorter: true,
+                form: {
+                    type: 'text',
+                    rules: [
+                        {required: true, message: 'Please input your name!'},
+                        {min: 3, message: 'Name must be at least 3 characters!'},
+                        {max: 50, message: 'Name must be at most 50 characters!'}
+                    ]
+                }
+            },
+            {
+                title: 'Email',
+                dataIndex: 'email',
+                key: 'email',
+                filterable: true,
+                sorter: true,
+                form: {
+                    type: 'email',
+                    rules: [
+                        {required: true, message: 'Please input your email!'},
+                        {type: 'email', message: 'The input is not valid E-mail!'}
+                    ]
+                }
+            },
+            {
+                title: 'Status',
+                dataIndex: 'status',
+                key: 'status',
+                filters: [
+                    {text: 'Active', value: 'active'},
+                    {text: 'Inactive', value: 'inactive'},
+                    {text: 'Pending', value: 'pending'}
+                ],
+                onFilter: (value, record) => record.status === value,
+                form: {
+                    type: {
+                        type: 'select', // or checkbox or radio
+                        options: [
+                            {label: 'Active', value: 'active'},
+                            {label: 'Inactive', value: 'inactive'},
+                            {label: 'Pending', value: 'pending'}
+                        ]
+                    },
+                    rules: [
+                        {required: true, message: 'Please select a status!'}
+                    ]
+                }
+            },
+            {
+                title: 'Created Date',
+                dataIndex: 'createdAt',
+                key: 'createdAt',
+                sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+                filterType: 'date',
+                form: {
+                    type: 'date',
+                    rules: [
+                        {required: true, message: 'Please select a date!'}
+                    ]
+                },
+                render: (text) => {
+                    return dayjs(text).format('YYYY-MM-DD');
+                }
+            },
+            {
+                title: 'Role',
+                dataIndex: 'role',
+                key: 'role',
+                filters: [
+                    {text: 'Admin', value: 'Admin'},
+                    {text: 'Manager', value: 'Manager'},
+                    {text: 'User', value: 'User'}
+                ],
+                onFilter: (value, record) => record.role && record.role.includes(value),
+                form: {
+                    type: 'tags',
+                    options: [
+                        {label: 'Admin', value: 'Admin'},
+                        {label: 'Manager', value: 'Manager'},
+                        {label: 'User', value: 'User'}
+                    ],
+                    rules: [
+                        {required: true, message: 'Please select a role!'}
+                    ]
+                }
+            },
+            {
+                title: 'Description',
+                dataIndex: 'description',
+                key: 'description',
+                filterable: true,
+                form: {
+                    type: 'textArea',
+                    rules: [
+                        {required: true, message: 'Please input a description!'},
+                        {min: 10, message: 'Description must be at least 10 characters!'},
+                        {max: 200, message: 'Description must be at most 200 characters!'}
+                    ]
+                },
+                render: (text) => {
+                    return <Text>{text}</Text>;
+                }
             }
-        },
-        {
-            title: 'Name',
-            dataIndex: 'name',
-            key: 'name',
-            form: {
-                type: 'text',
-                rules: [
-                    {required: true, message: 'Please input your name!'},
-                    {min: 3, message: 'Name must be at least 3 characters!'},
-                    {max: 50, message: 'Name must be at most 50 characters!'}
-                ]
-            }
-        },
-        {
-            title: 'Email',
-            dataIndex: 'email',
-            key: 'email',
-            form: {
-                type: 'email',
-                rules: [
-                    {required: true, message: 'Please input your email!'},
-                    {type: 'email', message: 'The input is not valid E-mail!'}
-                ]
-            }
-        },
-        {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            form: {
-                type: {
+        ],
+        form: {
+            settings: {
+                title: 'User Form',
+                labelCol: {span: 6},
+                wrapperCol: {span: 24},
+                cols: 12,
+                layout: 'horizontal',
+                mode: 'modal'
+            },
+            fields: [
+                {
+                    dataIndex: 'userId',
+                    type: 'input',
+                    rules: [
+                        {required: true, message: 'Please input your ID!'},
+                        {min: 3, message: 'ID must be at least 3 characters!'},
+                        {max: 10, message: 'ID must be at most 10 characters!'}
+                    ],
+                    disabled: (mode) => mode === 'edit'
+                },
+                {
+                    dataIndex: 'name',
+                    type: 'input',
+                    rules: [
+                        {required: true, message: 'Please input your name!'},
+                        {min: 3, message: 'Name must be at least 3 characters!'},
+                        {max: 50, message: 'Name must be at most 50 characters!'}
+                    ]
+                },
+                {
+                    dataIndex: 'email',
+                    type: 'email',
+                    rules: [
+                        {required: true, message: 'Please input your email!'},
+                        {type: 'email', message: 'The input is not valid E-mail!'}
+                    ]
+                },
+                {
+                    dataIndex: 'status',
                     type: 'select', // or checkbox or radio
                     options: [
                         {label: 'Active', value: 'active'},
                         {label: 'Inactive', value: 'inactive'},
                         {label: 'Pending', value: 'pending'}
+                    ],
+                    rules: [
+                        {required: true, message: 'Please select a status!'}
                     ]
                 },
-                rules: [
-                    {required: true, message: 'Please select a status!'}
-                ]
-            }
-        },
-        {
-            title: 'Created Date',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            form: {
-                type: 'date',
-                rules: [
-                    {required: true, message: 'Please select a date!'}
-                ]
-            },
-            render: (text) => {
-                return dayjs(text).format('YYYY-MM-DD');
-            }
-        },
-        {
-            title: 'Role',
-            dataIndex: 'role',
-            key: 'role',
-            form: {
-                type: 'tags',
-                options: [
-                    {label: 'Admin', value: 'Admin'},
-                    {label: 'Manager', value: 'Manager'},
-                    {label: 'User', value: 'User'}
-                ],
-                rules: [
-                    {required: true, message: 'Please select a role!'}
-                ]
-            },
-        },
-        {
-            title: 'Description',
-            dataIndex: 'description',
-            key: 'description',
-            form: {
-                type: 'textArea',
-                rules: [
-                    {required: true, message: 'Please input a description!'},
-                    {min: 10, message: 'Description must be at least 10 characters!'},
-                    {max: 200, message: 'Description must be at most 200 characters!'}
-                ]
-            },
-            render: (text) => {
-                return <Text>{text}</Text>;
-            }
+                {
+                    dataIndex: 'role',
+                    type: 'tags',
+                    options: [
+                        {label: 'Admin', value: 'Admin'},
+                        {label: 'Manager', value: 'Manager'},
+                        {label: 'User', value: 'User'}
+                    ],
+                    rules: [
+                        {required: true, message: 'Please select a role!'}
+                    ]
+                },
+                {
+                    dataIndex: 'description',
+                    type: 'textArea',
+                    rules: [
+                        {required: true, message: 'Please input a description!'},
+                        {min: 10, message: 'Description must be at least 10 characters!'},
+                        {max: 200, message: 'Description must be at most 200 characters!'}
+                    ]
+                }
+            ]
         }
-    ];
+    }
+    // State for loading and error handling
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     
     // Generic CRUD operation handlers
-    const handleAdd = (data, setData) => (newRecord) => {
-        setData([...data, newRecord]);
-        message.success(`New record added successfully`);
-    };
+    useEffect(() => {
+        // Fetch data from API
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const response = await api.get('userData');
+                console.log('API response:', response);
+                if (response.data && response.data.length > 0) {
+                    // If the API returns data with proper format
+                    setUserData(response.data);
+                } else {
+                    // Keep the sample data if API doesn't return any data
+                    console.log('No data from API, using sample data');
+                }
+                setError(null);
+            } catch (err) {
+                console.error('Error fetching user data:', err);
+                setError('Failed to fetch user data. Please try again later.');
+                message.error('Failed to fetch user data. Please try again later.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
     
-    const handleEdit = (data, setData) => (key, updatedRecord) => {
-        const newData = [...data];
-        const index = newData.findIndex(item => item.key === key);
-        if (index > -1) {
-            newData[index] = {...newData[index], ...updatedRecord};
-            setData(newData);
-            message.success(`Record updated successfully`);
+    
+    const handleAdd = (data, setData) => async (newRecord) => {
+        try {
+            // Add key if it doesn't exist
+            if (!newRecord.key) {
+                newRecord.key = Date.now();
+            }
+            
+            // API call to add record
+            await api.post('userData', newRecord);
+            
+            // Update local state
+            setData([...data, newRecord]);
+            message.success(`New record added successfully`);
+        } catch (error) {
+            console.error('Error adding record:', error);
+            message.error('Failed to add record. Please try again.');
         }
     };
     
-    const handleDelete = (data, setData) => (keys) => {
-        const newData = data.filter(item => !keys.includes(item.key));
-        setData(newData);
-        message.success(`${keys.length} record(s) deleted successfully`);
+    const handleEdit = (data, setData) => async (key, updatedRecord) => {
+        try {
+            const newData = [...data];
+            const index = newData.findIndex(item => item.key === key);
+            
+            if (index > -1) {
+                // API call to update record
+                await api.put(`userData/${key}`, updatedRecord);
+                
+                // Update local state
+                newData[index] = {...newData[index], ...updatedRecord};
+                setData(newData);
+                message.success(`Record updated successfully`);
+            }
+        } catch (error) {
+            console.error('Error updating record:', error);
+            message.error('Failed to update record. Please try again.');
+        }
+    };
+    
+    const handleDelete = (data, setData) => async (keys) => {
+        try {
+            // API call to delete records
+            await Promise.all(keys.map(key => api.delete(`userData/${key}`)));
+            
+            // Update local state
+            const newData = data.filter(item => !keys.includes(item.key));
+            setData(newData);
+            message.success(`${keys.length} record(s) deleted successfully`);
+        } catch (error) {
+            console.error('Error deleting records:', error);
+            message.error('Failed to delete records. Please try again.');
+        }
     };
     
     const handleExport = (data) => (allData, selectedKeys) => {
-        const dataToExport = selectedKeys.length > 0
-            ? allData.filter(item => selectedKeys.includes(item.key))
-            : allData;
-        
-        message.success(`Exporting ${dataToExport.length} records...`);
-        console.log('Exporting data:', dataToExport);
+        try {
+            const dataToExport = selectedKeys.length > 0
+                ? allData.filter(item => selectedKeys.includes(item.key))
+                : allData;
+            
+            // Create a CSV string
+            const headers = options.columns.map(col => col.title).join(',');
+            const csvRows = dataToExport.map(item => {
+                return options.columns.map(col => {
+                    // Handle special data types like arrays and dates
+                    if (Array.isArray(item[col.dataIndex])) {
+                        return `"${item[col.dataIndex].join(', ')}"`;
+                    } else if (col.dataIndex === 'createdAt' && item[col.dataIndex]) {
+                        return dayjs(item[col.dataIndex]).format('YYYY-MM-DD');
+                    }
+                    return `"${item[col.dataIndex] || ''}"`;
+                }).join(',');
+            });
+            
+            const csvString = [headers, ...csvRows].join('\n');
+            
+            // Create download link
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `user-management-export-${dayjs().format('YYYY-MM-DD')}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            message.success(`Exported ${dataToExport.length} records successfully`);
+        } catch (error) {
+            console.error('Error exporting data:', error);
+            message.error('Failed to export data. Please try again.');
+        }
     };
     return (
-        <Card variant="outline" className="p-4">
+        <Card className="p-4">
+            {error && <div className="mb-4 text-red-500">{error}</div>}
             <CrudTable
                 title="User Management"
                 data={userData}
@@ -169,27 +349,33 @@ export default function UserManagement() {
                 onEdit={handleEdit(userData, setUserData)}
                 onDelete={handleDelete(userData, setUserData)}
                 onExport={handleExport(userData)}
-                customColumns={customUserColumns}
+                loading={loading}
+                pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100']
+                }}
+                customColumns={options}
                 filters={[
                     {
                         title: 'Filter By Role',
                         field: 'role',
-                        key: 'role',
+                        type: 'select',
                         options: [
-                            {lable: 'Admin',key: 'Admin', value: 'Admin'},
-                            {lable: 'Manager',key: 'Manager', value: 'Manager'},
-                            {lable: 'User',key: 'User', value: 'User'}
+                            {label: 'Admin', value: 'Admin'},
+                            {label: 'Manager', value: 'Manager'},
+                            {label: 'User', value: 'User'}
                         ]
                     },
                     {
                         title: 'Search',
                         field: ['name', 'email'],
-                        key: 'search'
+                        type: 'text'
                     },
                     {
                         title: 'Date Range',
                         field: ['createdAt'],
-                        key: 'date',
+                        type: 'dateRange'
                     }
                 ]}
             />
