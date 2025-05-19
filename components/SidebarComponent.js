@@ -4,10 +4,12 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from 'next/image'
+import {useTranslation} from "react-i18next";
 
 const { Sider } = Layout;
 
 export default function SidebarComponent({ collapsed, setCollapsed }) {
+    const {t} = useTranslation();
     const { data: session, status } = useSession();
     const [logoDetail, setLogoDetail] = useState({
         path: "/assets/wsol-logo.png",
@@ -77,8 +79,13 @@ export default function SidebarComponent({ collapsed, setCollapsed }) {
         {
             key: '4',
             icon: <LogoutOutlined />,
-            label: 'CRUD',
-            onClick: () => router.push('/crud')
+            label: t('UserManagement'),
+            children: [
+                { key: 'users', label: 'Users', icon: <SettingOutlined /> },
+                { key: 'roles', label: 'Roles', icon: <SettingOutlined /> },
+                { key: 'permissions', label: 'Permissions', icon: <SettingOutlined /> },
+            ],
+            onClick: () => router.push('/user-management')
         }
     ];
 
