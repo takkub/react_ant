@@ -1,18 +1,16 @@
-'use client';
-import React, {useEffect, useState} from 'react';
-import {Card, message, Typography} from 'antd';
-import CrudTable from '@/components/CrudTable';
+'use client'
+import {Card, message, Typography} from "antd";
+import React, {useEffect, useState} from "react";
+import CrudTable from "@/components/CrudTable";
 import {useTitleContext} from "@/components/TitleContext";
 import {DatabaseOutlined} from "@ant-design/icons";
-import dayjs from 'dayjs';
-import axios from "axios";
-import api from "@/lib/api";
-
+import dayjs from "dayjs";
 const {Text} = Typography;
-export default function UserManagement() {
-    useTitleContext({title: 'UserManagement', icon: <DatabaseOutlined/>});
-    // Basic invoice data example
+export default function RolesManagement() {
+    useTitleContext({title: 'RoleManagement', icon: <DatabaseOutlined/>});
     const [userData, setUserData] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const options = {
         columns: [
             {
@@ -151,7 +149,7 @@ export default function UserManagement() {
             },
             fields: [
                 {
-                    dataIndex: 'userId',
+                    dataIndex: 'username',
                     type: 'input',
                     rules: [
                         {required: true, message: 'Please input your ID!'},
@@ -213,13 +211,7 @@ export default function UserManagement() {
             ]
         }
     }
-    // State for loading and error handling
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    
-    // Generic CRUD operation handlers
     useEffect(() => {
-        // Fetch data from API
         const fetchData = async () => {
             setLoading(true);
             try {
@@ -244,23 +236,26 @@ export default function UserManagement() {
         fetchData();
     }, []);
     
-    
     const handleAdd = (data, setData) => async (newRecord) => {
         try {
-            // Add key if it doesn't exist
             if (!newRecord.key) {
                 newRecord.key = Date.now();
             }
-            
-            // API call to add record
+            console.log(newRecord)
             await api.post('userData', newRecord);
             
-            // Update local state
             setData([...data, newRecord]);
+            
             message.success(`New record added successfully`);
         } catch (error) {
+            // Handle error resfponse
             console.error('Error adding record:', error);
-            message.error('Failed to add record. Please try again.');
+            if (error.response && error.response.data) {
+                console.error('Error details:', error.response.data);
+                message.error(`Failed to add record: ${error.response.data.message}`);
+            }
+            console.error('Error adding record:', error.response);
+            message.error('Failed to add record. Please try again.' , error.response);
         }
     };
     
@@ -270,10 +265,8 @@ export default function UserManagement() {
             const index = newData.findIndex(item => item.key === key);
             
             if (index > -1) {
-                // API call to update record
                 await api.put(`userData/${key}`, updatedRecord);
                 
-                // Update local state
                 newData[index] = {...newData[index], ...updatedRecord};
                 setData(newData);
                 message.success(`Record updated successfully`);
@@ -286,10 +279,8 @@ export default function UserManagement() {
     
     const handleDelete = (data, setData) => async (keys) => {
         try {
-            // API call to delete records
             await Promise.all(keys.map(key => api.delete(`userData/${key}`)));
             
-            // Update local state
             const newData = data.filter(item => !keys.includes(item.key));
             setData(newData);
             message.success(`${keys.length} record(s) deleted successfully`);
@@ -305,11 +296,9 @@ export default function UserManagement() {
                 ? allData.filter(item => selectedKeys.includes(item.key))
                 : allData;
             
-            // Create a CSV string
             const headers = options.columns.map(col => col.title).join(',');
             const csvRows = dataToExport.map(item => {
                 return options.columns.map(col => {
-                    // Handle special data types like arrays and dates
                     if (Array.isArray(item[col.dataIndex])) {
                         return `"${item[col.dataIndex].join(', ')}"`;
                     } else if (col.dataIndex === 'createdAt' && item[col.dataIndex]) {
@@ -321,7 +310,6 @@ export default function UserManagement() {
             
             const csvString = [headers, ...csvRows].join('\n');
             
-            // Create download link
             const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');

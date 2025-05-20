@@ -1,180 +1,135 @@
+import {getData,insertData,deleteData,updateData} from "@/lib/mysqldb";
+const checkPayload = async (method, req) => {
+    let body;
+    if (method !== 'get') {
+        body = await req.json();
+    } else {
+        const url = new URL(req.url);
+        const params = url.searchParams
+        body = Object.fromEntries(params.entries());
+    }
+    return body
+}
+
+/**
+ * GET - Retrieve user data
+ * Endpoint to fetch all user data
+ */
 export const GET = async (req) => {
     try {
-        const users = [
-            {
-                key: '1',
-                id: 1,
-                name: 'John Doe',
-                email: 'john.doe@example.com',
-                username: 'johndoe',
-                role: 'admin',
-                department: 'IT',
-                status: 'active',
-                lastLogin: '2023-10-15T08:30:00Z',
-                createdAt: '2023-01-10T09:00:00Z',
-                updatedAt: '2023-09-28T14:45:00Z',
-                permissions: ['read', 'write', 'delete'],
-                profileImage: 'https://randomuser.me/api/portraits/men/1.jpg',
-                phone: '+66812345678',
-                address: '123 Bangkok Street, Silom, Bangkok 10500'
-            },
-            {
-                key: '2',
-                id: 2,
-                name: 'Jane Smith',
-                email: 'jane.smith@example.com',
-                username: 'janesmith',
-                role: 'manager',
-                department: 'Marketing',
-                status: 'active',
-                lastLogin: '2023-10-14T15:20:00Z',
-                createdAt: '2023-02-15T10:30:00Z',
-                updatedAt: '2023-09-20T11:15:00Z',
-                permissions: ['read', 'write'],
-                profileImage: 'https://randomuser.me/api/portraits/women/2.jpg',
-                phone: '+66823456789',
-                address: '456 Chiang Mai Road, Nimman, Chiang Mai 50200'
-            },
-            {
-                key: '3',
-                id: 3,
-                name: 'David Johnson',
-                email: 'david.johnson@example.com',
-                username: 'davidj',
-                role: 'user',
-                department: 'Finance',
-                status: 'inactive',
-                lastLogin: '2023-09-30T12:45:00Z',
-                createdAt: '2023-03-05T08:15:00Z',
-                updatedAt: '2023-10-01T09:30:00Z',
-                permissions: ['read'],
-                profileImage: 'https://randomuser.me/api/portraits/men/3.jpg',
-                phone: '+66834567890',
-                address: '789 Phuket Beach, Patong, Phuket 83150'
-            },
-            {
-                key: '4',
-                id: 4,
-                name: 'Sarah Lee',
-                email: 'sarah.lee@example.com',
-                username: 'sarahlee',
-                role: 'manager',
-                department: 'Sales',
-                status: 'active',
-                lastLogin: '2023-10-16T09:10:00Z',
-                createdAt: '2023-04-20T14:00:00Z',
-                updatedAt: '2023-10-10T16:45:00Z',
-                permissions: ['read', 'write'],
-                profileImage: 'https://randomuser.me/api/portraits/women/4.jpg',
-                phone: '+66845678901',
-                address: '101 Sukhumvit Road, Asoke, Bangkok 10110'
-            },
-            {
-                key: '5',
-                id: 5,
-                name: 'Michael Wang',
-                email: 'michael.wang@example.com',
-                username: 'michaelw',
-                role: 'developer',
-                department: 'IT',
-                status: 'active',
-                lastLogin: '2023-10-15T18:30:00Z',
-                createdAt: '2023-05-12T11:30:00Z',
-                updatedAt: '2023-09-15T13:20:00Z',
-                permissions: ['read', 'write', 'delete'],
-                profileImage: 'https://randomuser.me/api/portraits/men/5.jpg',
-                phone: '+66856789012',
-                address: '222 Hua Hin Beach Road, Hua Hin, Prachuap Khiri Khan 77110'
-            },
-            {
-                key: '6',
-                id: 6,
-                name: 'Emily Chen',
-                email: 'emily.chen@example.com',
-                username: 'emilyc',
-                role: 'designer',
-                department: 'Creative',
-                status: 'active',
-                lastLogin: '2023-10-14T10:45:00Z',
-                createdAt: '2023-06-08T09:15:00Z',
-                updatedAt: '2023-10-05T14:30:00Z',
-                permissions: ['read', 'write'],
-                profileImage: 'https://randomuser.me/api/portraits/women/6.jpg',
-                phone: '+66867890123',
-                address: '333 Pattaya Beach Road, Pattaya, Chonburi 20150'
-            },
-            {
-                key: '7',
-                id: 7,
-                name: 'Robert Kim',
-                email: 'robert.kim@example.com',
-                username: 'robertk',
-                role: 'analyst',
-                department: 'Finance',
-                status: 'inactive',
-                lastLogin: '2023-09-20T16:15:00Z',
-                createdAt: '2023-07-25T08:45:00Z',
-                updatedAt: '2023-09-28T11:10:00Z',
-                permissions: ['read'],
-                profileImage: 'https://randomuser.me/api/portraits/men/7.jpg',
-                phone: '+66878901234',
-                address: '444 Khao San Road, Banglamphu, Bangkok 10200'
-            },
-            {
-                key: '8',
-                id: 8,
-                name: 'Olivia Martinez',
-                email: 'olivia.martinez@example.com',
-                username: 'oliviam',
-                role: 'hr',
-                department: 'Human Resources',
-                status: 'active',
-                lastLogin: '2023-10-16T11:00:00Z',
-                createdAt: '2023-08-03T13:30:00Z',
-                updatedAt: '2023-10-12T09:45:00Z',
-                permissions: ['read', 'write', 'delete'],
-                profileImage: 'https://randomuser.me/api/portraits/women/8.jpg',
-                phone: '+66889012345',
-                address: '555 Ayutthaya Historical Park, Ayutthaya 13000'
-            },
-            {
-                key: '9',
-                id: 9,
-                name: 'William Brown',
-                email: 'william.brown@example.com',
-                username: 'williambrown',
-                role: 'user',
-                department: 'Operations',
-                status: 'active',
-                lastLogin: '2023-10-13T14:20:00Z',
-                createdAt: '2023-09-10T10:00:00Z',
-                updatedAt: '2023-10-08T15:30:00Z',
-                permissions: ['read'],
-                profileImage: 'https://randomuser.me/api/portraits/men/9.jpg',
-                phone: '+66890123456',
-                address: '666 Doi Suthep Road, Chiang Mai 50200'
-            },
-            {
-                key: '10',
-                id: 10,
-                name: 'Sophia Garcia',
-                email: 'sophia.garcia@example.com',
-                username: 'sophiag',
-                role: 'manager',
-                department: 'Marketing',
-                status: 'active',
-                lastLogin: '2023-10-15T09:45:00Z',
-                createdAt: '2023-10-01T08:00:00Z',
-                updatedAt: '2023-10-14T12:15:00Z',
-                permissions: ['read', 'write'],
-                profileImage: 'https://randomuser.me/api/portraits/women/10.jpg',
-                phone: '+66901234567',
-                address: '777 Samui Beach Road, Koh Samui, Surat Thani 84140'
-            }
-        ];
-        return new Response(JSON.stringify({data: users, message: "Get Data successfully"}), {status: 200});
+        // Parse request parameters
+        const params = await checkPayload('get', req);
+        const {data} = await getData('users',params);
+        if (data) {
+            return new Response(JSON.stringify({
+                success: true,
+                data: data,
+                total: data.length,
+            }), { status: 200 });
+        } else {
+            return new Response(JSON.stringify({
+                success: false,
+                message: 'No user data found'
+            }), { status: 404 });
+        }
     } catch (error) {
-        console.error("❌ Error sending message:", error);
-        return new Response(JSON.stringify({error: "Failed to fetch bots", details: error?.response?.data?.code}), {status: 500});
+        console.error('❌ Error fetching user data:', error);
+        return new Response(JSON.stringify({
+            success: false,
+            message: 'Internal Server Error'
+        }), { status: 500 });
+    }
+}
+
+/**
+ * POST - Create new user data
+ * Endpoint to create a new user record
+ */
+export const POST = async (req) => {
+    try {
+        // Parse request body
+        const params = await checkPayload('post', req);
+        const data = await insertData('users',params)
+        console.log(data)
+        if (data.status) {
+            return new Response(JSON.stringify({
+                success: true,
+                message: 'User created successfully',
+                data: {...params, id: data.id}
+            }), { status: 201 });
+        } else {
+            return new Response(JSON.stringify({
+                success: false,
+                message: data.message || 'Failed to create user'
+            }), { status: 400 });
+        }
+    } catch (error) {
+        console.error('❌ Error creating user:', error);
+        return new Response(JSON.stringify({
+            success: false,
+            message: 'Internal Server Error'
+        }), { status: 500 });
+    }
+}
+
+/**
+ * PUT - Update existing user data
+ * Endpoint to update a user record by ID
+ */
+export const PUT = async (req) => {
+    try {
+        // Parse request body
+        const {body,where} = await checkPayload('put', req);
+        const data = await updateData('users', body, where);
+        console.log(data)
+        // Update user (implementation needed)
+        const result = updateData; // Placeholder for actual implementation
+        
+        if (result) {
+            return new Response(JSON.stringify({
+                success: true,
+                message: 'User updated successfully',
+                data: result
+            }), { status: 200 });
+        } else {
+            return new Response(JSON.stringify({
+                success: false,
+                message: 'User not found'
+            }), { status: 404 });
+        }
+    } catch (error) {
+        console.error('❌ Error updating user:', error);
+        return new Response(JSON.stringify({
+            success: false,
+            message: 'Internal Server Error'
+        }), { status: 500 });
+    }
+}
+
+/**
+ * DELETE - Remove user data
+ * Endpoint to delete a user record by ID
+ */
+export const DELETE = async (req) => {
+    try {
+        const params = await checkPayload('delete', req);
+        const data = await deleteData('users',params)
+        if (data.status) {
+            return new Response(JSON.stringify({
+                success: true,
+                message: 'User deleted successfully',
+            }), { status: 200 });
+        } else {
+            return new Response(JSON.stringify({
+                success: false,
+                message: 'User not found'
+            }), { status: 404 });
+        }
+    } catch (error) {
+        console.error('❌ Error deleting user:', error);
+        return new Response(JSON.stringify({
+            success: false,
+            message: 'Internal Server Error'
+        }), { status: 500 });
     }
 }

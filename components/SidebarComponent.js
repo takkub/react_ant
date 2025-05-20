@@ -1,6 +1,6 @@
 import { Layout, Menu } from "antd";
 import { DashboardOutlined, LogoutOutlined, SettingOutlined, UserOutlined } from "@ant-design/icons";
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from 'next/image'
@@ -81,12 +81,11 @@ export default function SidebarComponent({ collapsed, setCollapsed }) {
             icon: <LogoutOutlined />,
             label: t('UserManagement'),
             children: [
-                { key: 'users', label: 'Users', icon: <SettingOutlined /> },
-                { key: 'roles', label: 'Roles', icon: <SettingOutlined /> },
+                { key: 'users', label: 'Users', icon: <SettingOutlined />,onClick: () => router.push('/user-management/users')},
+                { key: 'roles', label: 'Roles', icon: <SettingOutlined />,onClick: () => router.push('/user-management/roles') },
                 { key: 'permissions', label: 'Permissions', icon: <SettingOutlined /> },
             ],
-            onClick: () => router.push('/user-management')
-        }
+        },
     ];
 
     return (

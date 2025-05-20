@@ -7,8 +7,8 @@ import {
     Popconfirm, Radio
 } from 'antd';
 import {
-    PlusOutlined, DeleteOutlined, ExportOutlined,
-    FilterOutlined, SearchOutlined, EditOutlined,
+    PlusOutlined, DeleteOutlined,
+     SearchOutlined, EditOutlined,
     DownloadOutlined, FileExcelOutlined, FileTextOutlined
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
@@ -29,7 +29,8 @@ const CrudTable = ({
     loading = false,
     pagination = { pageSize: 10 },
     customColumns = { columns: [] },
-    filters = []
+    filters = [],
+    rowkeys = ['key']
 }) => {
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -146,7 +147,17 @@ const CrudTable = ({
     // Show edit form
     const showEditForm = (record) => {
         setModalMode('edit');
-        setEditingKey(record.key);
+        
+        // Use the primary key from rowkeys if available
+        let editKey = record.key;
+        for (const key of rowkeys) {
+            if (record[key] !== undefined && record[key] !== null) {
+                editKey = record[key];
+                break;
+            }
+        }
+        
+        setEditingKey(editKey);
         
         // Format date fields before setting form values
         const formValues = { ...record };
@@ -165,8 +176,14 @@ const CrudTable = ({
     };
 
     // Handle delete of a single record
-    const handleDeleteSingle = async (key) => {
-        await handleDelete([key]);
+    const handleDeleteSingle = async (record) => {
+        // Extract key values from the record using the rowkeys
+        const keys = rowkeys.map(key => record[key]).filter(val => val !== undefined);
+        
+        // If no keys were found, fall back to record.key
+        const keyToDelete = keys.length > 0 ? keys[0] : record.key;
+        
+        await handleDelete([keyToDelete]);
     };
 
     // Handle delete of selected records
@@ -366,7 +383,7 @@ const CrudTable = ({
                     <Tooltip title="Delete">
                         <Popconfirm
                             title="Are you sure you want to delete this record?"
-                            onConfirm={() => handleDeleteSingle(record.key)}
+                            onConfirm={() => handleDeleteSingle(record)}
                             okText="Yes"
                             cancelText="No"
                         >
@@ -516,7 +533,16 @@ const CrudTable = ({
                     pagination={pagination}
                     scroll={{ x: 'max-content' }}
                     size="middle"
-                    rowKey="key"
+                    rowKey={record => {
+                        // Use the first available field in rowkeys that has a value
+                        for (const key of rowkeys) {
+                            if (record[key] !== undefined && record[key] !== null) {
+                                return record[key];
+                            }
+                        }
+                        // Fallback to the record's key if available
+                        return record.key;
+                    }}
                 />
 
                 {/* Export Button */}
