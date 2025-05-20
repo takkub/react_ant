@@ -35,14 +35,16 @@ export default function LanguageSwitcher() {
         i18n.changeLanguage(value);
         
         // Only use router when component is mounted (client-side)
-        if (typeof window !== "undefined" && router && router.isReady) {
+        if (typeof window !== "undefined" && router) {
             try {
-                // You might want to keep the current route but change the locale
-                router.push(
-                    { pathname: router.pathname, query: router.query },
-                    router.asPath,
-                    { locale: value, scroll: false }
-                );
+                // In Next.js 13 app router, we don't have pathname, query, or asPath
+                // We can use simple push with locale parameter
+                const currentPath = window.location.pathname;
+                // Using the new router.push format for Next.js App Router
+                router.push(currentPath);
+                
+                // Store language preference in localStorage for persistence
+                localStorage.setItem('preferredLanguage', value);
             } catch (error) {
                 console.error("Error changing language:", error);
             }

@@ -162,8 +162,13 @@ const CrudTable = ({
         // Format date fields before setting form values
         const formValues = { ...record };
         
-        // Set form values
-        form.setFieldsValue(formValues);
+        // Check if form is defined before attempting to use it
+        if (form) {
+            // Set form values
+            form.setFieldsValue(formValues);
+        } else {
+            console.error("Form instance is not properly initialized");
+        }
         setIsModalVisible(true);
     };
 
