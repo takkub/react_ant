@@ -44,13 +44,64 @@ const CrudTable = ({
     const exportMenuRef = useRef(null);
 
     useEffect(() => {
+        // Apply filters to data - Moving the function inside useEffect to avoid dependency warnings
+        const applyFilters = () => {
+            let result = [...data];
+    
+            // Apply filter values
+            Object.entries(filterValues).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    const filter = filters.find(f => f.field === key || (Array.isArray(f.field) && f.field.includes(key)));
+                    
+                    if (filter) {
+                        if (filter.type === 'select' || filter.type === 'radio') {
+                            result = result.filter(record => {
+                                if (Array.isArray(record[key])) {
+                                    return record[key].includes(value);
+                                }
+                                return record[key] === value;
+                            });
+                        } else if (filter.type === 'dateRange' && Array.isArray(value) && value.length === 2) {
+                            const startDate = value[0].startOf('day');
+                            const endDate = value[1].endOf('day');
+                            
+                            result = result.filter(record => {
+                                const recordDate = dayjs(record[key]);
+                                return recordDate.isAfter(startDate) && recordDate.isBefore(endDate);
+                            });
+                        } else if (filter.type === 'text') {
+                            // This should be handled by the searchText logic below
+                        }
+                    }
+                }
+            });
+    
+            // Apply searchText to all searchable fields
+            if (searchText) {
+                const searchFilters = filters.filter(f => f.type === 'text');
+                const searchFields = searchFilters.flatMap(f => Array.isArray(f.field) ? f.field : [f.field]);
+                
+                result = result.filter(record => {
+                    return searchFields.some(field => {
+                        const value = record[field];
+                        if (typeof value === 'string') {
+                            return value.toLowerCase().includes(searchText.toLowerCase());
+                        }
+                        return false;
+                    });
+                });
+            }
+    
+            setFilteredData(result);
+        };
+    
         applyFilters();
-    }, [data, filterValues, searchText]);
+    }, [data, filterValues, searchText, filters]); // Added 'filters' to dependency array
 
-    // Apply filters to data
-    const applyFilters = () => {
+    // Function to manually trigger filtering (accessible outside useEffect)
+    const applyFiltersManually = () => {
         let result = [...data];
-
+    
         // Apply filter values
         Object.entries(filterValues).forEach(([key, value]) => {
             if (value !== undefined && value !== null && value !== '') {
@@ -78,7 +129,7 @@ const CrudTable = ({
                 }
             }
         });
-
+    
         // Apply searchText to all searchable fields
         if (searchText) {
             const searchFilters = filters.filter(f => f.type === 'text');
@@ -94,15 +145,17 @@ const CrudTable = ({
                 });
             });
         }
-
+    
         setFilteredData(result);
     };
-
+    
     // Reset all filters
     const resetFilters = () => {
         setFilterValues({});
         setSearchText('');
         form.resetFields();
+        // Apply filters after resetting to show unfiltered data
+        setTimeout(() => applyFiltersManually(), 0);
     };
 
     // Row selection configuration

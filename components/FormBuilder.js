@@ -173,6 +173,25 @@ const FormBuilder = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [viewMode, setViewMode] = useState('card'); // 'card' or 'table'
     const [selectedTemplate, setSelectedTemplate] = useState(formTemplates[0].id);
+    const [currentFieldType, setCurrentFieldType] = useState(null);
+    
+    // Watch for field type changes
+    useEffect(() => {
+        if (!form || !fieldFormVisible) return;
+        
+        const type = form.getFieldValue('type');
+        if (type !== currentFieldType) {
+            setCurrentFieldType(type);
+            
+            // Check if this field type needs options
+            const needsOptions = ['select', 'radio', 'tags', 'checkbox'].includes(type);
+            const options = form.getFieldValue('options') || [];
+            
+            if (needsOptions && options.length === 0) {
+                message.info('This field type requires options. Please add them in the Options tab.');
+            }
+        }
+    }, [form, fieldFormVisible, currentFieldType]);
     
     // Handle template selection
     const handleTemplateSelect = (templateId) => {
@@ -864,33 +883,31 @@ export default function ${formSettings.title.replace(/\s+/g, '')}() {
         );
     };
     
+    // State for field form tabs
+    const [currentFieldFormTab, setCurrentFieldFormTab] = useState('basic');
+    
+    // Check if the current field type needs options
+    const checkNeedsOptions = () => {
+        const currentType = form?.getFieldValue('type');
+        return ['select', 'radio', 'tags', 'checkbox'].includes(currentType);
+    };
+    
+    // Effect to update tab notification when field type changes - moved outside renderFieldForm
+    useEffect(() => {
+        // Skip if form is not available
+        if (!form) return;
+        
+        const fieldType = form.getFieldValue('type');
+        const needsOptions = ['select', 'radio', 'tags', 'checkbox'].includes(fieldType);
+        const options = form.getFieldValue('options') || [];
+        
+        if (needsOptions && options.length === 0 && fieldFormVisible) {
+            message.info('This field type requires options. Please add them in the Options tab.');
+        }
+    }, [fieldFormVisible, form]);
+    
     // Field form for add/edit
     const renderFieldForm = () => {
-        const [currentTab, setCurrentTab] = useState('basic');
-        
-        // Check if the current field type needs options
-        const checkNeedsOptions = () => {
-            const currentType = form.getFieldValue('type');
-            return ['select', 'radio', 'tags', 'checkbox'].includes(currentType);
-        };
-        
-        // Effect to update tab notification when field type changes
-        useEffect(() => {
-            const handleTypeChange = () => {
-                // If the field type requires options but none exist, show a notification
-                const needsOptions = checkNeedsOptions();
-                const options = form.getFieldValue('options') || [];
-                
-                if (needsOptions && options.length === 0) {
-                    message.info('This field type requires options. Please add them in the Options tab.');
-                }
-            };
-            
-            // Return cleanup function
-            return () => {
-                // No cleanup needed
-            };
-        }, [form.getFieldValue('type')]);
         
         return (
             <Drawer
@@ -921,8 +938,8 @@ export default function ${formSettings.title.replace(/\s+/g, '')}() {
                     }}
                 >
                     <Tabs 
-                        activeKey={currentTab} 
-                        onChange={setCurrentTab}
+                                activeKey={currentFieldFormTab} 
+                                onChange={setCurrentFieldFormTab}
                         items={[
                             {
                                 key: 'basic',
