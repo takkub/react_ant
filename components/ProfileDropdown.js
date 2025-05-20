@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Dropdown, Avatar, Space, Typography } from "antd";
-import { UserOutlined, SettingOutlined, LogoutOutlined, DownOutlined } from "@ant-design/icons";
+import { UserOutlined, SettingOutlined, LogoutOutlined, DownOutlined, BgColorsOutlined } from "@ant-design/icons";
 import { useRouter } from 'next/navigation';
 import { useDrawer } from "@/store/context/DrawerContext";
 import {signOut} from "next-auth/react";
+import { useTheme } from "@/store/context/ThemeContext";
 
 const { Text } = Typography;
 
 export default function ProfileDropdown() {
     const [isMounted, setIsMounted] = useState(false);
     const router = useRouter();
+    const { theme, toggleTheme } = useTheme();
     const { openDrawer } = useDrawer();
     // Mocked user data - in a real app, this would come from your auth context or state
     const user = {
@@ -55,6 +57,12 @@ export default function ProfileDropdown() {
             label: "Settings",
             icon: <SettingOutlined />,
             onClick: () => navigateTo("/settings"),
+        },
+        {
+            key: "theme",
+            label: `Change Theme`,
+            icon: <BgColorsOutlined />,
+            onClick: () => toggleTheme(),
         },
         {
             type: "divider",

@@ -21,30 +21,36 @@ export const lightTheme = {
     },
     components: {
         Menu: {
-            itemBg:'#ffffff', // พื้นหลังของเมนู
+            itemBg: '#ffffff', // พื้นหลังของเมนู
         },
         Typography: {
-            titleMarginBottom:0,
-            titleMarginTop:0,
+            titleMarginBottom: 0,
+            titleMarginTop: 0,
         },
     },
 };
 export const darkTheme = {
     token: {
-        colorPrimary: '#1890ff', // สีหลัก
-        colorTextBase: '#ff0000', // สีข้อความหลัก
-        colorTextSecondary: '#999999', // สีข้อความรอง
-        colorBgContainer: '#141414', // พื้นหลังของคอนเทนเนอร์
-        colorBgBase: '#1f1f1f', // พื้นหลังหลัก
-        colorLink: '#1890ff', // สีของลิงก์
-        colorError: '#ff4d4f', // สีข้อความผิดพลาด
-        colorSuccess: '#52c41a', // สีสำเร็จ
-        colorWarning: '#fadb14', // สีคำเตือน
-        fontSizeBase: '14px', // ขนาดฟอนต์พื้นฐาน
-        borderRadiusBase: '4px', // มุมโค้งพื้นฐาน
-        boxShadowBase: '0 2px 8px rgba(0, 0, 0, 0.15)', // เงาพื้นฐาน
-        paddingBase: '8px', // ระยะห่างพื้นฐาน
-        marginBase: '8px', // ระยะห่างจากขอบ
+        fontFamily: 'Prompt, sans-serif',
+        colorPrimary: '#006964', 
+        colorTextBase: '#fff', 
+        colorTextSecondary: '#fff', 
+        colorBgContainer: '#212121',
+        colorBgBase: '#5f5f5f',
+        colorLink: '#1890ff',
+        colorPrimaryBgHover: "#b7d433",
+        colorSuccess: "#73ba4b",
+        colorWarning: "#e1dd00",
+        Layout: {
+            headerBg: "#212121",
+            siderBg: "#212121"
+        },
+        Menu: {
+            itemBg: "#212121",
+            itemHoverBg: "#006964",
+            itemSelectedBg: "#006964",
+            itemSelectedColor: "rgb(255, 255, 255)"
+        },
     },
 };
 export const WSOLTheme = {
@@ -56,7 +62,7 @@ export const WSOLTheme = {
         colorPrimaryBgHover: "#b7d433",
         colorSuccess: "#73ba4b",
         colorWarning: "#e1dd00",
-
+        fontFamily: 'Prompt, sans-serif',
     },
     components: {
         Layout: {

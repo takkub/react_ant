@@ -3,6 +3,7 @@ import React from "react";
 import { Inter } from 'next/font/google';
 import { TitleProvider } from "@/components/TitleContext";
 import NetworkStatusNotifier from "@/components/NetworkStatusNotifier";
+import { ThemeProvider } from "../store/context/ThemeContext";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,9 +17,11 @@ export default function RootLayout({ children }) {
         <html lang="en">
             <body className={inter.className}>
                 <NetworkStatusNotifier />
+                <ThemeProvider>
                 <TitleProvider>
                     {children}
                 </TitleProvider>
+                </ThemeProvider>
             </body>
         </html>
     );
