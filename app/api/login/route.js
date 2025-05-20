@@ -17,6 +17,7 @@ export async function POST(req) {
                 success: true,
                 message: 'Login successful',
                 data: result,
+                cookies: result.user,
                 token: 'username' // Placeholder for actual token
             }), {
                 status: 200,
