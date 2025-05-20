@@ -83,7 +83,7 @@ export default function SidebarComponent({ collapsed, setCollapsed }) {
             children: [
                 { key: 'users', label: 'Users', icon: <SettingOutlined />,onClick: () => router.push('/user-management/users')},
                 { key: 'roles', label: 'Roles', icon: <SettingOutlined />,onClick: () => router.push('/user-management/roles') },
-                { key: 'permissions', label: 'Permissions', icon: <SettingOutlined /> },
+                { key: 'permissions', label: 'Permissions', icon: <SettingOutlined />,onClick: () => router.push('/user-management/permissions') },
             ],
         },
     ];

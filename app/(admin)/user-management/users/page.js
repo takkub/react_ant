@@ -21,14 +21,6 @@ export default function UserManagement() {
                 width: 100,
                 fixed: 'left',
                 filterable: true,
-                form: {
-                    type: 'text',
-                    rules: [
-                        {required: true, message: 'Please input your ID!'},
-                        {min: 3, message: 'ID must be at least 3 characters!'},
-                        {max: 10, message: 'ID must be at most 10 characters!'}
-                    ]
-                }
             },
             {
                 title: 'Name',
@@ -36,14 +28,6 @@ export default function UserManagement() {
                 key: 'name',
                 filterable: true,
                 sorter: true,
-                form: {
-                    type: 'text',
-                    rules: [
-                        {required: true, message: 'Please input your name!'},
-                        {min: 3, message: 'Name must be at least 3 characters!'},
-                        {max: 50, message: 'Name must be at most 50 characters!'}
-                    ]
-                }
             },
             {
                 title: 'Email',
@@ -51,13 +35,6 @@ export default function UserManagement() {
                 key: 'email',
                 filterable: true,
                 sorter: true,
-                form: {
-                    type: 'email',
-                    rules: [
-                        {required: true, message: 'Please input your email!'},
-                        {type: 'email', message: 'The input is not valid E-mail!'}
-                    ]
-                }
             },
             {
                 title: 'Status',
@@ -69,19 +46,6 @@ export default function UserManagement() {
                     {text: 'Pending', value: 'pending'}
                 ],
                 onFilter: (value, record) => record.status === value,
-                form: {
-                    type: {
-                        type: 'select', // or checkbox or radio
-                        options: [
-                            {label: 'Active', value: 'active'},
-                            {label: 'Inactive', value: 'inactive'},
-                            {label: 'Pending', value: 'pending'}
-                        ]
-                    },
-                    rules: [
-                        {required: true, message: 'Please select a status!'}
-                    ]
-                }
             },
             {
                 title: 'Created Date',
@@ -89,12 +53,6 @@ export default function UserManagement() {
                 key: 'createdAt',
                 sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
                 filterType: 'date',
-                form: {
-                    type: 'date',
-                    rules: [
-                        {required: true, message: 'Please select a date!'}
-                    ]
-                },
                 render: (text) => {
                     return dayjs(text).format('YYYY-MM-DD');
                 }
@@ -109,31 +67,12 @@ export default function UserManagement() {
                     {text: 'User', value: 'User'}
                 ],
                 onFilter: (value, record) => record.role && record.role.includes(value),
-                form: {
-                    type: 'tags',
-                    options: [
-                        {label: 'Admin', value: 'Admin'},
-                        {label: 'Manager', value: 'Manager'},
-                        {label: 'User', value: 'User'}
-                    ],
-                    rules: [
-                        {required: true, message: 'Please select a role!'}
-                    ]
-                }
             },
             {
                 title: 'Description',
                 dataIndex: 'description',
                 key: 'description',
                 filterable: true,
-                form: {
-                    type: 'textArea',
-                    rules: [
-                        {required: true, message: 'Please input a description!'},
-                        {min: 10, message: 'Description must be at least 10 characters!'},
-                        {max: 200, message: 'Description must be at most 200 characters!'}
-                    ]
-                },
                 render: (text) => {
                     return <Text>{text}</Text>;
                 }
