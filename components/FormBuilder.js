@@ -166,7 +166,6 @@ const FormBuilder = () => {
     // Form builder state - use deep cloning to break potential circular references 
     const [formFields, setFormFields] = useState(() => JSON.parse(JSON.stringify(formTemplates[0].fields)));
     const [formSettings, setFormSettings] = useState(() => JSON.parse(JSON.stringify(formTemplates[0].settings)));
-    const [codeModalVisible, setCodeModalVisible] = useState(false);
     const [activeTab, setActiveTab] = useState('1');
     const [fieldFormVisible, setFieldFormVisible] = useState(false);
     const [currentField, setCurrentField] = useState(null);
@@ -514,226 +513,6 @@ const FormBuilder = () => {
         } catch (error) {
             console.error('Error deleting field:', error);
             message.error('Failed to delete field');
-        }
-    };
-    
-    // Generate code for the page.js file
-    const generatePageCode = () => {
-        return `'use client';
-import React, { useEffect, useState } from 'react';
-import { Card, message, Typography, Row, Col } from 'antd';
-import CrudTable from '@/components/CrudTable';
-import { useTitleContext } from "@/components/TitleContext";
-import { DatabaseOutlined } from "@ant-design/icons";
-import dayjs from 'dayjs';
-import api from "@/lib/api";
-
-const { Text } = Typography;
-
-export default function ${formSettings.title.replace(/\s+/g, '')}() {
-    useTitleContext({ title: '${formSettings.pageTitle}', icon: <DatabaseOutlined /> });
-    const [userData, setUserData] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-
-    const options = {
-        columns: [
-            ${formFields.map(field => `{
-                title: '${field.title}',
-                dataIndex: '${field.dataIndex}',
-                key: '${field.dataIndex}',
-                ${field.filterable ? 'filterable: true,' : ''}
-                ${field.sortable ? 'sorter: true,' : ''}
-                ${field.type === 'date' ? 'render: (text) => dayjs(text).format(\'YYYY-MM-DD\'),' : ''}
-            }`).join(',\n            ')}
-        ],
-        form: {
-            settings: {
-                title: '${formSettings.modalTitle}',
-                labelCol: { span: ${formSettings.labelCol.span} },
-                wrapperCol: { span: ${formSettings.wrapperCol.span} },
-                layout: '${formSettings.layout}',
-                gridColumns: ${formSettings.gridColumns || 1}
-            },
-            fields: [
-                ${formFields.map(field => `{
-                    dataIndex: '${field.dataIndex}',
-                    type: '${field.type}',
-                    ${field.options && field.options.length > 0 ?
-                        `options: [
-                            ${field.options.map(opt => `{ label: '${opt.label}', value: '${opt.value}' }`).join(',\n                            ')}
-                        ],` : ''}
-                    rules: [
-                        ${field.rules.map(rule => {
-                            if (rule.required) return `{ required: true, message: 'Please input ${field.title}!' }`;
-                            if (rule.type) return `{ type: '${rule.type}', message: 'Please enter a valid ${field.title}!' }`;
-                            return JSON.stringify(rule);
-                        }).join(',\n                        ')}
-                    ]
-                }`).join(',\n                ')}
-            ]
-        }
-    };
-
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const response = await api.get('userData');
-                if (response.data && response.data.length > 0) {
-                    setUserData(response.data);
-                } else {
-                    console.log('No data from API, using sample data');
-                }
-                setError(null);
-            } catch (err) {
-                console.error('Error fetching user data:', err);
-                setError('Failed to fetch user data. Please try again later.');
-                message.error('Failed to fetch user data. Please try again later.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
-    
-    const handleAdd = async (newRecord) => {
-        try {
-            const res = await api.post('userData', newRecord);
-            setUserData(prev => [...prev, res.data]);
-            message.success('New record added successfully');
-            return true;
-        } catch (error) {
-            let errMsg = 'Failed to add record. Please try again.';
-            if (error?.response?.data?.message) {
-                errMsg = \`Failed to add record: \${error.response.data.message}\`;
-            }
-            message.error(errMsg);
-            console.error('Error adding record:', error);
-            return false;
-        }
-    };
-    
-    const handleEdit = async (key, updatedRecord) => {
-        try {
-            const res = await api.put(\`userData/\${key}\`, updatedRecord);
-            setUserData(prev => 
-                prev.map(record => 
-                    record.id === key ? res.data : record
-                )
-            );
-            message.success('Record updated successfully');
-            return true;
-        } catch (error) {
-            let errMsg = 'Failed to update record. Please try again.';
-            if (error?.response?.data?.message) {
-                errMsg = \`Failed to update record: \${error.response.data.message}\`;
-            }
-            message.error(errMsg);
-            console.error('Error updating record:', error);
-            return false;
-        }
-    };
-    
-    const handleDelete = async (keys) => {
-        try {
-            await Promise.all(
-                keys.map(key => api.delete(\`userData/\${key}\`))
-            );
-            setUserData(prev => prev.filter(record => !keys.includes(record.id)));
-            message.success('Record(s) deleted successfully');
-            return true;
-        } catch (error) {
-            let errMsg = 'Failed to delete record(s). Please try again.';
-            if (error?.response?.data?.message) {
-                errMsg = \`Failed to delete record(s): \${error.response.data.message}\`;
-            }
-            message.error(errMsg);
-            console.error('Error deleting record(s):', error);
-            return false;
-        }
-    };
-
-    return (
-        <Card>
-            <CrudTable
-                title="${formSettings.title}"
-                data={userData}
-                setData={setUserData}
-                onAdd={handleAdd}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                loading={loading}
-                customColumns={options}
-                rowkeys={['id']}
-                pagination={{ pageSize: 10 }}
-            />
-        </Card>
-    );
-}`;
-    };
-    
-    // Generate code
-    const generateCode = () => {
-        return {
-            page: generatePageCode()
-        };
-    };
-    
-    // Show code modal
-    const showCodeModal = () => {
-        setCodeModalVisible(true);
-    };
-    
-    // Handle copy code
-    const handleCopyCode = async (code) => {
-        try {
-            await navigator.clipboard.writeText(code);
-            message.success('Code copied to clipboard');
-        } catch (error) {
-            console.error('Error copying code:', error);
-            
-            // Fallback method for browsers that don't support clipboard API
-            try {
-                const textArea = document.createElement('textarea');
-                textArea.value = code;
-                textArea.style.position = 'fixed';  // Avoid scrolling to bottom
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                
-                const successful = document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                if (successful) {
-                    message.success('Code copied to clipboard');
-                } else {
-                    message.error('Failed to copy code');
-                }
-            } catch (fallbackError) {
-                message.error('Failed to copy code');
-                console.error('Fallback error:', fallbackError);
-            }
-        }
-    };
-    
-    // Handle download code
-    const handleDownloadCode = (code, filename) => {
-        try {
-            const blob = new Blob([code], { type: 'text/javascript' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', filename);
-            document.body.appendChild(a);  // Required for Firefox
-            a.click();
-            document.body.removeChild(a);  // Clean up
-            URL.revokeObjectURL(url);      // Release the object URL
-            
-            message.success(`${filename} downloaded successfully`);
-        } catch (error) {
-            console.error('Error downloading code:', error);
-            message.error('Failed to download code');
         }
     };
     
@@ -1491,57 +1270,6 @@ export default function ${formSettings.title.replace(/\s+/g, '')}() {
         );
     };
     
-    // Code modal content
-    const renderCodeModal = () => {
-        const code = generateCode();
-        
-        return (
-            <Modal
-                title="Generated Code"
-                open={codeModalVisible}
-                onCancel={() => setCodeModalVisible(false)}
-                width={800}
-                footer={null}
-            >
-                <Tabs 
-                    activeKey={activeTab} 
-                    onChange={setActiveTab}
-                    items={[
-                        {
-                            key: '1',
-                            label: 'Page Code',
-                            children: (
-                                <div style={{ position: 'relative' }}>
-                                    <div style={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}>
-                                        <Space>
-                                            <Button
-                                                icon={<CopyOutlined />}
-                                                onClick={() => handleCopyCode(code.page)}
-                                            >
-                                                Copy
-                                            </Button>
-                                            <Button
-                                                icon={<DownloadOutlined />}
-                                                onClick={() => handleDownloadCode(code.page, 'page.js')}
-                                            >
-                                                Download
-                                            </Button>
-                                        </Space>
-                                    </div>
-                                    <div style={{ background: '#f5f5f5', padding: '16px', borderRadius: '4px', marginTop: '40px' }}>
-                                        <pre style={{ whiteSpace: 'pre-wrap', maxHeight: '400px', overflow: 'auto' }}>
-                                            {code.page}
-                                        </pre>
-                                    </div>
-                                </div>
-                            )
-                        }
-                    ]}
-                />
-            </Modal>
-        );
-    };
-    
     return (
         <Card>
             <Title level={2}>Form Builder</Title>
@@ -1686,22 +1414,14 @@ export default function ${formSettings.title.replace(/\s+/g, '')}() {
                 <Space>
                     <FormCodeGenerator
                         formFields={formFields}
+                        formSettings={formSettings}
                         formTitle={formSettings.title}
                         tableName={formSettings.title.toLowerCase().replace(/\s+/g, '_')}
                     />
-                    <Button
-                        type="primary"
-                        icon={<CodeOutlined />}
-                        onClick={showCodeModal}
-                        disabled={formFields.length === 0}
-                    >
-                        Generate Page
-                    </Button>
                 </Space>
             </div>
             
             {renderFieldForm()}
-            {renderCodeModal()}
         </Card>
     );
 };

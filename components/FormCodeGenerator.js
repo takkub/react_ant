@@ -8,7 +8,7 @@ import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 const { TabPane } = Tabs;
 const { Title, Text } = Typography;
 
-const FormCodeGenerator = ({ formFields, formTitle, tableName }) => {
+const FormCodeGenerator = ({ formFields, formSettings, formTitle, tableName }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('1');
   const sanitizedTableName = tableName || formTitle?.toLowerCase().replace(/\s+/g, '_') || 'custom_form';
@@ -280,11 +280,10 @@ export default function ${componentName}() {
         form: {
             settings: {
                 title: '${formTitle} Form',
-                labelCol: {span: 6},
-                wrapperCol: {span: 24},
-                cols: 12,
-                layout: 'horizontal',
-                mode: 'modal'
+                labelCol: {span: ${formSettings?.labelCol?.span || 6}},
+                wrapperCol: {span: ${formSettings?.wrapperCol?.span || 18}},
+                layout: '${formSettings?.layout || "horizontal"}',
+                gridColumns: ${formSettings?.gridColumns || 1}
             },
             fields: ${JSON.stringify(formatFormFields(formFields), null, 8)}
         }

@@ -34,7 +34,6 @@ export default function UserManagement() {
                 dataIndex: 'email',
                 key: 'email',
                 filterable: true,
-                sorter: true,
             },
             {
                 title: 'Status',
