@@ -80,7 +80,8 @@ const FormBuilder = () => {
                 labelCol: { span: 6 },
                 wrapperCol: { span: 18 },
                 modalTitle: 'User Form',
-                pageTitle: 'User Management'
+                pageTitle: 'User Management',
+                gridColumns: 1
             }
         },
         {
@@ -140,7 +141,8 @@ const FormBuilder = () => {
                 labelCol: { span: 6 },
                 wrapperCol: { span: 18 },
                 modalTitle: 'Product Form',
-                pageTitle: 'Product Catalog'
+                pageTitle: 'Product Catalog',
+                gridColumns: 1
             }
         },
         {
@@ -155,7 +157,8 @@ const FormBuilder = () => {
                 labelCol: { span: 6 },
                 wrapperCol: { span: 18 },
                 modalTitle: 'Data Form',
-                pageTitle: 'Data Management'
+                pageTitle: 'Data Management',
+                gridColumns: 1
             }
         }
     ];
@@ -518,7 +521,7 @@ const FormBuilder = () => {
     const generatePageCode = () => {
         return `'use client';
 import React, { useEffect, useState } from 'react';
-import { Card, message, Typography } from 'antd';
+import { Card, message, Typography, Row, Col } from 'antd';
 import CrudTable from '@/components/CrudTable';
 import { useTitleContext } from "@/components/TitleContext";
 import { DatabaseOutlined } from "@ant-design/icons";
@@ -549,7 +552,8 @@ export default function ${formSettings.title.replace(/\s+/g, '')}() {
                 title: '${formSettings.modalTitle}',
                 labelCol: { span: ${formSettings.labelCol.span} },
                 wrapperCol: { span: ${formSettings.wrapperCol.span} },
-                layout: '${formSettings.layout}'
+                layout: '${formSettings.layout}',
+                gridColumns: ${formSettings.gridColumns || 1}
             },
             fields: [
                 ${formFields.map(field => `{
@@ -1349,6 +1353,60 @@ export default function ${formSettings.title.replace(/\s+/g, '')}() {
                     />
                 </Form.Item>
                 
+                <Form.Item label="Grid Layout Columns">
+                    <Segmented
+                        block
+                        options={[
+                            {
+                                label: (
+                                    <Tooltip title="Single Column">
+                                        <div style={{ padding: '4px 0' }}>
+                                            <BarsOutlined />
+                                            <div>1 Column</div>
+                                        </div>
+                                    </Tooltip>
+                                ),
+                                value: 1
+                            },
+                            {
+                                label: (
+                                    <Tooltip title="Two Columns">
+                                        <div style={{ padding: '4px 0' }}>
+                                            <LayoutOutlined />
+                                            <div>2 Columns</div>
+                                        </div>
+                                    </Tooltip>
+                                ),
+                                value: 2
+                            },
+                            {
+                                label: (
+                                    <Tooltip title="Three Columns">
+                                        <div style={{ padding: '4px 0' }}>
+                                            <TableOutlined />
+                                            <div>3 Columns</div>
+                                        </div>
+                                    </Tooltip>
+                                ),
+                                value: 3
+                            },
+                            {
+                                label: (
+                                    <Tooltip title="Four Columns">
+                                        <div style={{ padding: '4px 0' }}>
+                                            <AppstoreOutlined />
+                                            <div>4 Columns</div>
+                                        </div>
+                                    </Tooltip>
+                                ),
+                                value: 4
+                            }
+                        ]}
+                        value={formSettings.gridColumns || 1}
+                        onChange={(value) => handleSettingsChange('gridColumns', value)}
+                    />
+                </Form.Item>
+                
                 <Row gutter={16}>
                     <Col span={12}>
                         <Form.Item label="Label Column Width">
@@ -1374,6 +1432,62 @@ export default function ${formSettings.title.replace(/\s+/g, '')}() {
                     </Col>
                 </Row>
             </Form>
+        );
+    };
+    
+    // Render grid layout preview
+    const renderGridLayoutPreview = () => {
+        const gridColumns = formSettings.gridColumns || 1;
+        
+        return (
+            <Card 
+                title="Grid Layout Preview" 
+                size="small" 
+                style={{ marginBottom: 16 }}
+                extra={
+                    <Tooltip title="How your form fields will be arranged in columns">
+                        <InfoCircleOutlined />
+                    </Tooltip>
+                }
+            >
+                <div style={{ padding: '12px', background: '#f5f5f5', borderRadius: '4px' }}>
+                    <Row gutter={[16, 16]}>
+                        {Array.from({ length: Math.min(8, formFields.length || 4) }).map((_, idx) => (
+                            <Col span={24 / gridColumns} key={idx}>
+                                <Card 
+                                    size="small" 
+                                    style={{ 
+                                        height: '80px', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center',
+                                        background: idx < formFields.length ? '#fff' : '#fafafa',
+                                        borderStyle: idx < formFields.length ? 'solid' : 'dashed'
+                                    }}
+                                >
+                                    {idx < formFields.length ? (
+                                        <div style={{ textAlign: 'center' }}>
+                                            {getFieldTypeIcon(formFields[idx].type)}
+                                            <div>{formFields[idx].title}</div>
+                                        </div>
+                                    ) : (
+                                        <div style={{ color: '#999', textAlign: 'center' }}>
+                                            <PlusOutlined />
+                                            <div>Field Placeholder</div>
+                                        </div>
+                                    )}
+                                </Card>
+                            </Col>
+                        ))}
+                    </Row>
+                </div>
+                <div style={{ marginTop: 12, textAlign: 'center' }}>
+                    <Text type="secondary">
+                        {gridColumns === 1 ? 'Single column layout' : 
+                        `${gridColumns}-column grid layout - fields will wrap to new rows as needed`}
+                    </Text>
+                </div>
+            </Card>
         );
     };
     
@@ -1521,23 +1635,34 @@ export default function ${formSettings.title.replace(/\s+/g, '')}() {
                                     style={{ marginBottom: 16 }}
                                 />
                                 
+                                {/* Grid layout preview */}
+                                {renderGridLayoutPreview()}
+                                
                                 <Card title={formSettings.modalTitle || "Form"}>
                                     <Form
                                         layout={formSettings.layout}
                                         labelCol={{ span: formSettings.labelCol?.span || 6 }}
                                         wrapperCol={{ span: formSettings.wrapperCol?.span || 18 }}
                                     >
-                                        {formFields.map(field => (
-                                            <Form.Item
-                                                key={field.id}
-                                                label={field.title}
-                                                name={field.dataIndex}
-                                                required={field.rules?.some(rule => rule.required)}
-                                                tooltip={field.rules?.some(rule => rule.required) ? "This field is required" : "This field is optional"}
-                                            >
-                                                <FieldTypeExample type={field.type} />
-                                            </Form.Item>
-                                        ))}
+                                        <Row gutter={[16, 16]}>
+                                            {formFields.map(field => (
+                                                <Col 
+                                                    key={field.id} 
+                                                    xs={24} 
+                                                    sm={formSettings.gridColumns > 1 ? 12 : 24} 
+                                                    md={24 / (formSettings.gridColumns || 1)}
+                                                >
+                                                    <Form.Item
+                                                        label={field.title}
+                                                        name={field.dataIndex}
+                                                        required={field.rules?.some(rule => rule.required)}
+                                                        tooltip={field.rules?.some(rule => rule.required) ? "This field is required" : "This field is optional"}
+                                                    >
+                                                        <FieldTypeExample type={field.type} />
+                                                    </Form.Item>
+                                                </Col>
+                                            ))}
+                                        </Row>
                                         
                                         <Form.Item wrapperCol={{ offset: formSettings.layout === 'horizontal' ? (formSettings.labelCol?.span || 6) : 0 }}>
                                             <Button type="primary" htmlType="submit">
