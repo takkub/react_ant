@@ -59,7 +59,6 @@ export const WSOLTheme = {
         colorInfo: '#006964',
         colorPrimaryBgHover: "#b7d433",
         wireframe: false,
-        colorPrimaryBgHover: "#b7d433",
         colorSuccess: "#73ba4b",
         colorWarning: "#e1dd00",
         fontFamily: 'Prompt, sans-serif',
