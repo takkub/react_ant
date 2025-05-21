@@ -83,9 +83,9 @@ export default function UserManagement() {
                 title: 'User Form',
                 labelCol: {span: 6},
                 wrapperCol: {span: 24},
-                cols: 12,
+                gridColumns: 2,
                 layout: 'horizontal',
-                mode: 'modal'
+                mode: 'modal',
             },
             fields: [
                 {

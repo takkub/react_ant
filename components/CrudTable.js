@@ -326,97 +326,123 @@ const CrudTable = ({
     const getFormItems = () => {
         const formSettings = customColumns.form?.settings || {};
         const formFields = customColumns.form?.fields || [];
+        const gridColumns = formSettings.gridColumns || 1;
+        
+        // If using single column layout, return the form items directly
+        if (gridColumns === 1) {
+            return formFields.map((field, index) => {
+                return renderFormItem(field, index);
+            });
+        }
+        
+        // For grid layout, wrap items in Row and Col components
+        return (
+            <Row gutter={[16, 0]}>
+                {formFields.map((field, index) => (
+                    <Col 
+                        key={index} 
+                        xs={24} 
+                        sm={gridColumns > 1 ? 12 : 24} 
+                        md={24 / gridColumns}
+                        lg={24 / gridColumns}
+                    >
+                        {renderFormItem(field, index)}
+                    </Col>
+                ))}
+            </Row>
+        );
+    };
+    
+    // Helper function to render a single form item
+    const renderFormItem = (field, index) => {
+        const isDisabled = typeof field.disabled === 'function'
+            ? field.disabled(modalMode)
+            : field.disabled;
 
-        return formFields.map((field, index) => {
-            const isDisabled = typeof field.disabled === 'function'
-                ? field.disabled(modalMode)
-                : field.disabled;
+        let formItem;
 
-            let formItem;
+        switch (field.type) {
+            case 'input':
+            case 'text':
+                formItem = <Input disabled={isDisabled} />;
+                break;
+            case 'email':
+                formItem = <Input type="email" disabled={isDisabled} />;
+                break;
+            case 'textArea':
+                formItem = <TextArea rows={4} disabled={isDisabled} />;
+                break;
+            case 'number':
+                formItem = <Input type="number" disabled={isDisabled} />;
+                break;
+            case 'select':
+                formItem = (
+                    <Select
+                        disabled={isDisabled}
+                        options={field.options || []}
+                        allowClear
+                    />
+                );
+                break;
+            case 'date':
+                formItem = <DatePicker style={{ width: '100%' }} disabled={isDisabled} />;
+                break;
+            case 'dateRange':
+                formItem = <RangePicker style={{ width: '100%' }} disabled={isDisabled} />;
+                break;
+            case 'checkbox':
+                formItem = <Checkbox disabled={isDisabled}>{field.label}</Checkbox>;
+                break;
+            case 'tags':
+                formItem = (
+                    <Select
+                        mode="multiple"
+                        disabled={isDisabled}
+                        options={field.options || []}
+                        tagRender={(props) => {
+                            const { label, value, closable, onClose } = props;
+                            return (
+                                <Tag
+                                    color="blue"
+                                    closable={closable}
+                                    onClose={onClose}
+                                    style={{ marginRight: 3 }}
+                                >
+                                    {label}
+                                </Tag>
+                            );
+                        }}
+                    />
+                );
+                break;
+            case 'radio':
+                formItem = (
+                    <Radio.Group disabled={isDisabled}>
+                        {(field.options || []).map(option => (
+                            <Radio key={option.value} value={option.value}>
+                                {option.label}
+                            </Radio>
+                        ))}
+                    </Radio.Group>
+                );
+                break;
+            default:
+                formItem = <Input disabled={isDisabled} />;
+        }
 
-            switch (field.type) {
-                case 'input':
-                case 'text':
-                    formItem = <Input disabled={isDisabled} />;
-                    break;
-                case 'email':
-                    formItem = <Input type="email" disabled={isDisabled} />;
-                    break;
-                case 'textArea':
-                    formItem = <TextArea rows={4} disabled={isDisabled} />;
-                    break;
-                case 'number':
-                    formItem = <Input type="number" disabled={isDisabled} />;
-                    break;
-                case 'select':
-                    formItem = (
-                        <Select
-                            disabled={isDisabled}
-                            options={field.options || []}
-                            allowClear
-                        />
-                    );
-                    break;
-                case 'date':
-                    formItem = <DatePicker disabled={isDisabled} />;
-                    break;
-                case 'dateRange':
-                    formItem = <RangePicker disabled={isDisabled} />;
-                    break;
-                case 'checkbox':
-                    formItem = <Checkbox disabled={isDisabled}>{field.label}</Checkbox>;
-                    break;
-                case 'tags':
-                    formItem = (
-                        <Select
-                            mode="multiple"
-                            disabled={isDisabled}
-                            options={field.options || []}
-                            tagRender={(props) => {
-                                const { label, value, closable, onClose } = props;
-                                return (
-                                    <Tag
-                                        color="blue"
-                                        closable={closable}
-                                        onClose={onClose}
-                                        style={{ marginRight: 3 }}
-                                    >
-                                        {label}
-                                    </Tag>
-                                );
-                            }}
-                        />
-                    );
-                    break;
-                case 'radio':
-                    formItem = (
-                        <Radio.Group disabled={isDisabled}>
-                            {(field.options || []).map(option => (
-                                <Radio key={option.value} value={option.value}>
-                                    {option.label}
-                                </Radio>
-                            ))}
-                        </Radio.Group>
-                    );
-                    break;
-                default:
-                    formItem = <Input disabled={isDisabled} />;
-            }
+        const columnDef = customColumns.columns.find(col => col.dataIndex === field.dataIndex);
+        const label = columnDef?.title || field.label || field.dataIndex;
 
-            const columnDef = customColumns.columns.find(col => col.dataIndex === field.dataIndex);
-            const label = columnDef?.title || field.label || field.dataIndex;
-
-            return (
-                <Form.Item
-                    key={index}
-                    name={field.dataIndex}
-                    label={label}
-                    rules={field.rules || []}
-                >
-                    {formItem}
-                </Form.Item>
-            );
-        });
+        return (
+            <Form.Item
+                key={index}
+                name={field.dataIndex}
+                label={label}
+                rules={field.rules || []}
+            >
+                {formItem}
+            </Form.Item>
+        );
     };
 
     // Build columns with action column
@@ -624,7 +650,7 @@ const CrudTable = ({
                 open={isModalVisible}
                 onOk={handleFormSubmit}
                 onCancel={() => setIsModalVisible(false)}
-                width={800}
+                width={'80%'}
                 destroyOnClose
             >
                 <Form
@@ -632,7 +658,7 @@ const CrudTable = ({
                     layout={customColumns.form?.settings?.layout || 'horizontal'}
                     labelCol={customColumns.form?.settings?.labelCol || { span: 6 }}
                     wrapperCol={customColumns.form?.settings?.wrapperCol || { span: 18 }}
-                    style={customColumns.form?.settings?.style || { maxWidth: 600 }}
+                    style={customColumns.form?.settings?.style}
                 >
                     {getFormItems()}
                 </Form>
