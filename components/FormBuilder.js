@@ -1206,14 +1206,15 @@ const FormBuilder = () => {
         
         const handleTypeSelect = (type) => {
             form.setFieldValue('type', type);
+            setCurrentFieldType(type); // Update the current field type state to trigger re-render
             
             // Reset options if switching to a type that doesn't use them
-            if (!['select', 'radio', 'tags'].includes(type)) {
+            if (!['select', 'radio', 'tags', 'checkbox'].includes(type)) {
                 form.setFieldValue('options', []);
             }
             
             // If switching to a type that uses options but none exist, add default ones
-            if (['select', 'radio', 'tags'].includes(type) && 
+            if (['select', 'radio', 'tags', 'checkbox'].includes(type) &&
                 (!form.getFieldValue('options') || form.getFieldValue('options').length === 0)) {
                 form.setFieldValue('options', [
                     { label: 'Option 1', value: 'option1' },
