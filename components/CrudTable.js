@@ -322,125 +322,181 @@ const CrudTable = ({
         }
     };
 
-    // Generate form items based on column definitions
+    // Generate form items based on column definitions and cardGroupSetting
     const getFormItems = () => {
         const formSettings = customColumns.form?.settings || {};
         const formFields = customColumns.form?.fields || [];
-        const gridColumns = formSettings.gridColumns || 1;
-        
-        // If using single column layout, return the form items directly
-        if (gridColumns === 1) {
-            return formFields.map((field, index) => {
-                return renderFormItem(field, index);
-            });
+        const cardGroupSettings = customColumns.form?.cardGroupSetting;
+
+        if (cardGroupSettings && Array.isArray(cardGroupSettings) && cardGroupSettings.length > 0) {
+            const renderedGroups = cardGroupSettings.map(group => {
+                const groupFields = formFields.filter(field => field.cardGroup === group.key);
+                if (groupFields.length === 0) {
+                    return null;
+                }
+
+                const groupGridColumns = group.gridColumns || formSettings.gridColumns || 1;
+                // Use group-specific layout settings, fallback to global formSettings
+                const groupLayoutSettings = {
+                    layout: group.layout || formSettings.layout,
+                    labelCol: group.labelCol || formSettings.labelCol,
+                    wrapperCol: group.wrapperCol || formSettings.wrapperCol,
+                };
+
+                return (
+                    <Card key={group.key} title={group.title || 'Group'} style={{ marginBottom: 16 }}>
+                        <Row gutter={[16, 0]}>
+                            {groupFields.map((field) => (
+                                <Col
+                                    key={field.dataIndex}
+                                    xs={24}
+                                    sm={groupGridColumns > 1 ? (24 / Math.min(groupGridColumns, 2)) : 24}
+                                    md={24 / groupGridColumns}
+                                    lg={24 / groupGridColumns}
+                                >
+                                    {renderFormItem(field, field.dataIndex, groupLayoutSettings)}
+                                </Col>
+                            ))}
+                        </Row>
+                    </Card>
+                );
+            }).filter(Boolean);
+
+            // Render fields not in any group, if any
+            const ungroupedFields = formFields.filter(field => !field.cardGroup || !cardGroupSettings.find(g => g.key === field.cardGroup));
+            if (ungroupedFields.length > 0) {
+                const globalGridColumns = formSettings.gridColumns || 1;
+                renderedGroups.push(
+                    <Card key="ungrouped-fields" title="Other Fields" style={{ marginBottom: 16 }}>
+                        <Row gutter={[16, 0]}>
+                            {ungroupedFields.map((field) => (
+                                <Col
+                                    key={field.dataIndex}
+                                    xs={24}
+                                    sm={globalGridColumns > 1 ? 12 : 24}
+                                    md={24 / globalGridColumns}
+                                    lg={24 / globalGridColumns}
+                                >
+                                    {renderFormItem(field, field.dataIndex, formSettings)}
+                                </Col>
+                            ))}
+                        </Row>
+                    </Card>
+                );
+            }
+            return renderedGroups;
+
+        } else {
+            // Existing logic for non-grouped or single-group layout
+            const gridColumns = formSettings.gridColumns || 1;
+            if (gridColumns === 1 && (!formSettings.layout || formSettings.layout === 'vertical')) { // Simpler rendering for single column vertical
+                return formFields.map((field) => renderFormItem(field, field.dataIndex, formSettings));
+            }
+            return (
+                <Row gutter={[16, 0]}>
+                    {formFields.map((field) => (
+                        <Col
+                            key={field.dataIndex}
+                            xs={24}
+                            sm={gridColumns > 1 ? 12 : 24}
+                            md={24 / gridColumns}
+                            lg={24 / gridColumns}
+                        >
+                            {renderFormItem(field, field.dataIndex, formSettings)}
+                        </Col>
+                    ))}
+                </Row>
+            );
         }
-        
-        // For grid layout, wrap items in Row and Col components
-        return (
-            <Row gutter={[16, 0]}>
-                {formFields.map((field, index) => (
-                    <Col 
-                        key={index} 
-                        xs={24} 
-                        sm={gridColumns > 1 ? 12 : 24} 
-                        md={24 / gridColumns}
-                        lg={24 / gridColumns}
-                    >
-                        {renderFormItem(field, index)}
-                    </Col>
-                ))}
-            </Row>
-        );
     };
     
     // Helper function to render a single form item
-    const renderFormItem = (field, index) => {
+    const renderFormItem = (field, key, itemLayoutSettings) => {
         const isDisabled = typeof field.disabled === 'function'
             ? field.disabled(modalMode)
             : field.disabled;
 
-        let formItem;
+        let formItemComponent;
 
         switch (field.type) {
             case 'input':
             case 'text':
-                formItem = <Input disabled={isDisabled} />;
+                formItemComponent = <Input disabled={isDisabled} />;
                 break;
             case 'email':
-                formItem = <Input type="email" disabled={isDisabled} />;
+                formItemComponent = <Input type="email" disabled={isDisabled} />;
                 break;
             case 'textArea':
-                formItem = <TextArea rows={4} disabled={isDisabled} />;
+                formItemComponent = <TextArea rows={field.rows || 4} disabled={isDisabled} />;
                 break;
             case 'number':
-                formItem = <Input type="number" disabled={isDisabled} />;
+                formItemComponent = <Input type="number" disabled={isDisabled} style={{width: '100%'}} />;
                 break;
             case 'select':
-                formItem = (
+                formItemComponent = (
                     <Select
                         disabled={isDisabled}
                         options={field.options || []}
                         allowClear
+                        showSearch={field.showSearch || false}
+                        optionFilterProp={field.optionFilterProp || "children"}
+                        filterOption={field.filterOption || ((input, option) =>
+                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase()))}
                     />
                 );
                 break;
             case 'date':
-                formItem = <DatePicker style={{ width: '100%' }} disabled={isDisabled} />;
+                formItemComponent = <DatePicker style={{ width: '100%' }} disabled={isDisabled} format={field.format || "YYYY-MM-DD"} />;
                 break;
             case 'dateRange':
-                formItem = <RangePicker style={{ width: '100%' }} disabled={isDisabled} />;
+                formItemComponent = <RangePicker style={{ width: '100%' }} disabled={isDisabled} format={field.format || "YYYY-MM-DD"}/>;
                 break;
-            case 'checkbox':
-                formItem = <Checkbox disabled={isDisabled}>{field.label}</Checkbox>;
+            case 'checkbox': // This is for a single checkbox. Checkbox.Group would be different.
+                formItemComponent = <Checkbox disabled={isDisabled}>{field.checkboxLabel || ''}</Checkbox>;
                 break;
             case 'tags':
-                formItem = (
+                formItemComponent = (
                     <Select
-                        mode="multiple"
+                        mode="tags" // Changed from "multiple" to "tags" for free-form input
                         disabled={isDisabled}
-                        options={field.options || []}
-                        tagRender={(props) => {
-                            const { label, value, closable, onClose } = props;
-                            return (
-                                <Tag
-                                    color="blue"
-                                    closable={closable}
-                                    onClose={onClose}
-                                    style={{ marginRight: 3 }}
-                                >
-                                    {label}
-                                </Tag>
-                            );
-                        }}
+                        options={field.options || []} // Options can still be provided as suggestions
+                        tokenSeparators={[',']}
+                        // tagRender prop can be used for custom tag appearance if needed
                     />
                 );
                 break;
             case 'radio':
-                formItem = (
-                    <Radio.Group disabled={isDisabled}>
-                        {(field.options || []).map(option => (
-                            <Radio key={option.value} value={option.value}>
-                                {option.label}
-                            </Radio>
-                        ))}
+                formItemComponent = (
+                    <Radio.Group disabled={isDisabled} options={field.options || []}>
+                        {/* Options are now directly passed to Radio.Group if they are in {label, value} format */}
                     </Radio.Group>
                 );
                 break;
             default:
-                formItem = <Input disabled={isDisabled} />;
+                formItemComponent = <Input disabled={isDisabled} />;
         }
 
         const columnDef = customColumns.columns.find(col => col.dataIndex === field.dataIndex);
-        const label = columnDef?.title || field.label || field.dataIndex;
+        const label = field.label || columnDef?.title || field.dataIndex;
+        
+        // Determine layout for this specific item
+        const itemSpecificLayout = itemLayoutSettings?.layout || customColumns.form?.settings?.layout || 'horizontal';
+        const itemLabelCol = itemLayoutSettings?.labelCol || customColumns.form?.settings?.labelCol;
+        const itemWrapperCol = itemLayoutSettings?.wrapperCol || customColumns.form?.settings?.wrapperCol;
 
         return (
             <Form.Item
-                key={index}
+                key={key}
                 name={field.dataIndex}
                 label={label}
                 rules={field.rules || []}
+                {...(itemSpecificLayout === 'horizontal' && { // Apply labelCol/wrapperCol only if layout is horizontal
+                    labelCol: itemLabelCol,
+                    wrapperCol: itemWrapperCol,
+                })}
+                {...(field.type === 'checkbox' && { valuePropName: 'checked' })} // For single Checkbox
             >
-                {formItem}
+                {formItemComponent}
             </Form.Item>
         );
     };
@@ -646,19 +702,20 @@ const CrudTable = ({
 
             {/* Form Modal */}
             <Modal
-                title={modalMode === 'add' ? 'Add New Record' : 'Edit Record'}
+                title={modalMode === 'add' ? (customColumns.form?.settings?.addModalTitle || 'Add New Record') : (customColumns.form?.settings?.editModalTitle || 'Edit Record')}
                 open={isModalVisible}
                 onOk={handleFormSubmit}
                 onCancel={() => setIsModalVisible(false)}
-                width={'80%'}
+                width={customColumns.form?.settings?.modalWidth || '80%'}
                 destroyOnClose
             >
                 <Form
                     form={form}
                     layout={customColumns.form?.settings?.layout || 'horizontal'}
-                    labelCol={customColumns.form?.settings?.labelCol || { span: 6 }}
-                    wrapperCol={customColumns.form?.settings?.wrapperCol || { span: 18 }}
+                    labelCol={customColumns.form?.settings?.labelCol || { span: 6 }} // Global defaults
+                    wrapperCol={customColumns.form?.settings?.wrapperCol || { span: 18 }} // Global defaults
                     style={customColumns.form?.settings?.style}
+                    initialValues={customColumns.form?.settings?.initialValues || {}}
                 >
                     {getFormItems()}
                 </Form>

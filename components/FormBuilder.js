@@ -2,18 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import {
     Card, Button, Form, Input, Select, Switch, Typography, Space, Divider,
-    Tag, Table, Modal, Tabs, Tooltip, message, Drawer, Row, Col, Steps, Empty,
-    Result, Radio, Segmented, Badge, Alert, List, Avatar, DatePicker, Checkbox,
-    InputNumber, Cascader
+    Tag, Table, Modal, Tabs, Tooltip, message, Drawer, Row, Col, Empty,
+    Radio, Segmented, Badge, Alert, DatePicker, Checkbox,
+    InputNumber
 } from 'antd';
 import {
     PlusOutlined, DeleteOutlined, CopyOutlined, CodeOutlined, DownloadOutlined, 
-    FileTextOutlined, SaveOutlined, EditOutlined, SettingOutlined, UserOutlined, 
-    FormOutlined, CheckCircleOutlined, EyeOutlined, AppstoreOutlined, BarsOutlined,
+    FileTextOutlined, EditOutlined, SettingOutlined, UserOutlined,
+    FormOutlined, CheckCircleOutlined, AppstoreOutlined, BarsOutlined,
     CheckOutlined, LayoutOutlined, TableOutlined, ThunderboltOutlined, FileAddOutlined,
-    SmileOutlined, CaretRightOutlined, RightOutlined, LeftOutlined, MailOutlined,
+    MailOutlined,
     NumberOutlined, CalendarOutlined, CheckSquareOutlined, TagsOutlined, DownOutlined,
-    InfoCircleOutlined, PhoneOutlined, QuestionCircleOutlined, StarOutlined,
+    InfoCircleOutlined, PhoneOutlined, QuestionCircleOutlined,
     DatabaseOutlined
 } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
@@ -22,7 +22,6 @@ import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
-const { TabPane } = Tabs;
 
 // FormCodeGenerator component - now included in FormBuilder
 const FormCodeGenerator = ({ formFields, formSettings, formTitle, tableName }) => {
@@ -262,6 +261,9 @@ export const DELETE = async (req) => {
         if (field.options && field.options.length > 0) {
           formField.options = field.options;
         }
+        if (field.cardGroup) {
+          formField.cardGroup = field.cardGroup;
+        }
         
         return formField;
       });
@@ -272,6 +274,9 @@ export const DELETE = async (req) => {
       .replace(/\s+/g, '')
       .replace(/[^a-zA-Z0-9]/g, '')
       .replace(/^./, str => str.toUpperCase());
+
+    // Create a copy of formSettings without cardGroupSetting for the main settings block
+    const { cardGroupSetting, ...otherFormSettings } = formSettings || {};
     
     // Generate the page code
     return `'use client';
@@ -296,13 +301,14 @@ export default function ${componentName}() {
           .replace(/"onFilter": "(.*?)"/g, '"onFilter": $1')},
         form: {
             settings: {
-                title: '${formTitle} Form',
-                labelCol: {span: ${formSettings?.labelCol?.span || 6}},
-                wrapperCol: {span: ${formSettings?.wrapperCol?.span || 18}},
-                layout: '${formSettings?.layout || "horizontal"}',
-                gridColumns: ${formSettings?.gridColumns || 1}
+                title: '${otherFormSettings?.title || 'Form'} Form',
+                labelCol: {span: ${otherFormSettings?.labelCol?.span || 6}},
+                wrapperCol: {span: ${otherFormSettings?.wrapperCol?.span || 18}},
+                layout: '${otherFormSettings?.layout || "horizontal"}',
+                gridColumns: ${otherFormSettings?.gridColumns || 1}
             },
-            fields: ${JSON.stringify(formatFormFields(formFields), null, 8)}
+            fields: ${JSON.stringify(formatFormFields(formFields), null, 8)},
+            cardGroupSetting: ${JSON.stringify(cardGroupSetting || [], null, 8)}
         }
     }
     
@@ -376,7 +382,7 @@ export default function ${componentName}() {
         }
     };
     
-    const handleExport = (data) => (allData, selectedKeys) => {
+    const handleExport = () => (allData, selectedKeys) => {
         try {
             const dataToExport = selectedKeys.length > 0
                 ? allData.filter(item => selectedKeys.includes(item.key))
@@ -423,7 +429,7 @@ export default function ${componentName}() {
                 onAdd={handleAdd(data, setData)}
                 onEdit={handleEdit(data, setData)}
                 onDelete={handleDelete(data, setData)}
-                onExport={handleExport(data)}
+                onExport={handleExport()}
                 loading={loading}
                 pagination={{
                     pageSize: 10,
@@ -631,7 +637,8 @@ const FormBuilder = () => {
                 wrapperCol: { span: 18 },
                 modalTitle: 'User Form',
                 pageTitle: 'User Management',
-                gridColumns: 1
+                gridColumns: 1,
+                cardGroupSetting: []
             }
         },
         {
@@ -692,7 +699,8 @@ const FormBuilder = () => {
                 wrapperCol: { span: 18 },
                 modalTitle: 'Product Form',
                 pageTitle: 'Product Catalog',
-                gridColumns: 1
+                gridColumns: 1,
+                cardGroupSetting: []
             }
         },
         {
@@ -708,7 +716,8 @@ const FormBuilder = () => {
                 wrapperCol: { span: 18 },
                 modalTitle: 'Data Form',
                 pageTitle: 'Data Management',
-                gridColumns: 1
+                gridColumns: 1,
+                cardGroupSetting: []
             }
         }
     ];
@@ -716,14 +725,11 @@ const FormBuilder = () => {
     // Form builder state - use deep cloning to break potential circular references 
     const [formFields, setFormFields] = useState(() => JSON.parse(JSON.stringify(formTemplates[0].fields)));
     const [formSettings, setFormSettings] = useState(() => JSON.parse(JSON.stringify(formTemplates[0].settings)));
-    const [activeTab, setActiveTab] = useState('1');
     const [fieldFormVisible, setFieldFormVisible] = useState(false);
     const [currentField, setCurrentField] = useState(null);
     const [form] = Form.useForm();
     
     // Wizard state
-    const [currentStep, setCurrentStep] = useState(0);
-    const [viewMode, setViewMode] = useState('card'); // 'card' or 'table'
     const [selectedTemplate, setSelectedTemplate] = useState(formTemplates[0].id);
     const [currentFieldType, setCurrentFieldType] = useState(null);
     
@@ -872,12 +878,6 @@ const FormBuilder = () => {
         }
     ];
     
-    // Function to get field type icon
-    const getFieldTypeIcon = (type) => {
-        const fieldType = fieldTypes.find(t => t.value === type);
-        return fieldType ? fieldType.icon : <FormOutlined />;
-    };
-    
     // Add a new field
     const handleAddField = () => {
         try {
@@ -972,7 +972,8 @@ const FormBuilder = () => {
                 required: fieldCopy.rules?.some(rule => rule.required) || false,
                 filterable: fieldCopy.filterable || false,
                 sortable: fieldCopy.sortable || false,
-                options: Array.isArray(fieldCopy.options) ? fieldCopy.options : []
+                options: Array.isArray(fieldCopy.options) ? fieldCopy.options : [],
+                cardGroup: fieldCopy.cardGroup || null
             });
             
             setFieldFormVisible(true);
@@ -1004,7 +1005,8 @@ const FormBuilder = () => {
                 ],
                 options: Array.isArray(values.options) ? [...values.options] : [],
                 filterable: Boolean(values.filterable),
-                sortable: Boolean(values.sortable)
+                sortable: Boolean(values.sortable),
+                cardGroup: values.cardGroup
             };
             
             // Use functional updates to ensure we're using latest state
@@ -1325,6 +1327,20 @@ const FormBuilder = () => {
                                         >
                                             <Input />
                                         </Form.Item>
+
+                                        <Form.Item
+                                            name="cardGroup"
+                                            label="Card Group (Optional)"
+                                            tooltip="Assign this field to a specific card group in the form."
+                                        >
+                                            <Select placeholder="Select card group" allowClear>
+                                                {(formSettings.cardGroupSetting || []).map(group => (
+                                                    <Select.Option key={group.key} value={group.key}>
+                                                        {group.title || group.key}
+                                                    </Select.Option>
+                                                ))}
+                                            </Select>
+                                        </Form.Item>
                                         
                                         {renderFieldTypeSelection()}
                                         {renderFieldPreview()}
@@ -1388,7 +1404,7 @@ const FormBuilder = () => {
                                                                 <br />
                                                                 <Button 
                                                                     type="link" 
-                                                                    onClick={() => setCurrentTab('basic')}
+                                                                    onClick={() => setCurrentFieldFormTab('basic')}
                                                                 >
                                                                     Change field type
                                                                 </Button>
@@ -1579,6 +1595,12 @@ const FormBuilder = () => {
                 ) : null
             },
             {
+                title: 'Card Group',
+                dataIndex: 'cardGroup',
+                key: 'cardGroup',
+                render: (cardGroup) => cardGroup || 'None'
+            },
+            {
                 title: 'Actions',
                 key: 'actions',
                 render: (_, record) => (
@@ -1620,31 +1642,72 @@ const FormBuilder = () => {
     
     // Form settings form
     const renderSettingsForm = () => {
-        const handleSettingsChange = (key, value) => {
+        const handleSettingsChange = (key, value, index, subKey) => {
             try {
-                // Validate input based on field type
-                let validatedValue = value;
-                
-                // Special validation for numeric inputs
-                if (['labelCol', 'wrapperCol'].includes(key) && typeof value === 'object') {
-                    // Ensure span is a valid number between 1-24
-                    const span = parseInt(value.span);
-                    if (isNaN(span) || span < 1) {
-                        validatedValue = { span: 1 };
-                    } else if (span > 24) {
-                        validatedValue = { span: 24 };
+                setFormSettings(prevSettings => {
+                    const newSettings = { ...prevSettings };
+                    if (key === 'cardGroupSetting') {
+                        if (!newSettings.cardGroupSetting) {
+                            newSettings.cardGroupSetting = [];
+                        }
+                        if (index !== undefined && subKey !== undefined) {
+                            // Editing a specific property of a card group
+                            if (newSettings.cardGroupSetting[index]) {
+                                if (['labelCol', 'wrapperCol'].includes(subKey)) {
+                                    const span = parseInt(value.span);
+                                    let validatedSpan = 1;
+                                    if (!isNaN(span)) {
+                                        if (span < 1) validatedSpan = 1;
+                                        else if (span > 24) validatedSpan = 24;
+                                        else validatedSpan = span;
+                                    }
+                                    newSettings.cardGroupSetting[index][subKey] = { span: validatedSpan };
+                                } else {
+                                    newSettings.cardGroupSetting[index][subKey] = value;
+                                }
+                            }
+                        } else if (index !== undefined && value === null) {
+                            // Removing a card group
+                            newSettings.cardGroupSetting = newSettings.cardGroupSetting.filter((_, i) => i !== index);
+                        } else if (value && typeof value === 'object' && !subKey) {
+                             // Adding a new card group (value is the new group object)
+                             newSettings.cardGroupSetting = [...(newSettings.cardGroupSetting || []), value];
+                        }
+                    } else {
+                        // Validate input based on field type
+                        let validatedValue = value;
+                        
+                        // Special validation for numeric inputs
+                        if (['labelCol', 'wrapperCol'].includes(key) && typeof value === 'object') {
+                            // Ensure span is a valid number between 1-24
+                            const span = parseInt(value.span);
+                            if (isNaN(span) || span < 1) {
+                                validatedValue = { span: 1 };
+                            } else if (span > 24) {
+                                validatedValue = { span: 24 };
+                            }
+                        }
+                        newSettings[key] = validatedValue;
                     }
-                }
-                
-                // Use functional update to ensure we're working with latest state
-                setFormSettings(prevSettings => ({
-                    ...prevSettings,
-                    [key]: validatedValue
-                }));
+                    return newSettings;
+                });
             } catch (error) {
                 console.error('Error updating form settings:', error);
                 message.error('Failed to update form settings');
             }
+        };
+
+        const addCardGroup = () => {
+            const newGroup = {
+                key: `group${(formSettings.cardGroupSetting?.length || 0) + 1}`,
+                title: `New Card Group ${(formSettings.cardGroupSetting?.length || 0) + 1}`,
+                description: '', // Added description field
+                labelCol: { span: formSettings.labelCol?.span || 6 },
+                wrapperCol: { span: formSettings.wrapperCol?.span || 18 },
+                layout: formSettings.layout || 'horizontal',
+                gridColumns: formSettings.gridColumns || 1,
+            };
+            handleSettingsChange('cardGroupSetting', newGroup);
         };
         
         return (
@@ -1760,6 +1823,108 @@ const FormBuilder = () => {
                         </Form.Item>
                     </Col>
                 </Row>
+
+                <Divider>Card Group Settings</Divider>
+                <Paragraph type="secondary">
+                    Define groups of fields to be displayed within separate cards in the form. This is useful for organizing complex forms.
+                </Paragraph>
+                {(formSettings.cardGroupSetting || []).map((group, index) => (
+                    <Card
+                        key={index}
+                        title={`Card Group: ${group.title || group.key}`}
+                        size="small"
+                        style={{ marginBottom: 16 }}
+                        extra={
+                            <Button
+                                icon={<DeleteOutlined />}
+                                onClick={() => handleSettingsChange('cardGroupSetting', null, index)}
+                                danger
+                                type="text"
+                                title="Remove Card Group"
+                            />
+                        }
+                    >
+                        <Row gutter={16}>
+                            <Col span={12}>
+                                <Form.Item label="Group Key (Unique ID)">
+                                    <Input
+                                        value={group.key}
+                                        onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'key')}
+                                        placeholder="e.g., personalDetails, addressInfo"
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                                <Form.Item label="Group Title">
+                                    <Input
+                                        value={group.title}
+                                        onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'title')}
+                                        placeholder="e.g., Personal Details"
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                        <Form.Item label="Group Description">
+                            <Input.TextArea
+                                value={group.description}
+                                onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'description')}
+                                placeholder="Optional description for the card group"
+                                rows={2}
+                            />
+                        </Form.Item>
+                        <Form.Item label="Group Layout">
+                            <Select
+                                value={group.layout}
+                                onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'layout')}
+                                options={[
+                                    { label: 'Horizontal', value: 'horizontal' },
+                                    { label: 'Vertical', value: 'vertical' },
+                                    { label: 'Inline', value: 'inline' }
+                                ]}
+                            />
+                        </Form.Item>
+                        <Form.Item label="Group Grid Layout Columns">
+                            <Segmented
+                                block
+                                options={[
+                                    { label: (<Tooltip title="Single Column"><BarsOutlined /> 1</Tooltip>), value: 1 },
+                                    { label: (<Tooltip title="Two Columns"><LayoutOutlined /> 2</Tooltip>), value: 2 },
+                                    { label: (<Tooltip title="Three Columns"><TableOutlined /> 3</Tooltip>), value: 3 },
+                                    { label: (<Tooltip title="Four Columns"><AppstoreOutlined /> 4</Tooltip>), value: 4 }
+                                ]}
+                                value={group.gridColumns || 1}
+                                onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'gridColumns')}
+                            />
+                        </Form.Item>
+                        <Row gutter={16}>
+                            <Col span={12}>
+                                <Form.Item label="Group Label Column Width">
+                                    <InputNumber
+                                        min={1}
+                                        max={24}
+                                        value={group.labelCol?.span}
+                                        onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'labelCol')}
+                                        style={{width: '100%'}}
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                                <Form.Item label="Group Wrapper Column Width">
+                                    <InputNumber
+                                        min={1}
+                                        max={24}
+                                        value={group.wrapperCol?.span}
+                                        onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'wrapperCol')}
+                                        style={{width: '100%'}}
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    </Card>
+                ))}
+                <Button type="dashed" onClick={addCardGroup} block icon={<PlusOutlined />}>
+                    Add Card Group
+                </Button>
             </Form>
         );
     };
@@ -1856,43 +2021,123 @@ const FormBuilder = () => {
                                     showIcon
                                     style={{ marginBottom: 16 }}
                                 />
-                                
-                                <Card title={formSettings.modalTitle || "Form"}>
-                                    <Form
-                                        layout={formSettings.layout}
-                                        labelCol={{ span: formSettings.labelCol?.span || 6 }}
-                                        wrapperCol={{ span: formSettings.wrapperCol?.span || 18 }}
-                                    >
-                                        <Row gutter={[16, 16]}>
-                                            {formFields.map(field => (
-                                                <Col 
-                                                    key={field.id} 
-                                                    xs={24} 
-                                                    sm={formSettings.gridColumns > 1 ? 12 : 24} 
-                                                    md={24 / (formSettings.gridColumns || 1)}
+
+                                {/* Render fields NOT in any card group first */}
+                                {(() => {
+                                    const ungroupedFields = formFields.filter(field =>
+                                        !field.cardGroup ||
+                                        !(formSettings.cardGroupSetting || []).find(g => g.key === field.cardGroup)
+                                    );
+                                    if (ungroupedFields.length > 0) {
+                                        return (
+                                            <Card title={formSettings.modalTitle || "Form (Ungrouped Fields)"} style={{ marginBottom: 16 }}>
+                                                <Form
+                                                    layout={formSettings.layout}
+                                                    labelCol={{ span: formSettings.labelCol?.span || 6 }}
+                                                    wrapperCol={{ span: formSettings.wrapperCol?.span || 18 }}
                                                 >
-                                                    <Form.Item
-                                                        label={field.title}
-                                                        name={field.dataIndex}
-                                                        required={field.rules?.some(rule => rule.required)}
-                                                        tooltip={field.rules?.some(rule => rule.required) ? "This field is required" : "This field is optional"}
-                                                    >
-                                                        <FieldTypeExample type={field.type} />
-                                                    </Form.Item>
-                                                </Col>
-                                            ))}
-                                        </Row>
-                                        
-                                        <Form.Item wrapperCol={{ offset: formSettings.layout === 'horizontal' ? (formSettings.labelCol?.span || 6) : 0 }}>
-                                            <Button type="primary" htmlType="submit">
-                                                Submit
-                                            </Button>
-                                            <Button style={{ marginLeft: 8 }}>
-                                                Cancel
-                                            </Button>
-                                        </Form.Item>
-                                    </Form>
-                                </Card>
+                                                    <Row gutter={[16, 16]}>
+                                                        {ungroupedFields.map(field => (
+                                                            <Col
+                                                                key={field.id}
+                                                                xs={24}
+                                                                sm={formSettings.gridColumns > 1 ? 12 : 24}
+                                                                md={24 / (formSettings.gridColumns || 1)}
+                                                            >
+                                                                <Form.Item
+                                                                    label={field.title}
+                                                                    required={field.rules?.some(rule => rule.required)}
+                                                                    tooltip={field.rules?.some(rule => rule.required) ? "This field is required" : "This field is optional"}
+                                                                >
+                                                                    <FieldTypeExample type={field.type} />
+                                                                </Form.Item>
+                                                            </Col>
+                                                        ))}
+                                                    </Row>
+                                                </Form>
+                                            </Card>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+
+                                {/* Render fields within their respective card groups */}
+                                {(formSettings.cardGroupSetting || []).map(group => {
+                                    const groupFields = formFields.filter(field => field.cardGroup === group.key);
+                                    if (groupFields.length === 0 && !(formFields.filter(field => !field.cardGroup || !(formSettings.cardGroupSetting || []).find(g => g.key === field.cardGroup)).length > 0)) {
+                                        // If no ungrouped fields and this group is empty, show a general message if it's the only thing to show
+                                        if ((formSettings.cardGroupSetting || []).length === 1) {
+                                            return <Empty key="empty-groups" description="No fields defined or assigned to groups for preview." />;
+                                        }
+                                        return null; // Don't render empty groups if other content exists
+                                    }
+                                    if (groupFields.length === 0) return null; // Skip rendering this specific group if it has no fields
+
+                                    const currentLayout = group.layout || formSettings.layout;
+                                    const currentLabelCol = group.labelCol?.span || formSettings.labelCol?.span || 6;
+                                    const currentWrapperCol = group.wrapperCol?.span || formSettings.wrapperCol?.span || 18;
+                                    const currentGridColumns = group.gridColumns || formSettings.gridColumns || 1;
+
+                                    return (
+                                        <Card
+                                            key={group.key}
+                                            title={group.title || group.key}
+                                            style={{ marginBottom: 16 }}
+                                            extra={group.description ? <Text type="secondary">{group.description}</Text> : null}
+                                        >
+                                            <Form
+                                                layout={currentLayout}
+                                                labelCol={{ span: currentLabelCol }}
+                                                wrapperCol={{ span: currentWrapperCol }}
+                                            >
+                                                <Row gutter={[16, 16]}>
+                                                    {groupFields.map(field => (
+                                                        <Col
+                                                            key={field.id}
+                                                            xs={24}
+                                                            sm={currentGridColumns > 1 ? 12 : 24}
+                                                            md={24 / currentGridColumns}
+                                                        >
+                                                            <Form.Item
+                                                                label={field.title}
+                                                                required={field.rules?.some(rule => rule.required)}
+                                                                tooltip={field.rules?.some(rule => rule.required) ? "This field is required" : "This field is optional"}
+                                                            >
+                                                                <FieldTypeExample type={field.type} />
+                                                            </Form.Item>
+                                                        </Col>
+                                                    ))}
+                                                </Row>
+                                            </Form>
+                                        </Card>
+                                    );
+                                })}
+                                
+                                {/* Show Empty state if no fields and no groups with fields */}
+                                {formFields.length === 0 && (!formSettings.cardGroupSetting || formSettings.cardGroupSetting.length === 0) && (
+                                    <Empty description="No fields defined for preview." />
+                                )}
+                                
+                                {/* Common Submit/Cancel buttons at the end */}
+                                {(formFields.length > 0) && (
+                                  <Form
+                                      layout={formSettings.layout}
+                                      labelCol={{ span: formSettings.labelCol?.span || 6 }}
+                                      wrapperCol={{ span: formSettings.wrapperCol?.span || 18 }}
+                                  >
+                                      <Form.Item wrapperCol={{
+                                          offset: formSettings.layout === 'horizontal' ? (formSettings.labelCol?.span || 6) : 0,
+                                          span: formSettings.wrapperCol?.span || 18
+                                      }}>
+                                          <Button type="primary" htmlType="submit" onClick={() => message.info('Preview submit clicked!')}>
+                                              Submit
+                                          </Button>
+                                          <Button style={{ marginLeft: 8 }} onClick={() => message.info('Preview cancel clicked!')}>
+                                              Cancel
+                                          </Button>
+                                      </Form.Item>
+                                  </Form>
+                                )}
                             </div>
                         )
                     }
