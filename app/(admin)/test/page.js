@@ -1,169 +1,295 @@
 'use client';
-import React, { useState } from "react";
 import { useTitleContext } from '@/components/TitleContext';
-import { UserOutlined } from "@ant-design/icons";
-import { Button, Card, Checkbox, DatePicker, Drawer, Form, Input, Modal, Radio, Select, Space, Spin, Switch, Tabs, message } from "antd";
+import { CloseCircleOutlined, DeleteOutlined, DownloadOutlined, PlusCircleOutlined, SaveOutlined, UserOutlined } from "@ant-design/icons";
+import { Button, Card, Checkbox, Col, DatePicker, Form, Input, Radio, Row, Select, Table, TimePicker } from "antd";
+import { useState } from 'react';
 
 export default function TestPage() {
-    useTitleContext({ title: 'User', icon: <UserOutlined /> });
-    const [form] = Form.useForm();
-    const [messageApi, contextHolder] = message.useMessage();
-    const [disabled, setDisabled] = useState(true);
-    const [open, setOpen] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    useTitleContext({ title: 'Branch', icon: <UserOutlined /> });
 
-    const onChangeDatePicker = (date, dateString) => {
-        console.log(date, dateString);
+    const [form] = Form.useForm();
+    const [selectionType] = useState('checkbox');
+    const [isFormVisible, setIsFormVisible] = useState(false);
+
+    const rowSelection = {
+        onChange: (selectedRowKeys, selectedRows) => {
+            console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
+        },
+        getCheckboxProps: record => ({
+            disabled: record.name === 'Disabled User',
+            name: record.name,
+        }),
     };
-    const showDrawer = () => {
-        setOpen(true);
-    };
-    const onClose = () => {
-        setOpen(false);
-    };
-    const showModal = () => {
-        setIsModalOpen(true);
-    };
-    const handleOk = () => {
-        setIsModalOpen(false);
-    };
-    const handleCancel = () => {
-        setIsModalOpen(false);
-    };
-    const items = [
+
+    const columns = [
         {
-            key: '1',
-            label: 'Tab 1',
-            children: 'Content of Tab Pane 1',
+            title: 'Branch Code',
+            dataIndex: 'branch_id',
         },
         {
-            key: '2',
-            label: 'Tab 2',
-            children: 'Content of Tab Pane 2',
+            title: 'Branch Name',
+            dataIndex: 'branch_name',
         },
         {
-            key: '3',
-            label: 'Tab 3',
-            children: 'Content of Tab Pane 3',
+            title: 'Branch Detail',
+            dataIndex: 'branch_detail',
+        },
+        {
+            title: 'Manager',
+            dataIndex: 'manager',
+        },
+        {
+            title: 'Phone',
+            dataIndex: 'phone',
+        },
+        {
+            title: 'Status',
+            dataIndex: 'status',
+        },
+        {
+            title: 'Update Date',
+            dataIndex: 'update_date',
         },
     ];
-    const onChange = key => {
-        console.log(key);
+
+    const data = [
+        {
+            branch_id: '1',
+            branch_name: 'Central Plaza',
+            branch_detail: 'Main shopping center branch',
+            manager: 'Somsak Jaroensuk',
+            phone: '02-123-4567',
+            status: 'active',
+            update_date: '2025-05-20',
+        },
+        {
+            branch_id: '2',
+            branch_name: 'Bangna Outlet',
+            branch_detail: 'Outlet store near Bangna intersection',
+            manager: 'Chalita Saengsiri',
+            phone: '02-888-9999',
+            status: 'inactive',
+            update_date: '2025-05-18',
+        },
+        {
+            branch_id: '3',
+            branch_name: 'Chiang Mai Branch',
+            branch_detail: 'Northern regional service branch',
+            manager: 'Nattapong Wongdee',
+            phone: '053-222-444',
+            status: 'active',
+            update_date: '2025-05-10',
+        },
+        {
+            branch_id: '4',
+            branch_name: 'Phuket Store',
+            branch_detail: 'Tourist-focused store near Patong',
+            manager: 'Anchana Thongdee',
+            phone: '076-789-000',
+            status: 'active',
+            update_date: '2025-05-21',
+        },
+
+    ];
+
+    const handleAddClick = () => {
+        setIsFormVisible(true);
     };
-    const success = () => {
-        messageApi.open({
-            type: 'success',
-            content: 'This is a success message',
-        });
-    };
-    const error = () => {
-        messageApi.open({
-            type: 'error',
-            content: 'This is an error message',
-        });
-    };
-    const warning = () => {
-        messageApi.open({
-            type: 'warning',
-            content: 'This is a warning message',
-        });
-    };
-    const onReset = () => {
+
+    const handleCancel = () => {
+        setIsFormVisible(false);
         form.resetFields();
     };
+
+    const handleSubmit = (values) => {
+        console.log('Form values:', values);
+    };
+
+    const onSearch = (value) => {
+        console.log(value);
+    }
     return (
-        <div>
-            <Card>
-                <div>
-                    <h1>Test UI</h1>
-                    <p>Welcome to test ui</p>
-                </div>
+        <Card>
+            {isFormVisible ? (
                 <Form
                     form={form}
-                    labelCol={{ span: 4 }}
-                    wrapperCol={{ span: 14 }}
-                    layout="horizontal"
-                    style={{ maxWidth: 600 }}
-                >
-                    <Form.Item name="note" label="Note" rules={[{ required: true }]}>
-                        <Input />
-                    </Form.Item>
+                    onFinish={handleSubmit}
+                    labelCol={{ span: 6 }}
+                    wrapperCol={{ span: 12 }}
 
-                    <Form.Item name="gender" label="Gender" rules={[{ required: true }]}>
-                        <Select
-                            placeholder="Select a option and change input text above"
-                            // onChange={onGenderChange}
-                            allowClear
-                            options={[
-                                { value: 'male', label: 'male' },
-                                { value: 'female', label: 'female' },
-                                { value: 'other', label: 'other' }
-                            ]}
-                        />
-                    </Form.Item>
-                    <Form.Item name="dateRange" label="dateRange">
-                        <DatePicker.RangePicker onChange={onChangeDatePicker} />
-                    </Form.Item>
-                    <Form.Item name="status" label="Status">
-                        <Radio.Group>
-                            <Radio value={false}>Disabled</Radio>
-                            <Radio value={true}>Enabled</Radio>
-                        </Radio.Group>
-                    </Form.Item>
-                    <Form.Item name="check" label="Check">
-                        <Checkbox>Check this</Checkbox>
-                    </Form.Item>
-                    <Form.Item>
-                        <Space>
-                            <Button htmlType="submit" style={{ background: '#1890ff', color: 'white' }}>
-                                Submit
-                            </Button>
-                            <Button htmlType="button" onClick={onReset}>
-                                Reset
-                            </Button>
-                        </Space>
+                >
+                    <Card title="ข้อมูลสาขา" style={{ marginBottom: 24 }}>
+                        <Row gutter={24}>
+                            <Col span={12}>
+                                <Form.Item label="ประเภทสาขา" name="branchType">
+                                    <Radio.Group>
+                                        <Radio value="branch">สาขา</Radio>
+                                        <Radio value="head_office">สำนักงานใหญ่</Radio>
+                                    </Radio.Group>
+                                </Form.Item>
+
+                                <Form.Item label="รหัสสาขา" name="branchCode" rules={[{ required: true }]}>
+                                    <Input />
+                                </Form.Item>
+
+                                <Form.Item label="ชื่อภาษาไทย" name="thaiName" rules={[{ required: true }]}>
+                                    <Input />
+                                </Form.Item>
+
+                                <Form.Item label="ชื่อภาษาอังกฤษ" name="engName" rules={[{ required: true }]}>
+                                    <Input />
+                                </Form.Item>
+
+                                <Form.Item label="วันที่เปิด" name="openDate">
+                                    <DatePicker style={{ width: '100%' }} />
+                                </Form.Item>
+
+                                <Form.Item label="วันที่ปิด" name="closeDate">
+                                    <DatePicker style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+
+                            <Col span={12}>
+                                <Form.Item label="ภูมิภาค" name="region">
+                                    <Select placeholder="เลือกภูมิภาค">
+                                        <Select.Option value="north">ภาคเหนือ</Select.Option>
+                                        <Select.Option value="central">ภาคกลาง</Select.Option>
+                                        <Select.Option value="south">ภาคใต้</Select.Option>
+                                        <Select.Option value="east">ภาคตะวันออก</Select.Option>
+                                        <Select.Option value="west">ภาคตะวันตก</Select.Option>
+                                        <Select.Option value="northeast">ภาคอีสาน</Select.Option>
+                                    </Select>
+                                </Form.Item>
+
+                                <Form.Item label="สถานะ" name="status">
+                                    <Select placeholder="เลือกสถานะ">
+                                        <Select.Option value="active">เปิดใช้งาน</Select.Option>
+                                        <Select.Option value="inactive">ปิดใช้งาน</Select.Option>
+                                    </Select>
+                                </Form.Item>
+
+                                <Form.Item label="รหัสที่ออกโดยสรรพากร" name="issueCode" rules={[{ required: true }]}>
+                                    <Input />
+                                </Form.Item>
+
+                                <Form.Item label="เลขที่ผู้เสียภาษีอากร" name="taxNumber" rules={[{ required: true }]}>
+                                    <Input />
+                                </Form.Item>
+
+                                <Form.Item label="รายละเอียด" name="description">
+                                    <Input.TextArea rows={3} />
+                                </Form.Item>
+
+                                <Form.Item label="ผู้จัดการสาขา" name="manager">
+                                    <Input />
+                                </Form.Item>
+
+                                <Form.Item label="เบอร์โทรศัพท์" name="phone">
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    </Card>
+
+                    <Card title="การตั้งค่าสาขา" style={{ marginBottom: 24 }}>
+                        <Row gutter={24}>
+                            <Col span={12}>
+                                <Form.Item label="การปิดระบบสาขาสิ้นวัน" name="branchCloseSystem">
+                                    <Radio.Group>
+                                        <Radio value="manual">ด้วยตัวเอง</Radio>
+                                        <Radio value="auto">อัตโนมัติ</Radio>
+                                    </Radio.Group>
+                                </Form.Item>
+
+                                <Form.Item label="การใช้งานข้ามสาขา" name="crossBranchUsage">
+                                    <Radio.Group>
+                                        <Radio value="no">ไม่ข้ามสาขา</Radio>
+                                        <Radio value="yes">ข้ามสาขา</Radio>
+                                    </Radio.Group>
+                                </Form.Item>
+
+                                <Form.Item label="เวลาปิดระบบสิ้นวัน" name="systemCloseTime">
+                                    <TimePicker style={{ width: '100%' }} format="HH:mm" />
+                                </Form.Item>
+                            </Col>
+
+                            <Col span={12}>
+                                <Form.Item label="การจดภาษี" name="taxRegistration">
+                                    <Checkbox.Group>
+                                        <Row>
+                                            <Col span={24}>
+                                                <Checkbox value="cashier">แคชเชียร์</Checkbox>
+                                            </Col>
+                                            <Col span={24}>
+                                                <Checkbox value="store">ร้านค้า</Checkbox>
+                                            </Col>
+                                        </Row>
+                                    </Checkbox.Group>
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    </Card>
+
+                    <Card title="กำหนด Header ในการพิมพิ์ใบกำกับภาษี">
+                        <Row gutter={24}>
+                            <Col span={12}>
+                                <Form.Item label="ชื่อบริษัท" name="companyName" rules={[{ required: true }]}>
+                                    <Input />
+                                </Form.Item>
+
+                                <Form.Item label="ชื่อหัวสลิป" name="slipHeader" rules={[{ required: true }]}>
+                                    <Input />
+                                </Form.Item>
+
+                                <Form.Item label="ข้อความสลิปภาษาไทย" name="slipTextThai" rules={[{ required: true }]}>
+                                    <Input.TextArea rows={3} />
+                                </Form.Item>
+                            </Col>
+
+                            <Col span={12}>
+                                <Form.Item label="ที่อยู่สำหรับออกใบกำกับภาษี" name="invoiceAddress" rules={[{ required: true }]}>
+                                    <Input.TextArea rows={4} />
+                                </Form.Item>
+
+                                <Form.Item label="ข้อความสลิปภาษาอังกฤษ" name="slipTextEng" rules={[{ required: true }]}>
+                                    <Input.TextArea rows={3} />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    </Card>
+
+                    <Form.Item style={{ textAlign: 'right', marginTop: 24 }}>
+                        <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
+                            Save
+                        </Button>
+                        <Button type="primary" danger style={{ marginLeft: 8 }} onClick={handleCancel} icon={<CloseCircleOutlined />}>
+                            Cancel
+                        </Button>
                     </Form.Item>
                 </Form>
-
-                <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
-
-                <Button onClick={showDrawer} style={{ background: '#1890ff', color: 'white' }}>
-                    Open
-                </Button>
-                <Drawer
-                    title="Basic Drawer"
-                    closable={{ 'aria-label': 'Close Button' }}
-                    onClose={onClose}
-                    open={open}
-                >
-                    <p>Some contents...</p>
-                    <p>Some contents...</p>
-                    <p>Some contents...</p>
-                </Drawer>
-
-                <Button onClick={showModal} style={{ background: '#1890ff', color: 'white' }}>
-                    Open Modal
-                </Button>
-                <Modal
-                    title="Basic Modal"
-                    closable={{ 'aria-label': 'Custom Close Button' }}
-                    open={isModalOpen}
-                    onOk={handleOk}
-                    onCancel={handleCancel}
-                >
-                    <p>Some contents...</p>
-                    <p>Some contents...</p>
-                    <p>Some contents...</p>
-                </Modal>
-                {contextHolder}
-                <Space>
-                    <Button onClick={success}>Success</Button>
-                    <Button onClick={error}>Error</Button>
-                    <Button onClick={warning}>Warning</Button>
-                </Space>
-                <Spin />
-            </Card>
-
-        </div>
+            ) : (
+                <>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+                        <div>
+                            <Button type="primary" onClick={handleAddClick} icon={<PlusCircleOutlined />}>Add</Button>
+                            <Button type="primary" danger style={{ marginLeft: 8 }} icon={<DeleteOutlined />}>Delete</Button>
+                        </div>
+                        <div style={{display: "flex", gap: 8}}>
+                            <Input.Search placeholder="ค้นหา" onSearch={onSearch} style={{ width: 200 }} />
+                            <Select placeholder="เลือกสถานะ">
+                                <Select.Option value="active">เปิดใช้งาน</Select.Option>
+                                <Select.Option value="inactive">ปิดใช้งาน</Select.Option>
+                            </Select>
+                            <Button icon={<DownloadOutlined />}>Download</Button>
+                        </div>
+                    </div>
+                    <Table
+                        rowSelection={{ type: selectionType, ...rowSelection }}
+                        columns={columns}
+                        dataSource={data}
+                    />
+                </>
+            )}
+        </Card>
     );
 }
