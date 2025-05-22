@@ -14,7 +14,7 @@ import {
     MailOutlined,
     NumberOutlined, CalendarOutlined, CheckSquareOutlined, TagsOutlined, DownOutlined,
     InfoCircleOutlined, PhoneOutlined, QuestionCircleOutlined,
-    DatabaseOutlined
+    DatabaseOutlined, ShoppingCartOutlined, LineChartOutlined
 } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -701,6 +701,96 @@ const FormBuilder = () => {
                 pageTitle: 'Product Catalog',
                 gridColumns: 1,
                 cardGroupSetting: []
+            }
+        },
+        {
+            id: 'orderProduct',
+            name: 'Product Order Form',
+            icon: <ShoppingCartOutlined />,
+            description: 'Create and manage product orders, assigning items to specific groups.',
+            fields: [
+                { id: uuidv4(), dataIndex: 'orderId', title: 'Order ID', type: 'input', rules: [{ required: true, message: 'Order ID is required!' }], filterable: true, sortable: true, cardGroup: 'orderDetails' },
+                { id: uuidv4(), dataIndex: 'customerName', title: 'Customer Name', type: 'input', rules: [{ required: true, message: 'Customer name is required!' }], filterable: true, sortable: true, cardGroup: 'orderDetails' },
+                { id: uuidv4(), dataIndex: 'orderDate', title: 'Order Date', type: 'date', rules: [{ required: true, message: 'Order date is required!' }], filterable: true, sortable: true, cardGroup: 'orderDetails' },
+                {
+                    id: uuidv4(), dataIndex: 'orderStatus', title: 'Order Status', type: 'select',
+                    rules: [{ required: true, message: 'Please select order status!' }],
+                    options: [
+                        { label: 'Pending', value: 'pending' },
+                        { label: 'Processing', value: 'processing' },
+                        { label: 'Shipped', value: 'shipped' },
+                        { label: 'Delivered', value: 'delivered' },
+                        { label: 'Cancelled', value: 'cancelled' },
+                    ],
+                    filterable: true, sortable: false, cardGroup: 'orderDetails'
+                },
+                {
+                    id: uuidv4(), dataIndex: 'productId', title: 'Product', type: 'select',
+                    rules: [{ required: true, message: 'Please select a product!' }],
+                    options: [
+                        { label: 'Laptop Model X', value: 'PROD001' },
+                        { label: 'Wireless Mouse', value: 'PROD002' },
+                        { label: 'Keyboard Pro', value: 'PROD003' },
+                    ],
+                    filterable: true, sortable: true, cardGroup: 'productInfo'
+                },
+                { id: uuidv4(), dataIndex: 'quantity', title: 'Quantity', type: 'number', rules: [{ required: true, message: 'Quantity is required!', type: 'number', min: 1 }], filterable: false, sortable: true, cardGroup: 'productInfo' },
+                { id: uuidv4(), dataIndex: 'unitPrice', title: 'Unit Price', type: 'number', rules: [{ type: 'number', min: 0 }], filterable: false, sortable: true, cardGroup: 'productInfo' },
+                { id: uuidv4(), dataIndex: 'shippingAddress', title: 'Shipping Address', type: 'textArea', rules: [], filterable: false, sortable: false, cardGroup: 'shippingInfo' },
+                { id: uuidv4(), dataIndex: 'billingAddress', title: 'Billing Address', type: 'textArea', rules: [], filterable: false, sortable: false, cardGroup: 'shippingInfo' },
+            ],
+            settings: {
+                title: 'Product Order Management',
+                layout: 'horizontal',
+                labelCol: { span: 8 },
+                wrapperCol: { span: 16 },
+                modalTitle: 'Product Order Form',
+                pageTitle: 'Product Orders',
+                gridColumns: 1,
+                cardGroupSetting: [
+                    { key: 'orderDetails', title: 'Order Details', description: 'Basic order information', layout: 'horizontal', gridColumns: 1, labelCol: { span: 6 }, wrapperCol: { span: 18 } },
+                    { key: 'productInfo', title: 'Product Information', description: 'Details of products ordered', layout: 'horizontal', gridColumns: 2, labelCol: { span: 8 }, wrapperCol: { span: 16 } },
+                    { key: 'shippingInfo', title: 'Address Information', description: 'Shipping and billing details', layout: 'vertical', gridColumns: 1, labelCol: { span: 24 }, wrapperCol: { span: 24 } },
+                ]
+            }
+        },
+        {
+            id: 'salesReport',
+            name: 'Sales Report Form',
+            icon: <LineChartOutlined />,
+            description: 'Configure and view sales report data with grouped sections.',
+            fields: [
+                { id: uuidv4(), dataIndex: 'reportName', title: 'Report Name', type: 'input', rules: [{ required: true, message: 'Report name is required!' }], filterable: true, sortable: false, cardGroup: 'reportConfig' },
+                {
+                    id: uuidv4(), dataIndex: 'reportType', title: 'Report Type', type: 'select',
+                    options: [
+                        { label: 'Daily Summary', value: 'daily' },
+                        { label: 'Weekly Summary', value: 'weekly' },
+                        { label: 'Monthly Summary', value: 'monthly' },
+                        { label: 'Custom Range', value: 'custom' },
+                    ],
+                    rules: [{ required: true, message: 'Report type is required!' }],
+                    filterable: true, sortable: false, cardGroup: 'reportConfig'
+                },
+                { id: uuidv4(), dataIndex: 'dateFrom', title: 'Date From', type: 'date', rules: [{ required: true, message: 'Start date is required!' }], filterable: false, sortable: false, cardGroup: 'reportConfig' },
+                { id: uuidv4(), dataIndex: 'dateTo', title: 'Date To', type: 'date', rules: [{ required: true, message: 'End date is required!' }], filterable: false, sortable: false, cardGroup: 'reportConfig' },
+                { id: uuidv4(), dataIndex: 'totalSales', title: 'Total Sales', type: 'number', rules: [], filterable: false, sortable: true, cardGroup: 'reportOutput' },
+                { id: uuidv4(), dataIndex: 'numberOfTransactions', title: 'Number of Transactions', type: 'number', rules: [], filterable: false, sortable: true, cardGroup: 'reportOutput' },
+                { id: uuidv4(), dataIndex: 'averageTransactionValue', title: 'Avg. Transaction Value', type: 'number', rules: [], filterable: false, sortable: true, cardGroup: 'reportOutput' },
+                { id: uuidv4(), dataIndex: 'generatedOn', title: 'Generated On', type: 'datetime', rules: [], filterable: false, sortable: false, cardGroup: 'reportOutput' },
+            ],
+            settings: {
+                title: 'Sales Report Generation',
+                layout: 'vertical',
+                labelCol: { span: 24 },
+                wrapperCol: { span: 24 },
+                modalTitle: 'Sales Report Parameters',
+                pageTitle: 'Sales Reports',
+                gridColumns: 1,
+                cardGroupSetting: [
+                    { key: 'reportConfig', title: 'Report Configuration', description: 'Set parameters for the report', layout: 'horizontal', gridColumns: 2, labelCol: { span: 8 }, wrapperCol: { span: 16 } },
+                    { key: 'reportOutput', title: 'Report Output', description: 'Summary of the generated report', layout: 'vertical', gridColumns: 1, labelCol: { span: 6 }, wrapperCol: { span: 18 } },
+                ]
             }
         },
         {
