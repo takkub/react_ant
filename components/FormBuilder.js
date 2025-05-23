@@ -476,8 +476,8 @@ export default function ${componentName}() {
 
   return (
     <>
-      <Button 
-        type="primary" 
+      <Button
+        type="primary"
         icon={<CodeOutlined />}
         onClick={() => setIsModalVisible(true)}
       >
@@ -491,8 +491,8 @@ export default function ${componentName}() {
         width={1000}
         footer={null}
       >
-        <Tabs 
-          activeKey={activeTab} 
+        <Tabs
+          activeKey={activeTab}
           onChange={setActiveTab}
           items={[
             {
@@ -501,14 +501,14 @@ export default function ${componentName}() {
               children: (
                 <Card>
                   <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button 
-                      icon={<CopyOutlined />} 
+                    <Button
+                      icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(generatePageCode())}
                     >
                       Copy
                     </Button>
-                    <Button 
-                      icon={<DownloadOutlined />} 
+                    <Button
+                      icon={<DownloadOutlined />}
                       onClick={() => downloadCode(generatePageCode(), `${sanitizedTableName}.page.js`)}
                     >
                       Download
@@ -526,14 +526,14 @@ export default function ${componentName}() {
               children: (
                 <Card>
                   <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button 
-                      icon={<CopyOutlined />} 
+                    <Button
+                      icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(generateRouteCode())}
                     >
                       Copy
                     </Button>
-                    <Button 
-                      icon={<DownloadOutlined />} 
+                    <Button
+                      icon={<DownloadOutlined />}
                       onClick={() => downloadCode(generateRouteCode(), `${sanitizedTableName}.route.js`)}
                     >
                       Download
@@ -551,14 +551,14 @@ export default function ${componentName}() {
               children: (
                 <Card>
                   <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button 
-                      icon={<CopyOutlined />} 
+                    <Button
+                      icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(generateSqlCode())}
                     >
                       Copy
                     </Button>
-                    <Button 
-                      icon={<DownloadOutlined />} 
+                    <Button
+                      icon={<DownloadOutlined />}
                       onClick={() => downloadCode(generateSqlCode(), `${sanitizedTableName}.sql`)}
                     >
                       Download
@@ -2060,6 +2060,11 @@ const FormBuilder = () => {
                 items={[
                     {
                         key: '1',
+                        label: 'Settings',
+                        children: renderSettingsForm()
+                    },
+                    {
+                        key: '2',
                         label: 'Fields',
                         children: (
                             <>
@@ -2094,11 +2099,6 @@ const FormBuilder = () => {
                                 {renderFieldsTable()}
                             </>
                         )
-                    },
-                    {
-                        key: '2',
-                        label: 'Settings',
-                        children: renderSettingsForm()
                     },
                     {
                         key: '3',

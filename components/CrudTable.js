@@ -548,7 +548,7 @@ const CrudTable = ({
                 {filters.map((filter, index) => {
                     const fields = Array.isArray(filter.field) ? filter.field : [filter.field];
                     const fieldKey = fields[0]; // Use the first field as the key for the filter value
-
+                    
                     switch (filter.type) {
                         case 'select':
                             return (
@@ -633,36 +633,40 @@ const CrudTable = ({
     return (
         <div className="crud-table">
             <Card>
-                <div className="flex justify-between items-center mb-4 flex-wrap">
-                    <Space className="mb-4 mt-2">
-                        <Button
-                            type="primary"
-                            icon={<PlusOutlined />}
-                            onClick={showAddForm}
-                        >
-                            Create
-                        </Button>
-                        <Popconfirm
-                            title="Are you sure you want to delete these records?"
-                            onConfirm={handleDeleteSelected}
-                            okText="Yes"
-                            cancelText="No"
-                            disabled={selectedRowKeys.length === 0}
-                        >
+                <Row className="mb-4">
+                    <Col  flex="100px">
+                        <Space className="mb-4 mt-2">
                             <Button
-                                danger
-                                icon={<DeleteOutlined />}
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={showAddForm}
+                            >
+                                Create
+                            </Button>
+                            <Popconfirm
+                                title="Are you sure you want to delete these records?"
+                                onConfirm={handleDeleteSelected}
+                                okText="Yes"
+                                cancelText="No"
                                 disabled={selectedRowKeys.length === 0}
                             >
-                                Delete
-                            </Button>
-                        </Popconfirm>
-                    </Space>
-                </div>
-                {/* Filters */}
-                {filters.length > 0 && (
-                    renderFilters()
-                )}
+                                <Button
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    disabled={selectedRowKeys.length === 0}
+                                >
+                                    Delete
+                                </Button>
+                            </Popconfirm>
+                        </Space>
+                    </Col>
+                    {/* Filters */}
+                    <Col flex="auto">
+                    {filters.length > 0 && (
+                        renderFilters()
+                    )}
+                    </Col>
+                </Row>
 
                 {/* Table */}
                 <Table
