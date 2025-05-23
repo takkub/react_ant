@@ -526,7 +526,7 @@ export default function BranchManagement() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const response = await api.get('branch_management');
+                const response = await api.get('test');
                 console.log('API response:', response);
                 if (response.data && response.data.length > 0) {
                     // If the API returns data with proper format

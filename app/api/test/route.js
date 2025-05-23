@@ -46,6 +46,31 @@ export const GET = async (req) => {
                 "invoice_address": "123 ถนนสุขุมวิท แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพฯ 10110",
                 "slip_text_th": "ขอบคุณที่ใช้บริการ",
                 "slip_text_en": "Thank you for your business"
+            },
+            {
+                "id": 2,
+                "type": "main_branch",
+                "status": "active",
+                "branch_code": "001",
+                "code_revenue": "REV001",
+                "branch_name_th": "สำนักงานใหญ่",
+                "tax_number": "0105537001234",
+                "branch_name_en": "Head Office",
+                "branch_detail": "สำนักงานใหญ่ ตั้งอยู่ที่กรุงเทพฯ ให้บริการลูกค้าทั่วประเทศ",
+                "open_date": "2010-05-01",
+                "close_date": null,
+                "manager": "นายสมชาย ใจดี",
+                "phone": "02-123-4567",
+                "region": "กรุงเทพมหานคร",
+                "system_shutdown": "manual",
+                "cross_branch": "yes",
+                "time_system_shutdown": "2025-05-20T18:00:00",
+                "tax_register": "จดทะเบียนภาษีมูลค่าเพิ่ม",
+                "company_name": "บริษัท เอ บี ซี จำกัด",
+                "slip_header_name": "บริษัท เอ บี ซี จำกัด (สำนักงานใหญ่)",
+                "invoice_address": "123 ถนนสุขุมวิท แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพฯ 10110",
+                "slip_text_th": "ขอบคุณที่ใช้บริการ",
+                "slip_text_en": "Thank you for your business"
             }
 
         ]
