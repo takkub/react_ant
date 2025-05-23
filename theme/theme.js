@@ -1,3 +1,5 @@
+import { Table } from "antd";
+
 export const lightTheme = {
     token: {
         colorPrimary: '#0067ff', // สีหลัก
@@ -73,6 +75,10 @@ export const WSOLTheme = {
             itemHoverBg: "rgb(183, 212, 51)",
             itemSelectedBg: "rgb(0,105,100)",
             itemSelectedColor: "rgb(255, 255, 255)"
+        },
+        Table: {
+            rowSelectedBg: "rgb(216, 216, 216)",
+            rowSelectedHoverBg: "rgb(175, 175, 175)"
         }
     }
 };
