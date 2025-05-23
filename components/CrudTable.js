@@ -8,7 +8,7 @@ import {
 } from 'antd';
 import {
     PlusOutlined, DeleteOutlined,
-     SearchOutlined, EditOutlined,
+    SearchOutlined, EditOutlined,
     DownloadOutlined, FileExcelOutlined, FileTextOutlined
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
@@ -47,12 +47,12 @@ const CrudTable = ({
         // Apply filters to data - Moving the function inside useEffect to avoid dependency warnings
         const applyFilters = () => {
             let result = [...data];
-    
+
             // Apply filter values
             Object.entries(filterValues).forEach(([key, value]) => {
                 if (value !== undefined && value !== null && value !== '') {
                     const filter = filters.find(f => f.field === key || (Array.isArray(f.field) && f.field.includes(key)));
-                    
+
                     if (filter) {
                         if (filter.type === 'select' || filter.type === 'radio') {
                             result = result.filter(record => {
@@ -64,7 +64,7 @@ const CrudTable = ({
                         } else if (filter.type === 'dateRange' && Array.isArray(value) && value.length === 2) {
                             const startDate = value[0].startOf('day');
                             const endDate = value[1].endOf('day');
-                            
+
                             result = result.filter(record => {
                                 const recordDate = dayjs(record[key]);
                                 return recordDate.isAfter(startDate) && recordDate.isBefore(endDate);
@@ -75,12 +75,12 @@ const CrudTable = ({
                     }
                 }
             });
-    
+
             // Apply searchText to all searchable fields
             if (searchText) {
                 const searchFilters = filters.filter(f => f.type === 'text');
                 const searchFields = searchFilters.flatMap(f => Array.isArray(f.field) ? f.field : [f.field]);
-                
+
                 result = result.filter(record => {
                     return searchFields.some(field => {
                         const value = record[field];
@@ -91,22 +91,22 @@ const CrudTable = ({
                     });
                 });
             }
-    
+
             setFilteredData(result);
         };
-    
+
         applyFilters();
     }, [data, filterValues, searchText, filters]); // Added 'filters' to dependency array
 
     // Function to manually trigger filtering (accessible outside useEffect)
     const applyFiltersManually = () => {
         let result = [...data];
-    
+
         // Apply filter values
         Object.entries(filterValues).forEach(([key, value]) => {
             if (value !== undefined && value !== null && value !== '') {
                 const filter = filters.find(f => f.field === key || (Array.isArray(f.field) && f.field.includes(key)));
-                
+
                 if (filter) {
                     if (filter.type === 'select' || filter.type === 'radio') {
                         result = result.filter(record => {
@@ -118,7 +118,7 @@ const CrudTable = ({
                     } else if (filter.type === 'dateRange' && Array.isArray(value) && value.length === 2) {
                         const startDate = value[0].startOf('day');
                         const endDate = value[1].endOf('day');
-                        
+
                         result = result.filter(record => {
                             const recordDate = dayjs(record[key]);
                             return recordDate.isAfter(startDate) && recordDate.isBefore(endDate);
@@ -129,12 +129,12 @@ const CrudTable = ({
                 }
             }
         });
-    
+
         // Apply searchText to all searchable fields
         if (searchText) {
             const searchFilters = filters.filter(f => f.type === 'text');
             const searchFields = searchFilters.flatMap(f => Array.isArray(f.field) ? f.field : [f.field]);
-            
+
             result = result.filter(record => {
                 return searchFields.some(field => {
                     const value = record[field];
@@ -145,10 +145,10 @@ const CrudTable = ({
                 });
             });
         }
-    
+
         setFilteredData(result);
     };
-    
+
     // Reset all filters
     const resetFilters = () => {
         setFilterValues({});
@@ -168,20 +168,20 @@ const CrudTable = ({
     const handleFormSubmit = async () => {
         try {
             const values = await form.validateFields();
-            
+
             // Format dates if needed
             Object.keys(values).forEach(key => {
                 if (values[key] instanceof dayjs) {
                     values[key] = values[key].toDate();
                 }
             });
-            
+
             if (modalMode === 'add') {
                 await onAdd(values);
             } else if (modalMode === 'edit') {
                 await onEdit(editingKey, values);
             }
-            
+
             setIsModalVisible(false);
             form.resetFields();
         } catch (error) {
@@ -200,7 +200,7 @@ const CrudTable = ({
     // Show edit form
     const showEditForm = (record) => {
         setModalMode('edit');
-        
+
         // Use the primary key from rowkeys if available
         let editKey = record.key;
         for (const key of rowkeys) {
@@ -209,12 +209,12 @@ const CrudTable = ({
                 break;
             }
         }
-        
+
         setEditingKey(editKey);
-        
+
         // Format date fields before setting form values
         const formValues = { ...record };
-        
+
         // Check if form is defined before attempting to use it
         if (form) {
             // Set form values
@@ -237,10 +237,10 @@ const CrudTable = ({
     const handleDeleteSingle = async (record) => {
         // Extract key values from the record using the rowkeys
         const keys = rowkeys.map(key => record[key]).filter(val => val !== undefined);
-        
+
         // If no keys were found, fall back to record.key
         const keyToDelete = keys.length > 0 ? keys[0] : record.key;
-        
+
         await handleDelete([keyToDelete]);
     };
 
@@ -271,20 +271,20 @@ const CrudTable = ({
 
         // Get columns
         const columns = customColumns.columns;
-        
+
         // Prepare data for export
         const exportData = dataToExport.map(record => {
             const row = {};
             columns.forEach(col => {
                 let value = record[col.dataIndex];
-                
+
                 // Format special types
                 if (Array.isArray(value)) {
                     value = value.join(', ');
                 } else if (col.dataIndex === 'createdAt' && value) {
                     value = dayjs(value).format('YYYY-MM-DD');
                 }
-                
+
                 row[col.title] = value;
             });
             return row;
@@ -295,10 +295,10 @@ const CrudTable = ({
             const worksheet = XLSX.utils.json_to_sheet(exportData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
-            
+
             // Generate filename
             const fileName = `${title.replace(/\s+/g, '-').toLowerCase()}-${dayjs().format('YYYY-MM-DD')}.xlsx`;
-            
+
             // Trigger download
             XLSX.writeFile(workbook, fileName);
             message.success(`Exported ${dataToExport.length} records to Excel`);
@@ -306,7 +306,7 @@ const CrudTable = ({
             // Export to CSV
             const worksheet = XLSX.utils.json_to_sheet(exportData);
             const csv = XLSX.utils.sheet_to_csv(worksheet);
-            
+
             // Create download link
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -317,7 +317,7 @@ const CrudTable = ({
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
+
             message.success(`Exported ${dataToExport.length} records to CSV`);
         }
     };
@@ -409,7 +409,7 @@ const CrudTable = ({
             );
         }
     };
-    
+
     // Helper function to render a single form item
     const renderFormItem = (field, key, itemLayoutSettings) => {
         const isDisabled = typeof field.disabled === 'function'
@@ -430,7 +430,7 @@ const CrudTable = ({
                 formItemComponent = <TextArea rows={field.rows || 4} disabled={isDisabled} />;
                 break;
             case 'number':
-                formItemComponent = <Input type="number" disabled={isDisabled} style={{width: '100%'}} />;
+                formItemComponent = <Input type="number" disabled={isDisabled} style={{ width: '100%' }} />;
                 break;
             case 'select':
                 formItemComponent = (
@@ -449,7 +449,7 @@ const CrudTable = ({
                 formItemComponent = <DatePicker style={{ width: '100%' }} disabled={isDisabled} format={field.format || "YYYY-MM-DD"} />;
                 break;
             case 'dateRange':
-                formItemComponent = <RangePicker style={{ width: '100%' }} disabled={isDisabled} format={field.format || "YYYY-MM-DD"}/>;
+                formItemComponent = <RangePicker style={{ width: '100%' }} disabled={isDisabled} format={field.format || "YYYY-MM-DD"} />;
                 break;
             case 'checkbox': // This is for a single checkbox. Checkbox.Group would be different.
                 formItemComponent = <Checkbox disabled={isDisabled}>{field.checkboxLabel || ''}</Checkbox>;
@@ -461,7 +461,7 @@ const CrudTable = ({
                         disabled={isDisabled}
                         options={field.options || []} // Options can still be provided as suggestions
                         tokenSeparators={[',']}
-                        // tagRender prop can be used for custom tag appearance if needed
+                    // tagRender prop can be used for custom tag appearance if needed
                     />
                 );
                 break;
@@ -478,7 +478,7 @@ const CrudTable = ({
 
         const columnDef = customColumns.columns.find(col => col.dataIndex === field.dataIndex);
         const label = field.label || columnDef?.title || field.dataIndex;
-        
+
         // Determine layout for this specific item
         const itemSpecificLayout = itemLayoutSettings?.layout || customColumns.form?.settings?.layout || 'horizontal';
         const itemLabelCol = itemLayoutSettings?.labelCol || customColumns.form?.settings?.labelCol;
@@ -544,16 +544,16 @@ const CrudTable = ({
     // Render filter components
     const renderFilters = () => {
         return (
-            <Row gutter={[16, 16]} className="mb-4">
+            <Row gutter={8} className="mb-4" justify="end">
                 {filters.map((filter, index) => {
                     const fields = Array.isArray(filter.field) ? filter.field : [filter.field];
                     const fieldKey = fields[0]; // Use the first field as the key for the filter value
-                    
+
                     switch (filter.type) {
                         case 'select':
                             return (
-                                <Col key={index} xs={24} sm={12} md={8} lg={6}>
-                                    <Form.Item className="mb-0">
+                                <Col key={index} xs={24} sm={12} md={6} lg={4}>
+                                    <Form.Item className="mb-0" style={{ marginBottom: 8 }}>
                                         <Select
                                             placeholder={`Select ${filter.title}`}
                                             allowClear
@@ -573,7 +573,7 @@ const CrudTable = ({
                         case 'dateRange':
                             return (
                                 <Col key={index} xs={24} sm={12} md={8} lg={6}>
-                                    <Form.Item className="mb-0">
+                                    <Form.Item className="mb-0" style={{ marginBottom: 8 }}>
                                         <RangePicker
                                             style={{ width: '100%' }}
                                             value={filterValues[fieldKey]}
@@ -589,8 +589,8 @@ const CrudTable = ({
                             );
                         case 'text':
                             return (
-                                <Col key={index} xs={24} sm={12} md={8} lg={6}>
-                                    <Form.Item className="mb-0">
+                                <Col key={index} xs={24} sm={12} md={6} lg={4}>
+                                    <Form.Item className="mb-0" style={{ marginBottom: 8 }}>
                                         <Input
                                             placeholder={`Search ${filter.title}`}
                                             prefix={<SearchOutlined />}
@@ -605,7 +605,7 @@ const CrudTable = ({
                             return null;
                     }
                 })}
-                <Col xs={24} sm={12} md={8} lg={6} className="flex items-end">
+                <Col >
                     <Button onClick={resetFilters} className="mb-[24px]">Reset Filters</Button>
                 </Col>
             </Row>
@@ -633,38 +633,42 @@ const CrudTable = ({
     return (
         <div className="crud-table">
             <Card>
-                <Row className="mb-4">
-                    <Col  flex="100px">
-                        <Space className="mb-4 mt-2">
-                            <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={showAddForm}
-                            >
-                                Create
-                            </Button>
-                            <Popconfirm
-                                title="Are you sure you want to delete these records?"
-                                onConfirm={handleDeleteSelected}
-                                okText="Yes"
-                                cancelText="No"
-                                disabled={selectedRowKeys.length === 0}
-                            >
+                <Row className="mb-4" style={{ marginBottom: 20 }}>
+                    <Col span={8}>
+                        <Row gutter={8}>
+                            <Col style={{ marginBottom: 8 }}>
                                 <Button
-                                    danger
-                                    icon={<DeleteOutlined />}
+                                    type="primary"
+                                    icon={<PlusOutlined />}
+                                    onClick={showAddForm}
+                                >
+                                    Create
+                                </Button>
+                            </Col>
+                            <Col style={{ marginBottom: 8 }}>
+                                <Popconfirm
+                                    title="Are you sure you want to delete these records?"
+                                    onConfirm={handleDeleteSelected}
+                                    okText="Yes"
+                                    cancelText="No"
                                     disabled={selectedRowKeys.length === 0}
                                 >
-                                    Delete
-                                </Button>
-                            </Popconfirm>
-                        </Space>
+                                    <Button
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        disabled={selectedRowKeys.length === 0}
+                                    >
+                                        Delete
+                                    </Button>
+                                </Popconfirm>
+                            </Col>
+                        </Row>
                     </Col>
                     {/* Filters */}
                     <Col flex="auto">
-                    {filters.length > 0 && (
-                        renderFilters()
-                    )}
+                        {filters.length > 0 && (
+                            renderFilters()
+                        )}
                     </Col>
                 </Row>
 
@@ -690,13 +694,13 @@ const CrudTable = ({
                 />
 
                 {/* Export Button */}
-                <div className="mt-4">
+                <div style={{ marginTop: 24 }}>
                     <Dropdown menu={exportMenu} trigger={['click']}>
-                        <Button icon={<DownloadOutlined />}>
+                        <Button icon={<DownloadOutlined />} className='mr-8'>
                             Export
                         </Button>
                     </Dropdown>
-                    <Text type="secondary" className="ml-2">
+                    <Text type="secondary" className="ml-2" style={{ marginLeft: 8 }}>
                         {selectedRowKeys.length > 0
                             ? `${selectedRowKeys.length} record(s) selected`
                             : 'Export all records'}
