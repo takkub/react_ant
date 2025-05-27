@@ -273,7 +273,7 @@ export default function ProductCatalog() {
                     field: 'isActive',
                     type: 'select',
                     options: [
-                        { label: 'Any Status', value: null},
+                        { label: 'Any Status', value: ''}, // Changed null to empty string
                         { label: 'Active', value: true },
                         { label: 'Inactive', value: false },
                     ],

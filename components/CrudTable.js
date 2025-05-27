@@ -118,59 +118,6 @@ const CrudTable = ({
         applyFilters();
     }, [data, filterValues, searchText, tableFilterFields]);
 
-    const applyFiltersManually = () => {
-        let result = [...data];
-
-        Object.entries(filterValues).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== '') {
-                const filter = tableFilterFields.find(f => f.field === key || (Array.isArray(f.field) && f.field.includes(key)));
-
-                if (filter) {
-                    if (filter.type === 'select' || filter.type === 'radio') {
-                        result = result.filter(record => {
-                            if (Array.isArray(record[key])) {
-                                return record[key].includes(value);
-                            }
-                            return record[key] === value;
-                        });
-                    } else if (filter.type === 'dateRange' && Array.isArray(value) && value.length === 2) {
-                        const startDate = value[0].startOf('day');
-                        const endDate = value[1].endOf('day');
-
-                        result = result.filter(record => {
-                            const recordDate = dayjs(record[key]);
-                            return recordDate.isAfter(startDate) && recordDate.isBefore(endDate);
-                        });
-                    }
-                }
-            }
-        });
-
-        if (searchText) {
-            const searchFilters = tableFilterFields.filter(f => f.type === 'text');
-            const searchFields = searchFilters.flatMap(f => Array.isArray(f.field) ? f.field : [f.field]);
-
-            result = result.filter(record => {
-                return searchFields.some(field => {
-                    const value = record[field];
-                    if (typeof value === 'string') {
-                        return value.toLowerCase().includes(searchText.toLowerCase());
-                    }
-                    return false;
-                });
-            });
-        }
-
-        setFilteredData(result);
-    };
-
-    const resetFilters = () => {
-        setFilterValues({});
-        setSearchText('');
-        form.resetFields();
-        setTimeout(() => applyFiltersManually(), 0);
-    };
-
     const rowSelection = {
         selectedRowKeys,
         onChange: (keys) => setSelectedRowKeys(keys),
@@ -634,9 +581,6 @@ const CrudTable = ({
                             return null;
                     }
                 })}
-                <Col>
-                    <Button onClick={resetFilters} className="mb-[24px]">Reset Filters</Button>
-                </Col>
             </Row>
         );
     };
@@ -662,7 +606,7 @@ const CrudTable = ({
         <div className="crud-table">
             <Card>
                 <Row className="mb-4" style={{ marginBottom: 20 }}>
-                    <Col span={8}>
+                    <Col span={4}>
                         <Row gutter={8}>
                             <Col style={{ marginBottom: 8 }}>
                                 <Button
