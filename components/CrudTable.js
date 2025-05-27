@@ -1,9 +1,9 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react'; // Added useMemo
 import {
     Table, Button, Space, Modal, Form, Input,
     Select, DatePicker, Checkbox, message, Card,
-    Row, Col, Tag, Tooltip, Dropdown, Typography,
+    Row, Col, Tooltip, Dropdown, Typography, // Removed Tag
     Popconfirm, Radio
 } from 'antd';
 import {
@@ -14,21 +14,19 @@ import {
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
 
-const { Title, Text } = Typography;
+const { Text } = Typography; // Removed Title
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
 const CrudTable = ({
     title,
     data,
-    setData,
     onAdd,
     onEdit,
     onDelete,
     onExport,
     loading = false,
     customColumns = { columns: [] },
-    filters = [],
     rowkeys = ['key']
 }) => {
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
@@ -40,11 +38,10 @@ const CrudTable = ({
     const [filteredData, setFilteredData] = useState(data);
     const [searchText, setSearchText] = useState('');
 
-    
+    const tableFilterFields = useMemo(() => customColumns.filters?.fields || [], [customColumns.filters?.fields]); // Wrapped in useMemo
+
     const [tablePagination, setTablePagination] = useState(() => {
-        // Make sure pageSize options are numbers, not strings
-        const paginationConfig = customColumns?.pagination ;
-        // Convert pageSizeOptions to numbers if they're strings
+        const paginationConfig = customColumns?.pagination;
         if (paginationConfig.pageSizeOptions) {
             paginationConfig.pageSizeOptions = paginationConfig.pageSizeOptions.map(size =>
                 typeof size === 'string' ? parseInt(size, 10) : size
@@ -54,9 +51,7 @@ const CrudTable = ({
         return {
             ...paginationConfig,
             current: 1,
-            // Make sure these handlers are defined
             onChange: (page, pageSize) => {
-                // console.log(`Page changed to ${page}, size: ${pageSize}`);
                 setTablePagination(prev => ({
                     ...prev,
                     current: page,
@@ -64,26 +59,22 @@ const CrudTable = ({
                 }));
             },
             onShowSizeChange: (current, size) => {
-                // console.log(`Size changed to ${size}`);
                 setTablePagination(prev => ({
                     ...prev,
-                    current: 1, // Reset to first page when changing page size
+                    current: 1,
                     pageSize: size
                 }));
             }
         };
     });
-    
-    
+
     useEffect(() => {
-        // Apply filters to data - Moving the function inside useEffect to avoid dependency warnings
         const applyFilters = () => {
             let result = [...data];
 
-            // Apply filter values
             Object.entries(filterValues).forEach(([key, value]) => {
                 if (value !== undefined && value !== null && value !== '') {
-                    const filter = filters.find(f => f.field === key || (Array.isArray(f.field) && f.field.includes(key)));
+                    const filter = tableFilterFields.find(f => f.field === key || (Array.isArray(f.field) && f.field.includes(key)));
 
                     if (filter) {
                         if (filter.type === 'select' || filter.type === 'radio') {
@@ -101,16 +92,13 @@ const CrudTable = ({
                                 const recordDate = dayjs(record[key]);
                                 return recordDate.isAfter(startDate) && recordDate.isBefore(endDate);
                             });
-                        } else if (filter.type === 'text') {
-                            // This should be handled by the searchText logic below
                         }
                     }
                 }
             });
 
-            // Apply searchText to all searchable fields
             if (searchText) {
-                const searchFilters = filters.filter(f => f.type === 'text');
+                const searchFilters = tableFilterFields.filter(f => f.type === 'text');
                 const searchFields = searchFilters.flatMap(f => Array.isArray(f.field) ? f.field : [f.field]);
 
                 result = result.filter(record => {
@@ -128,16 +116,14 @@ const CrudTable = ({
         };
 
         applyFilters();
-    }, [data, filterValues, searchText, filters]); // Added 'filters' to dependency array
+    }, [data, filterValues, searchText, tableFilterFields]);
 
-    // Function to manually trigger filtering (accessible outside useEffect)
     const applyFiltersManually = () => {
         let result = [...data];
 
-        // Apply filter values
         Object.entries(filterValues).forEach(([key, value]) => {
             if (value !== undefined && value !== null && value !== '') {
-                const filter = filters.find(f => f.field === key || (Array.isArray(f.field) && f.field.includes(key)));
+                const filter = tableFilterFields.find(f => f.field === key || (Array.isArray(f.field) && f.field.includes(key)));
 
                 if (filter) {
                     if (filter.type === 'select' || filter.type === 'radio') {
@@ -155,16 +141,13 @@ const CrudTable = ({
                             const recordDate = dayjs(record[key]);
                             return recordDate.isAfter(startDate) && recordDate.isBefore(endDate);
                         });
-                    } else if (filter.type === 'text') {
-                        // This should be handled by the searchText logic below
                     }
                 }
             }
         });
 
-        // Apply searchText to all searchable fields
         if (searchText) {
-            const searchFilters = filters.filter(f => f.type === 'text');
+            const searchFilters = tableFilterFields.filter(f => f.type === 'text');
             const searchFields = searchFilters.flatMap(f => Array.isArray(f.field) ? f.field : [f.field]);
 
             result = result.filter(record => {
@@ -181,27 +164,22 @@ const CrudTable = ({
         setFilteredData(result);
     };
 
-    // Reset all filters
     const resetFilters = () => {
         setFilterValues({});
         setSearchText('');
         form.resetFields();
-        // Apply filters after resetting to show unfiltered data
         setTimeout(() => applyFiltersManually(), 0);
     };
 
-    // Row selection configuration
     const rowSelection = {
         selectedRowKeys,
         onChange: (keys) => setSelectedRowKeys(keys),
     };
 
-    // Handle form submission
     const handleFormSubmit = async () => {
         try {
             const values = await form.validateFields();
 
-            // Format dates if needed
             Object.keys(values).forEach(key => {
                 if (values[key] instanceof dayjs) {
                     values[key] = values[key].toDate();
@@ -221,7 +199,6 @@ const CrudTable = ({
         }
     };
 
-    // Show add form
     const showAddForm = () => {
         setModalMode('add');
         setEditingKey(null);
@@ -229,11 +206,9 @@ const CrudTable = ({
         setIsModalVisible(true);
     };
 
-    // Show edit form
     const showEditForm = (record) => {
         setModalMode('edit');
 
-        // Use the primary key from rowkeys if available
         let editKey = record.key;
         for (const key of rowkeys) {
             if (record[key] !== undefined && record[key] !== null) {
@@ -244,12 +219,9 @@ const CrudTable = ({
 
         setEditingKey(editKey);
 
-        // Format date fields before setting form values
         const formValues = { ...record };
 
-        // Check if form is defined before attempting to use it
         if (form) {
-            // Set form values
             form.setFieldsValue(formValues);
         } else {
             console.error("Form instance is not properly initialized");
@@ -257,7 +229,6 @@ const CrudTable = ({
         setIsModalVisible(true);
     };
 
-    // Handle delete
     const handleDelete = async (keys) => {
         if (Array.isArray(keys) && keys.length > 0) {
             await onDelete(keys);
@@ -265,18 +236,13 @@ const CrudTable = ({
         }
     };
 
-    // Handle delete of a single record
     const handleDeleteSingle = async (record) => {
-        // Extract key values from the record using the rowkeys
         const keys = rowkeys.map(key => record[key]).filter(val => val !== undefined);
-
-        // If no keys were found, fall back to record.key
         const keyToDelete = keys.length > 0 ? keys[0] : record.key;
 
         await handleDelete([keyToDelete]);
     };
 
-    // Handle delete of selected records
     const handleDeleteSelected = async () => {
         if (selectedRowKeys.length > 0) {
             await handleDelete(selectedRowKeys);
@@ -285,7 +251,6 @@ const CrudTable = ({
         }
     };
 
-    // Handle export
     const handleExport = (type) => {
         if (typeof onExport === 'function') {
             onExport(filteredData, selectedRowKeys);
@@ -301,16 +266,13 @@ const CrudTable = ({
             return;
         }
 
-        // Get columns
         const columns = customColumns.columns;
 
-        // Prepare data for export
         const exportData = dataToExport.map(record => {
             const row = {};
             columns.forEach(col => {
                 let value = record[col.dataIndex];
 
-                // Format special types
                 if (Array.isArray(value)) {
                     value = value.join(', ');
                 } else if (col.dataIndex === 'createdAt' && value) {
@@ -323,23 +285,18 @@ const CrudTable = ({
         });
 
         if (type === 'excel') {
-            // Export to Excel
             const worksheet = XLSX.utils.json_to_sheet(exportData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
 
-            // Generate filename
             const fileName = `${title.replace(/\s+/g, '-').toLowerCase()}-${dayjs().format('YYYY-MM-DD')}.xlsx`;
 
-            // Trigger download
             XLSX.writeFile(workbook, fileName);
             message.success(`Exported ${dataToExport.length} records to Excel`);
         } else if (type === 'csv') {
-            // Export to CSV
             const worksheet = XLSX.utils.json_to_sheet(exportData);
             const csv = XLSX.utils.sheet_to_csv(worksheet);
 
-            // Create download link
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -611,13 +568,15 @@ const CrudTable = ({
         return columns;
     };
 
+    const finalColumns = useMemo(() => buildColumns(), [customColumns.columns, rowkeys]); // Memoize finalColumns
+
     // Render filter components
     const renderFilters = () => {
         return (
             <Row gutter={8} className="mb-4" justify="end">
-                {filters.map((filter, index) => {
+                {tableFilterFields.map((filter, index) => {
                     const fields = Array.isArray(filter.field) ? filter.field : [filter.field];
-                    const fieldKey = fields[0]; // Use the first field as the key for the filter value
+                    const fieldKey = fields[0];
 
                     switch (filter.type) {
                         case 'select':
@@ -675,14 +634,13 @@ const CrudTable = ({
                             return null;
                     }
                 })}
-                <Col >
+                <Col>
                     <Button onClick={resetFilters} className="mb-[24px]">Reset Filters</Button>
                 </Col>
             </Row>
         );
     };
 
-    // Export menu items
     const exportMenu = {
         items: [
             {
@@ -734,36 +692,31 @@ const CrudTable = ({
                             </Col>
                         </Row>
                     </Col>
-                    {/* Filters */}
                     <Col flex="auto">
-                        {filters.length > 0 && (
+                        {tableFilterFields.length > 0 && (
                             renderFilters()
                         )}
                     </Col>
                 </Row>
 
-                {/* Table */}
                 <Table
                     rowSelection={rowSelection}
-                    columns={buildColumns()}
+                    columns={finalColumns} // Use finalColumns (which calls buildColumns)
                     dataSource={filteredData}
                     loading={loading}
                     pagination={tablePagination}
                     scroll={{ x: 'max-content' }}
                     size="middle"
                     rowKey={record => {
-                        // Use the first available field in rowkeys that has a value
                         for (const key of rowkeys) {
                             if (record[key] !== undefined && record[key] !== null) {
                                 return record[key];
                             }
                         }
-                        // Fallback to the record's key if available
                         return record.key;
                     }}
                 />
 
-                {/* Export Button */}
                 <div style={{ marginTop: 24 }}>
                     <Dropdown menu={exportMenu} trigger={['click']}>
                         <Button icon={<DownloadOutlined />} className='mr-8'>
@@ -778,7 +731,6 @@ const CrudTable = ({
                 </div>
             </Card>
 
-            {/* Form Modal */}
             <Modal
                 title={modalMode === 'add' ? (customColumns.form?.settings?.addModalTitle || 'Add New Record') : (customColumns.form?.settings?.editModalTitle || 'Edit Record')}
                 open={isModalVisible}
@@ -790,8 +742,8 @@ const CrudTable = ({
                 <Form
                     form={form}
                     layout={customColumns.form?.settings?.layout || 'horizontal'}
-                    labelCol={customColumns.form?.settings?.labelCol || { span: 6 }} // Global defaults
-                    wrapperCol={customColumns.form?.settings?.wrapperCol || { span: 18 }} // Global defaults
+                    labelCol={customColumns.form?.settings?.labelCol || { span: 6 }}
+                    wrapperCol={customColumns.form?.settings?.wrapperCol || { span: 18 }}
                     style={customColumns.form?.settings?.style}
                     initialValues={customColumns.form?.settings?.initialValues || {}}
                 >
