@@ -694,7 +694,7 @@ const CrudTable = ({
                 />
 
                 {/* Export Button */}
-                <div>
+                <div className='mt-2'>
                     <Dropdown menu={exportMenu} trigger={['click']}>
                         <Button icon={<DownloadOutlined />} className='mr-2'>
                             Export
