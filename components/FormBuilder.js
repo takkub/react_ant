@@ -1368,13 +1368,105 @@ const FormBuilder = () => {
     }, [fieldFormVisible, form]);
     
     // Function to handle saving the form design
-    const handleSaveDesign = async () => { // Made async
+    const handleSaveDesign = async () => {
+
+        // Helper to build columns for CrudTable options
+        const buildCrudColumns = (fields) => {
+            return fields.map(field => {
+                let column = {
+                    title: field.title || field.label || field.name,
+                    dataIndex: field.dataIndex || field.name,
+                    key: field.dataIndex || field.name,
+                    filterable: field.filterable !== undefined ? field.filterable : true,
+                };
+                if (field.sortable) {
+                    column.sorter = true; // For antd's basic sort. Generated page.js might have specific functions.
+                }
+                if (field.type === 'date' || field.type === 'datetime') {
+                    column.render = ` (text) => { return text ? dayjs(text).format('YYYY-MM-DD HH:mm') : ''; }`;
+                }
+                if (field.type === 'select' || field.type === 'radio') {
+                    if (field.options && field.options.length > 0) {
+                        column.filters = field.options.map(opt => ({ text: opt.label, value: opt.value }));
+                        column.onFilter = ` (value, record) => record['${field.dataIndex || field.name}'] === value `;
+                    }
+                }
+                return column;
+            });
+        };
+
+        // Helper to build form fields for CrudTable options
+        const buildCrudFormFields = (fields) => {
+            return fields.map(field => {
+                let formField = {
+                    dataIndex: field.dataIndex || field.name,
+                    label: field.title || field.label || field.name,
+                    type: field.type,
+                    rules: field.rules || [{ required: true, message: `Please input ${field.title || field.label || field.name}!` }]
+                };
+                if (field.options && field.options.length > 0) {
+                    formField.options = field.options;
+                }
+                if (field.cardGroup) {
+                    formField.cardGroup = field.cardGroup;
+                }
+                // Include other relevant properties from field if CrudTable's getFormItems uses them
+                // For example: rows, format, checkboxLabel, disabled
+                if (field.rows) formField.rows = field.rows;
+                if (field.format) formField.format = field.format;
+                if (field.checkboxLabel) formField.checkboxLabel = field.checkboxLabel;
+                // 'disabled' is often a function (modalMode) => ..., which can't be directly stringified for all cases.
+                // If 'disabled' is a simple boolean in formFields, it can be included.
+                if (typeof field.disabled === 'boolean') {
+                    formField.disabled = field.disabled;
+                }
+                return formField;
+            });
+        };
+
+        const { cardGroupSetting, globalFilters, paginationSettings, ...otherSettings } = formSettings || {};
+
+        const crudTableOptions = {
+            columns: buildCrudColumns(formFields),
+            form: {
+                settings: {
+                    title: otherSettings?.title ? `${otherSettings.title} Form` : 'Generated Form',
+                    labelCol: otherSettings?.labelCol || { span: 6 },
+                    wrapperCol: otherSettings?.wrapperCol || { span: 18 },
+                    layout: otherSettings?.layout || "horizontal",
+                    gridColumns: otherSettings?.gridColumns || 1,
+                    addModalTitle: otherSettings?.modalTitle || `Add New ${otherSettings?.title || 'Record'}`,
+                    editModalTitle: otherSettings?.modalTitle ? `Edit ${otherSettings.modalTitle}` : `Edit ${otherSettings?.title || 'Record'}`,
+                    modalWidth: otherSettings?.modalWidth || '80%',
+                    initialValues: otherSettings?.initialValues || {},
+                    style: otherSettings?.style || {}
+                },
+                fields: buildCrudFormFields(formFields),
+                cardGroupSetting: cardGroupSetting || []
+            },
+            filters: {
+                fields: globalFilters?.map(f => ({
+                    title: f.title,
+                    field: Array.isArray(f.field) ? f.field : (f.field ? [f.field] : []),
+                    type: f.type,
+                    options: f.options || []
+                })) || []
+            },
+            pagination: paginationSettings || {
+                pageSize: 10,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showQuickJumper: true
+            }
+        };
+
         const formDesignPayload = {
             name: formSettings.title || 'Untitled Form Design',
-            fields_data: JSON.stringify(formFields), // Store as JSON string
-            settings_data: JSON.stringify(formSettings), // Store as JSON string
+            fields_data: formFields,
+            settings_data: formSettings,
+            crud_options_data: crudTableOptions // Added crud_options_data
         };
-        console.log(formFields,formSettings)
+        console.log("Payload to save:", formDesignPayload);
 
         try {
             // Assuming api.post handles the /api prefix and returns parsed JSON response
