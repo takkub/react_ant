@@ -19,6 +19,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import api from "@/lib/api"; // Added import for the API helper
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -254,6 +255,7 @@ export const DELETE = async (req) => {
       return fields.map(field => {
         let formField = {
           dataIndex: field.dataIndex || field.name,
+          label: field.title || field.label, // Ensure label is included for form fields
           type: field.type,
           rules: field.rules || [{ required: true, message: `Please input ${field.title || field.label}!` }]
         };
@@ -309,7 +311,9 @@ export default function ${componentName}() {
             },
             fields: ${JSON.stringify(formatFormFields(formFields), null, 8)},
             cardGroupSetting: ${JSON.stringify(cardGroupSetting || [], null, 8)}
-        }
+        },
+        filters: ${JSON.stringify(formSettings.globalFilters?.map(f => ({ title: f.title, field: f.field || [], type: f.type, options: f.options })) || [], null, 8)},
+        pagination: ${JSON.stringify(formSettings.paginationSettings || { pageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '20', '50', '100'], showQuickJumper: true }, null, 4)}
     }
     
     useEffect(() => {
@@ -431,24 +435,7 @@ export default function ${componentName}() {
                 onDelete={handleDelete(data, setData)}
                 onExport={handleExport()}
                 loading={loading}
-                pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100']
-                }}
                 customColumns={options}
-                filters={[
-                    {
-                        title: 'Search',
-                        field: ['name', 'description'],
-                        type: 'text'
-                    },
-                    {
-                        title: 'Date Range',
-                        field: ['createdAt'],
-                        type: 'dateRange'
-                    }
-                ]}
                 rowkeys={['id']}
             />
         </Card>
@@ -638,7 +625,17 @@ const FormBuilder = () => {
                 modalTitle: 'User Form',
                 pageTitle: 'User Management',
                 gridColumns: 1,
-                cardGroupSetting: []
+                cardGroupSetting: [],
+                paginationSettings: {
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    showQuickJumper: true
+                },
+                globalFilters: [
+                    { id: uuidv4(), title: 'Search Users', field: ['username', 'email'], type: 'text', options: [] },
+                    { id: uuidv4(), title: 'Filter by Role', field: ['role'], type: 'select', options: [{label: 'Admin', value: 'Admin'}, {label: 'User', value: 'User'}] }
+                ]
             }
         },
         {
@@ -700,7 +697,16 @@ const FormBuilder = () => {
                 modalTitle: 'Product Form',
                 pageTitle: 'Product Catalog',
                 gridColumns: 1,
-                cardGroupSetting: []
+                cardGroupSetting: [],
+                paginationSettings: {
+                    pageSize: 15,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['15', '30', '50'],
+                    showQuickJumper: true
+                },
+                globalFilters: [
+                    { id: uuidv4(), title: 'Search Products', field: ['productName', 'category'], type: 'text', options: [] }
+                ]
             }
         },
         {
@@ -751,6 +757,16 @@ const FormBuilder = () => {
                     { key: 'orderDetails', title: 'Order Details', description: 'Basic order information', layout: 'horizontal', gridColumns: 1, labelCol: { span: 6 }, wrapperCol: { span: 18 } },
                     { key: 'productInfo', title: 'Product Information', description: 'Details of products ordered', layout: 'horizontal', gridColumns: 2, labelCol: { span: 8 }, wrapperCol: { span: 16 } },
                     { key: 'shippingInfo', title: 'Address Information', description: 'Shipping and billing details', layout: 'vertical', gridColumns: 1, labelCol: { span: 24 }, wrapperCol: { span: 24 } },
+                ],
+                paginationSettings: {
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50'],
+                    showQuickJumper: true
+                },
+                globalFilters: [
+                    { id: uuidv4(), title: 'Search by Order ID', field: ['orderId'], type: 'text', options: [] },
+                    { id: uuidv4(), title: 'Filter by Status', field: ['orderStatus'], type: 'select', options: [ { label: 'Pending', value: 'pending' }, { label: 'Processing', value: 'processing' } ] }
                 ]
             }
         },
@@ -790,6 +806,15 @@ const FormBuilder = () => {
                 cardGroupSetting: [
                     { key: 'reportConfig', title: 'Report Configuration', description: 'Set parameters for the report', layout: 'horizontal', gridColumns: 2, labelCol: { span: 8 }, wrapperCol: { span: 16 } },
                     { key: 'reportOutput', title: 'Report Output', description: 'Summary of the generated report', layout: 'vertical', gridColumns: 1, labelCol: { span: 6 }, wrapperCol: { span: 18 } },
+                ],
+                paginationSettings: {
+                    pageSize: 20,
+                    showSizeChanger: false,
+                    pageSizeOptions: ['20', '40', '60'],
+                    showQuickJumper: false
+                },
+                globalFilters: [
+                    { id: uuidv4(), title: 'Filter by Report Type', field: ['reportType'], type: 'select', options: [ { label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' } ] }
                 ]
             }
         },
@@ -807,12 +832,22 @@ const FormBuilder = () => {
                 modalTitle: 'Data Form',
                 pageTitle: 'Data Management',
                 gridColumns: 1,
-                cardGroupSetting: []
+                cardGroupSetting: [],
+                paginationSettings: {
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    showQuickJumper: true
+                },
+                globalFilters: [
+                    { id: uuidv4(), title: 'Search', field: ['name'], type: 'text', options: [] }
+                ]
             }
         }
     ];
     
-    // Form builder state - use deep cloning to break potential circular references 
+    // Form builder state - use deep cloning to break potential circular references
+    const [currentFieldFormTab, setCurrentFieldFormTab] = useState('basic');
     const [formFields, setFormFields] = useState(() => JSON.parse(JSON.stringify(formTemplates[0].fields)));
     const [formSettings, setFormSettings] = useState(() => JSON.parse(JSON.stringify(formTemplates[0].settings)));
     const [fieldFormVisible, setFieldFormVisible] = useState(false);
@@ -822,7 +857,8 @@ const FormBuilder = () => {
     // Wizard state
     const [selectedTemplate, setSelectedTemplate] = useState(formTemplates[0].id);
     const [currentFieldType, setCurrentFieldType] = useState(null);
-    
+    const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Moved here
+
     // Watch for field type changes
     useEffect(() => {
         if (!form || !fieldFormVisible) return;
@@ -1310,7 +1346,6 @@ const FormBuilder = () => {
     };
     
     // State for field form tabs
-    const [currentFieldFormTab, setCurrentFieldFormTab] = useState('basic');
     
     // Check if the current field type needs options
     const checkNeedsOptions = () => {
@@ -1332,6 +1367,31 @@ const FormBuilder = () => {
         }
     }, [fieldFormVisible, form]);
     
+    // Function to handle saving the form design
+    const handleSaveDesign = async () => { // Made async
+        const formDesignPayload = {
+            name: formSettings.title || 'Untitled Form Design',
+            fields_data: JSON.stringify(formFields), // Store as JSON string
+            settings_data: JSON.stringify(formSettings), // Store as JSON string
+        };
+        console.log(formFields,formSettings)
+
+        try {
+            // Assuming api.post handles the /api prefix and returns parsed JSON response
+            const response = await api.post('form-designs', formDesignPayload);
+
+            if (response && response.success) {
+                message.success(response.message || 'Form design saved successfully!');
+            } else {
+                message.error(response?.message || 'Failed to save form design. Unknown error.');
+            }
+        } catch (error) {
+            console.error('Error saving form design:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'An error occurred while saving the form design.';
+            message.error(errorMessage);
+        }
+    };
+
     // Field form for add/edit
     const renderFieldForm = () => {
         
@@ -1764,6 +1824,39 @@ const FormBuilder = () => {
                              // Adding a new card group (value is the new group object)
                              newSettings.cardGroupSetting = [...(newSettings.cardGroupSetting || []), value];
                         }
+                    } else if (key === 'paginationSettings') {
+                        newSettings.paginationSettings = {
+                            ...newSettings.paginationSettings,
+                            [subKey]: value
+                        };
+                    } else if (key === 'globalFilters') {
+                        if (!newSettings.globalFilters) {
+                            newSettings.globalFilters = [];
+                        }
+                        if (index !== undefined && subKey === 'options') { // Editing options of a global filter
+                            if (!newSettings.globalFilters[index].options) {
+                                newSettings.globalFilters[index].options = [];
+                            }
+                            if (value === null) { // Removing an option
+                                // Correctly remove option by its index or a unique id if available
+                                newSettings.globalFilters[index].options = newSettings.globalFilters[index].options.filter((_, optIdx) => optIdx !== value.optIndex); // Assuming value.optIndex is passed
+                            } else if (typeof value === 'object' && value.hasOwnProperty('label') && value.hasOwnProperty('value')) { // Adding or updating an option
+                                const optionIndex = newSettings.globalFilters[index].options.findIndex(opt => opt.id === value.id);
+                                if (optionIndex > -1) {
+                                    newSettings.globalFilters[index].options[optionIndex] = value;
+                                } else {
+                                    newSettings.globalFilters[index].options.push({...value, id: uuidv4()});
+                                }
+                            }
+                        } else if (index !== undefined && subKey !== undefined) { // Editing a property of a global filter
+                            if (newSettings.globalFilters[index]) {
+                                newSettings.globalFilters[index][subKey] = value;
+                            }
+                        } else if (index !== undefined && value === null) { // Removing a global filter
+                            newSettings.globalFilters = newSettings.globalFilters.filter((_, i) => i !== index);
+                        } else if (value && typeof value === 'object' && !subKey && value.hasOwnProperty('title')) { // Adding a new global filter
+                            newSettings.globalFilters = [...(newSettings.globalFilters || []), {...value, id: uuidv4()}];
+                        }
                     } else {
                         // Validate input based on field type
                         let validatedValue = value;
@@ -1800,173 +1893,36 @@ const FormBuilder = () => {
             };
             handleSettingsChange('cardGroupSetting', newGroup);
         };
-        
+
         return (
             <Form layout="vertical">
-                <Form.Item label="Page Title">
-                    <Input
-                        value={formSettings.pageTitle}
-                        onChange={(e) => handleSettingsChange('pageTitle', e.target.value)}
-                    />
-                </Form.Item>
-                
-                <Form.Item label="Form Title">
-                    <Input
-                        value={formSettings.title}
-                        onChange={(e) => handleSettingsChange('title', e.target.value)}
-                    />
-                </Form.Item>
-                
-                <Form.Item label="Modal Title">
-                    <Input
-                        value={formSettings.modalTitle}
-                        onChange={(e) => handleSettingsChange('modalTitle', e.target.value)}
-                    />
-                </Form.Item>
-                
-                <Form.Item label="Form Layout">
-                    <Select
-                        value={formSettings.layout}
-                        onChange={(value) => handleSettingsChange('layout', value)}
-                        options={[
-                            { label: 'Horizontal', value: 'horizontal' },
-                            { label: 'Vertical', value: 'vertical' },
-                            { label: 'Inline', value: 'inline' }
-                        ]}
-                    />
-                </Form.Item>
-                
-                <Form.Item label="Grid Layout Columns">
-                    <Segmented
-                        block
-                        options={[
-                            {
-                                label: (
-                                    <Tooltip title="Single Column">
-                                        <div style={{ padding: '4px 0' }}>
-                                            <BarsOutlined />
-                                            <div>1 Column</div>
-                                        </div>
-                                    </Tooltip>
-                                ),
-                                value: 1
-                            },
-                            {
-                                label: (
-                                    <Tooltip title="Two Columns">
-                                        <div style={{ padding: '4px 0' }}>
-                                            <LayoutOutlined />
-                                            <div>2 Columns</div>
-                                        </div>
-                                    </Tooltip>
-                                ),
-                                value: 2
-                            },
-                            {
-                                label: (
-                                    <Tooltip title="Three Columns">
-                                        <div style={{ padding: '4px 0' }}>
-                                            <TableOutlined />
-                                            <div>3 Columns</div>
-                                        </div>
-                                    </Tooltip>
-                                ),
-                                value: 3
-                            },
-                            {
-                                label: (
-                                    <Tooltip title="Four Columns">
-                                        <div style={{ padding: '4px 0' }}>
-                                            <AppstoreOutlined />
-                                            <div>4 Columns</div>
-                                        </div>
-                                    </Tooltip>
-                                ),
-                                value: 4
-                            }
-                        ]}
-                        value={formSettings.gridColumns || 1}
-                        onChange={(value) => handleSettingsChange('gridColumns', value)}
-                    />
-                </Form.Item>
-                
-                <Row gutter={16}>
-                    <Col span={12}>
-                        <Form.Item label="Label Column Width">
+                <Tabs activeKey={currentSettingsTab} onChange={setCurrentSettingsTab}>
+                    <Tabs.TabPane tab="General" key="general">
+                        <Form.Item label="Page Title">
                             <Input
-                                type="number"
-                                min={1}
-                                max={24}
-                                value={formSettings.labelCol.span}
-                                onChange={(e) => handleSettingsChange('labelCol', { span: parseInt(e.target.value) })}
+                                value={formSettings.pageTitle}
+                                onChange={(e) => handleSettingsChange('pageTitle', e.target.value)}
                             />
                         </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                        <Form.Item label="Wrapper Column Width">
-                            <Input
-                                type="number"
-                                min={1}
-                                max={24}
-                                value={formSettings.wrapperCol.span}
-                                onChange={(e) => handleSettingsChange('wrapperCol', { span: parseInt(e.target.value) })}
-                            />
-                        </Form.Item>
-                    </Col>
-                </Row>
 
-                <Divider>Card Group Settings</Divider>
-                <Paragraph type="secondary">
-                    Define groups of fields to be displayed within separate cards in the form. This is useful for organizing complex forms.
-                </Paragraph>
-                {(formSettings.cardGroupSetting || []).map((group, index) => (
-                    <Card
-                        key={index}
-                        title={`Card Group: ${group.title || group.key}`}
-                        size="small"
-                        style={{ marginBottom: 16 }}
-                        extra={
-                            <Button
-                                icon={<DeleteOutlined />}
-                                onClick={() => handleSettingsChange('cardGroupSetting', null, index)}
-                                danger
-                                type="text"
-                                title="Remove Card Group"
-                            />
-                        }
-                    >
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item label="Group Key (Unique ID)">
-                                    <Input
-                                        value={group.key}
-                                        onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'key')}
-                                        placeholder="e.g., personalDetails, addressInfo"
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item label="Group Title">
-                                    <Input
-                                        value={group.title}
-                                        onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'title')}
-                                        placeholder="e.g., Personal Details"
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                        <Form.Item label="Group Description">
-                            <Input.TextArea
-                                value={group.description}
-                                onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'description')}
-                                placeholder="Optional description for the card group"
-                                rows={2}
+                        <Form.Item label="Form Title">
+                            <Input
+                                value={formSettings.title}
+                                onChange={(e) => handleSettingsChange('title', e.target.value)}
                             />
                         </Form.Item>
-                        <Form.Item label="Group Layout">
+
+                        <Form.Item label="Modal Title">
+                            <Input
+                                value={formSettings.modalTitle}
+                                onChange={(e) => handleSettingsChange('modalTitle', e.target.value)}
+                            />
+                        </Form.Item>
+
+                        <Form.Item label="Form Layout">
                             <Select
-                                value={group.layout}
-                                onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'layout')}
+                                value={formSettings.layout}
+                                onChange={(value) => handleSettingsChange('layout', value)}
                                 options={[
                                     { label: 'Horizontal', value: 'horizontal' },
                                     { label: 'Vertical', value: 'vertical' },
@@ -1974,48 +1930,309 @@ const FormBuilder = () => {
                                 ]}
                             />
                         </Form.Item>
-                        <Form.Item label="Group Grid Layout Columns">
+
+                        <Form.Item label="Grid Layout Columns (Form & Ungrouped Fields)">
                             <Segmented
                                 block
                                 options={[
-                                    { label: (<Tooltip title="Single Column"><BarsOutlined /> 1</Tooltip>), value: 1 },
-                                    { label: (<Tooltip title="Two Columns"><LayoutOutlined /> 2</Tooltip>), value: 2 },
-                                    { label: (<Tooltip title="Three Columns"><TableOutlined /> 3</Tooltip>), value: 3 },
-                                    { label: (<Tooltip title="Four Columns"><AppstoreOutlined /> 4</Tooltip>), value: 4 }
+                                    {
+                                        label: (
+                                            <Tooltip title="Single Column">
+                                                <div style={{ padding: '4px 0' }}>
+                                                    <BarsOutlined />
+                                                    <div>1 Column</div>
+                                                </div>
+                                            </Tooltip>
+                                        ),
+                                        value: 1
+                                    },
+                                    {
+                                        label: (
+                                            <Tooltip title="Two Columns">
+                                                <div style={{ padding: '4px 0' }}>
+                                                    <LayoutOutlined />
+                                                    <div>2 Columns</div>
+                                                </div>
+                                            </Tooltip>
+                                        ),
+                                        value: 2
+                                    },
+                                    {
+                                        label: (
+                                            <Tooltip title="Three Columns">
+                                                <div style={{ padding: '4px 0' }}>
+                                                    <TableOutlined />
+                                                    <div>3 Columns</div>
+                                                </div>
+                                            </Tooltip>
+                                        ),
+                                        value: 3
+                                    },
+                                    {
+                                        label: (
+                                            <Tooltip title="Four Columns">
+                                                <div style={{ padding: '4px 0' }}>
+                                                    <AppstoreOutlined />
+                                                    <div>4 Columns</div>
+                                                </div>
+                                            </Tooltip>
+                                        ),
+                                        value: 4
+                                    }
                                 ]}
-                                value={group.gridColumns || 1}
-                                onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'gridColumns')}
+                                value={formSettings.gridColumns || 1}
+                                onChange={(value) => handleSettingsChange('gridColumns', value)}
                             />
                         </Form.Item>
+
                         <Row gutter={16}>
                             <Col span={12}>
-                                <Form.Item label="Group Label Column Width">
-                                    <InputNumber
+                                <Form.Item label="Label Column Width (Form & Ungrouped Fields)">
+                                    <Input
+                                        type="number"
                                         min={1}
                                         max={24}
-                                        value={group.labelCol?.span}
-                                        onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'labelCol')}
-                                        style={{width: '100%'}}
+                                        value={formSettings.labelCol?.span}
+                                        onChange={(e) => handleSettingsChange('labelCol', { span: parseInt(e.target.value) })}
                                     />
                                 </Form.Item>
                             </Col>
                             <Col span={12}>
-                                <Form.Item label="Group Wrapper Column Width">
-                                    <InputNumber
+                                <Form.Item label="Wrapper Column Width (Form & Ungrouped Fields)">
+                                    <Input
+                                        type="number"
                                         min={1}
                                         max={24}
-                                        value={group.wrapperCol?.span}
-                                        onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'wrapperCol')}
-                                        style={{width: '100%'}}
+                                        value={formSettings.wrapperCol?.span}
+                                        onChange={(e) => handleSettingsChange('wrapperCol', { span: parseInt(e.target.value) })}
                                     />
                                 </Form.Item>
                             </Col>
                         </Row>
-                    </Card>
-                ))}
-                <Button type="dashed" onClick={addCardGroup} block icon={<PlusOutlined />}>
-                    Add Card Group
-                </Button>
+                    </Tabs.TabPane>
+                    <Tabs.TabPane tab="Pagination" key="pagination">
+                        <Row gutter={16}>
+                            <Col span={12}>
+                                <Form.Item label="Page Size">
+                                    <InputNumber
+                                        value={formSettings.paginationSettings?.pageSize}
+                                        onChange={(value) => handleSettingsChange('paginationSettings', value, undefined, 'pageSize')}
+                                        min={1}
+                                        style={{ width: '100%' }}
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                                <Form.Item label="Page Size Options">
+                                    <Select
+                                        mode="tags"
+                                        tokenSeparators={[',']}
+                                        value={formSettings.paginationSettings?.pageSizeOptions || []}
+                                        onChange={(values) => {
+                                            // Convert string values to strings and ensure they're valid numbers
+                                            const validValues = values
+                                                .map(val => String(val).trim())
+                                                .filter(val => val && !isNaN(val));
+                                            handleSettingsChange('paginationSettings', validValues, undefined, 'pageSizeOptions');
+                                        }}
+                                        placeholder="Add page size options (e.g., 10, 20, 50)"
+                                        style={{ width: '100%' }}
+                                    />
+                                    <div style={{ fontSize: '12px', color: '#8c8c8c', marginTop: '4px' }}>
+                                        Type numbers and press Enter or comma to add values
+                                    </div>
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                        <Row gutter={16}>
+                            <Col span={12}>
+                                <Form.Item label="Show Size Changer" valuePropName="checked">
+                                    <Switch
+                                        checked={formSettings.paginationSettings?.showSizeChanger}
+                                        onChange={(checked) => handleSettingsChange('paginationSettings', checked, undefined, 'showSizeChanger')}
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                                <Form.Item label="Show Quick Jumper" valuePropName="checked">
+                                    <Switch
+                                        checked={formSettings.paginationSettings?.showQuickJumper}
+                                        onChange={(checked) => handleSettingsChange('paginationSettings', checked, undefined, 'showQuickJumper')}
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    </Tabs.TabPane>
+                    <Tabs.TabPane tab="Global Filters" key="globalFilters">
+                        {(formSettings.globalFilters || []).map((filter, index) => (
+                            <Card key={filter.id || index} size="small" title={`Filter ${index + 1}: ${filter.title || 'New Filter'}`} style={{ marginBottom: 16 }} extra={<Button icon={<DeleteOutlined />} danger type="text" onClick={() => handleSettingsChange('globalFilters', null, index)} />}>
+                                <Row gutter={16}>
+                                    <Col span={12}>
+                                        <Form.Item label="Filter Title">
+                                            <Input value={filter.title} onChange={(e) => handleSettingsChange('globalFilters', e.target.value, index, 'title')} placeholder="e.g., Search by Name" />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Form.Item label="Filter Type">
+                                            <Select value={filter.type} onChange={(value) => handleSettingsChange('globalFilters', value, index, 'type')}>
+                                                <Select.Option value="text">Text Search</Select.Option>
+                                                <Select.Option value="select">Select Dropdown</Select.Option>
+                                                <Select.Option value="dateRange">Date Range</Select.Option>
+                                            </Select>
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                                <Form.Item label="Field(s) to Filter">
+                                    <Select
+                                        mode="multiple"
+                                        allowClear
+                                        style={{ width: '100%' }}
+                                        placeholder="Select fields to filter"
+                                        value={typeof filter.field === 'string' ? filter.field.split(',').map(s => s.trim()).filter(s => s) : (filter.field || [])}
+                                        onChange={(value) => handleSettingsChange('globalFilters', value, index, 'field')}
+                                        options={formFields.map(f => ({ label: f.title || f.dataIndex, value: f.dataIndex }))}
+                                    />
+                                </Form.Item>
+                                {filter.type === 'select' && (
+                                    <Form.List name={['globalFilters', index, 'options']}>
+                                        {(fields, { add, remove }) => (
+                                            <>
+                                                <Text strong style={{ marginBottom: 8, display: 'block' }}>Options for Select Filter:</Text>
+                                                {fields.map((optField, optIndex) => (
+                                                    <Card key={optField.key} size="small" style={{ marginBottom: 8, background: '#f9f9f9' }} title={`Option ${optIndex + 1}`}>
+                                                        <Row gutter={8}>
+                                                            <Col span={10}>
+                                                                <Form.Item name={[optField.name, 'label']} label="Label" rules={[{required: true}]}>
+                                                                    <Input placeholder="Display Label" onChange={(e) => handleSettingsChange('globalFilters', {...(formSettings.globalFilters[index].options[optIndex]), label: e.target.value, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4()}, index, 'options', {optIndex: optIndex, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4(), label: e.target.value, value: formSettings.globalFilters[index].options[optIndex]?.value})} />
+                                                                </Form.Item>
+                                                            </Col>
+                                                            <Col span={10}>
+                                                                <Form.Item name={[optField.name, 'value']} label="Value" rules={[{required: true}]}>
+                                                                    <Input placeholder="Stored Value" onChange={(e) => handleSettingsChange('globalFilters', {...(formSettings.globalFilters[index].options[optIndex]), value: e.target.value, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4()}, index, 'options', {optIndex: optIndex, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4(), label: formSettings.globalFilters[index].options[optIndex]?.label, value: e.target.value})} />
+                                                                </Form.Item>
+                                                            </Col>
+                                                            <Col span={4} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '30px' }}>
+                                                                <Button icon={<DeleteOutlined />} danger type="text" onClick={() => { remove(optField.name); handleSettingsChange('globalFilters', {optIndex: optIndex}, index, 'options', null); }} />
+                                                            </Col>
+                                                        </Row>
+                                                    </Card>
+                                                ))}
+                                                <Button type="dashed" onClick={() => { add({label: '', value: ''}); handleSettingsChange('globalFilters', {label: 'New Option', value: 'new_option', id: uuidv4()}, index, 'options'); }} block icon={<PlusOutlined />}>
+                                                    Add Option
+                                                </Button>
+                                            </>
+                                        )}
+                                    </Form.List>
+                                )}
+                            </Card>
+                        ))}
+                        <Button type="dashed" onClick={() => handleSettingsChange('globalFilters', { id: uuidv4(), title: 'New Filter', field: [], type: 'text', options: [] })} block icon={<PlusOutlined />}>
+                            Add Global Filter
+                        </Button>
+                    </Tabs.TabPane>
+                    <Tabs.TabPane tab="Card Groups" key="cardGroups">
+                        <Paragraph type="secondary">
+                            Define groups of fields to be displayed within separate cards in the form. This is useful for organizing complex forms.
+                        </Paragraph>
+                        {(formSettings.cardGroupSetting || []).map((group, index) => (
+                            <Card
+                                key={index}
+                                title={`Card Group: ${group.title || group.key}`}
+                                size="small"
+                                style={{ marginBottom: 16 }}
+                                extra={
+                                    <Button
+                                        icon={<DeleteOutlined />}
+                                        onClick={() => handleSettingsChange('cardGroupSetting', null, index)}
+                                        danger
+                                        type="text"
+                                        title="Remove Card Group"
+                                    />
+                                }
+                            >
+                                <Row gutter={16}>
+                                    <Col span={12}>
+                                        <Form.Item label="Group Key (Unique ID)">
+                                            <Input
+                                                value={group.key}
+                                                onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'key')}
+                                                placeholder="e.g., personalDetails, addressInfo"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Form.Item label="Group Title">
+                                            <Input
+                                                value={group.title}
+                                                onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'title')}
+                                                placeholder="e.g., Personal Details"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                                <Form.Item label="Group Description">
+                                    <Input.TextArea
+                                        value={group.description}
+                                        onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'description')}
+                                        placeholder="Optional description for the card group"
+                                        rows={2}
+                                    />
+                                </Form.Item>
+                                <Form.Item label="Group Layout">
+                                    <Select
+                                        value={group.layout}
+                                        onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'layout')}
+                                        options={[
+                                            { label: 'Horizontal', value: 'horizontal' },
+                                            { label: 'Vertical', value: 'vertical' },
+                                            { label: 'Inline', value: 'inline' }
+                                        ]}
+                                    />
+                                </Form.Item>
+                                <Form.Item label="Group Grid Layout Columns">
+                                    <Segmented
+                                        block
+                                        options={[
+                                            { label: (<Tooltip title="Single Column"><BarsOutlined /> 1</Tooltip>), value: 1 },
+                                            { label: (<Tooltip title="Two Columns"><LayoutOutlined /> 2</Tooltip>), value: 2 },
+                                            { label: (<Tooltip title="Three Columns"><TableOutlined /> 3</Tooltip>), value: 3 },
+                                            { label: (<Tooltip title="Four Columns"><AppstoreOutlined /> 4</Tooltip>), value: 4 }
+                                        ]}
+                                        value={group.gridColumns || 1}
+                                        onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'gridColumns')}
+                                    />
+                                </Form.Item>
+                                <Row gutter={16}>
+                                    <Col span={12}>
+                                        <Form.Item label="Group Label Column Width">
+                                            <InputNumber
+                                                min={1}
+                                                max={24}
+                                                value={group.labelCol?.span}
+                                                onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'labelCol')}
+                                                style={{width: '100%'}}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Form.Item label="Group Wrapper Column Width">
+                                            <InputNumber
+                                                min={1}
+                                                max={24}
+                                                value={group.wrapperCol?.span}
+                                                onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'wrapperCol')}
+                                                style={{width: '100%'}}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                            </Card>
+                        ))}
+                        <Button type="dashed" onClick={addCardGroup} block icon={<PlusOutlined />}>
+                            Add Card Group
+                        </Button>
+                    </Tabs.TabPane>
+                </Tabs>
             </Form>
         );
     };
@@ -2239,6 +2456,9 @@ const FormBuilder = () => {
             
             <div style={{ textAlign: 'right' }}>
                 <Space>
+                    <Button onClick={handleSaveDesign} icon={<DatabaseOutlined />} type="default">
+                        Save Form Design
+                    </Button>
                     <FormCodeGenerator
                         formFields={formFields}
                         formSettings={formSettings}

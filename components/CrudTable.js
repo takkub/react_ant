@@ -27,7 +27,6 @@ const CrudTable = ({
     onDelete,
     onExport,
     loading = false,
-    pagination = { pageSize: 10 },
     customColumns = { columns: [] },
     filters = [],
     rowkeys = ['key']
