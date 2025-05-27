@@ -544,7 +544,7 @@ const CrudTable = ({
     // Render filter components
     const renderFilters = () => {
         return (
-            <Row gutter={8} className="mb-4" justify="end">
+            <Row gutter={8} className="mb-0" justify="end">
                 {filters.map((filter, index) => {
                     const fields = Array.isArray(filter.field) ? filter.field : [filter.field];
                     const fieldKey = fields[0]; // Use the first field as the key for the filter value
@@ -553,7 +553,7 @@ const CrudTable = ({
                         case 'select':
                             return (
                                 <Col key={index} xs={24} sm={12} md={6} lg={4}>
-                                    <Form.Item className="mb-0" style={{ marginBottom: 8 }}>
+                                    <Form.Item className="mb-2">
                                         <Select
                                             placeholder={`Select ${filter.title}`}
                                             allowClear
@@ -573,7 +573,7 @@ const CrudTable = ({
                         case 'dateRange':
                             return (
                                 <Col key={index} xs={24} sm={12} md={8} lg={6}>
-                                    <Form.Item className="mb-0" style={{ marginBottom: 8 }}>
+                                    <Form.Item className="mb-2">
                                         <RangePicker
                                             style={{ width: '100%' }}
                                             value={filterValues[fieldKey]}
@@ -590,7 +590,7 @@ const CrudTable = ({
                         case 'text':
                             return (
                                 <Col key={index} xs={24} sm={12} md={6} lg={4}>
-                                    <Form.Item className="mb-0" style={{ marginBottom: 8 }}>
+                                    <Form.Item className="mb-2">
                                         <Input
                                             placeholder={`Search ${filter.title}`}
                                             prefix={<SearchOutlined />}
@@ -633,10 +633,10 @@ const CrudTable = ({
     return (
         <div className="crud-table">
             <Card>
-                <Row className="mb-4" style={{ marginBottom: 20 }}>
+                <Row>
                     <Col span={8}>
                         <Row gutter={8}>
-                            <Col style={{ marginBottom: 8 }}>
+                            <Col className="mb-2">
                                 <Button
                                     type="primary"
                                     icon={<PlusOutlined />}
@@ -645,7 +645,7 @@ const CrudTable = ({
                                     Create
                                 </Button>
                             </Col>
-                            <Col style={{ marginBottom: 8 }}>
+                            <Col className="mb-2">
                                 <Popconfirm
                                     title="Are you sure you want to delete these records?"
                                     onConfirm={handleDeleteSelected}
@@ -694,13 +694,13 @@ const CrudTable = ({
                 />
 
                 {/* Export Button */}
-                <div style={{ marginTop: 24 }}>
+                <div>
                     <Dropdown menu={exportMenu} trigger={['click']}>
-                        <Button icon={<DownloadOutlined />} className='mr-8'>
+                        <Button icon={<DownloadOutlined />} className='mr-2'>
                             Export
                         </Button>
                     </Dropdown>
-                    <Text type="secondary" className="ml-2" style={{ marginLeft: 8 }}>
+                    <Text type="secondary">
                         {selectedRowKeys.length > 0
                             ? `${selectedRowKeys.length} record(s) selected`
                             : 'Export all records'}

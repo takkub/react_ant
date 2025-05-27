@@ -1,21 +1,21 @@
 import './globals.css';
 import React from "react";
-import { Inter } from 'next/font/google';
 import { TitleProvider } from "@/components/TitleContext";
 import NetworkStatusNotifier from "@/components/NetworkStatusNotifier";
 import { ThemeProvider } from "../store/context/ThemeContext";
+import { Prompt } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'] });
+const prompt = Prompt({
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+  subsets: ['latin', 'thai'],
+  display: 'swap',
+});
 
-export const metadata = {
-    title: 'Admin Dashboard',
-    description: 'Next.js Admin Dashboard with Ant Design'
-};
 
 export default function RootLayout({ children }) {
     return (
         <html lang="en">
-            <body className={inter.className}>
+            <body className={prompt.className}>
                 <NetworkStatusNotifier />
                 <ThemeProvider>
                 <TitleProvider>
