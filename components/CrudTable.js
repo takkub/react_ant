@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Table, Button, Space, Modal, Form, Input,
     Select, DatePicker, Checkbox, message, Card,
@@ -40,9 +40,42 @@ const CrudTable = ({
     const [filterValues, setFilterValues] = useState({});
     const [filteredData, setFilteredData] = useState(data);
     const [searchText, setSearchText] = useState('');
-    const [exportMenuVisible, setExportMenuVisible] = useState(false);
-    const exportMenuRef = useRef(null);
 
+    
+    const [tablePagination, setTablePagination] = useState(() => {
+        // Make sure pageSize options are numbers, not strings
+        const paginationConfig = customColumns?.pagination ;
+        // Convert pageSizeOptions to numbers if they're strings
+        if (paginationConfig.pageSizeOptions) {
+            paginationConfig.pageSizeOptions = paginationConfig.pageSizeOptions.map(size =>
+                typeof size === 'string' ? parseInt(size, 10) : size
+            );
+        }
+
+        return {
+            ...paginationConfig,
+            current: 1,
+            // Make sure these handlers are defined
+            onChange: (page, pageSize) => {
+                // console.log(`Page changed to ${page}, size: ${pageSize}`);
+                setTablePagination(prev => ({
+                    ...prev,
+                    current: page,
+                    pageSize: pageSize
+                }));
+            },
+            onShowSizeChange: (current, size) => {
+                // console.log(`Size changed to ${size}`);
+                setTablePagination(prev => ({
+                    ...prev,
+                    current: 1, // Reset to first page when changing page size
+                    pageSize: size
+                }));
+            }
+        };
+    });
+    
+    
     useEffect(() => {
         // Apply filters to data - Moving the function inside useEffect to avoid dependency warnings
         const applyFilters = () => {
@@ -417,6 +450,7 @@ const CrudTable = ({
             : field.disabled;
 
         let formItemComponent;
+        let formItemProps = {};
 
         switch (field.type) {
             case 'input':
@@ -430,7 +464,43 @@ const CrudTable = ({
                 formItemComponent = <TextArea rows={field.rows || 4} disabled={isDisabled} />;
                 break;
             case 'number':
-                formItemComponent = <Input type="number" disabled={isDisabled} style={{ width: '100%' }} />;
+                formItemComponent = <Input
+                    type="number"
+                    disabled={isDisabled}
+                    style={{ width: '100%' }}
+                    onChange={(e) => {
+                        // Convert string value to number before setting in form
+                        let numValue = undefined;
+
+                        // Check if input is a valid number
+                        if (e.target.value !== '') {
+                            numValue = Number(e.target.value);
+
+                            // Validate if conversion was successful and it's a valid number
+                            if (isNaN(numValue)) {
+                                // If not a valid number, don't update the form value
+                                return;
+                            }
+                        }
+
+                        form.setFieldValue(field.dataIndex, numValue);
+                    }}
+                />;
+
+                // Add getValueFromEvent handler to ensure number type for validation
+                formItemProps.getValueFromEvent = (e) => {
+                    if (e?.target?.value === '') return undefined;
+                    const val = Number(e?.target?.value);
+                    return isNaN(val) ? undefined : val;
+                };
+
+                // Add normalize function to convert string to number during form validation
+                formItemProps.normalize = (value) => {
+                    if (value === undefined || value === null || value === '') return undefined;
+                    const val = Number(value);
+                    return isNaN(val) ? undefined : val;
+                };
+
                 break;
             case 'select':
                 formItemComponent = (
@@ -495,6 +565,7 @@ const CrudTable = ({
                     wrapperCol: itemWrapperCol,
                 })}
                 {...(field.type === 'checkbox' && { valuePropName: 'checked' })} // For single Checkbox
+                {...formItemProps} // Apply additional form item props specific to field type
             >
                 {formItemComponent}
             </Form.Item>
@@ -678,7 +749,7 @@ const CrudTable = ({
                     columns={buildColumns()}
                     dataSource={filteredData}
                     loading={loading}
-                    pagination={pagination}
+                    pagination={tablePagination}
                     scroll={{ x: 'max-content' }}
                     size="middle"
                     rowKey={record => {
