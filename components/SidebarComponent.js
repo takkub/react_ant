@@ -66,26 +66,32 @@ export default function SidebarComponent({ collapsed, setCollapsed }) {
             key: '2',
             icon: <UserOutlined />,
             label: 'Users',
-            onClick: () => router.push('/test')
+            onClick: () => router.push('/form-builder')
         },
         {
             key: '3',
-            icon: <SettingOutlined />,
-            label: 'Settings',
-            children: [
-                { key: 'setting1', label: 'Sub Setting', icon: <SettingOutlined />, },
-            ]
+            icon: <UserOutlined />,
+            label: 'Auto Form',
+            onClick: () => router.push('/autoform/test')
         },
-        {
-            key: '4',
-            icon: <LogoutOutlined />,
-            label: t('UserManagement'),
-            children: [
-                { key: 'users', label: 'Users', icon: <SettingOutlined />,onClick: () => router.push('/user-management/users')},
-                { key: 'roles', label: 'Roles', icon: <SettingOutlined />,onClick: () => router.push('/user-management/roles') },
-                { key: 'permissions', label: 'Permissions', icon: <SettingOutlined />,onClick: () => router.push('/user-management/permissions') },
-            ],
-        },
+        //{
+        //    key: '3',
+        //    icon: <SettingOutlined />,
+        //    label: 'Settings',
+        //    children: [
+        //        { key: 'setting1', label: 'Sub Setting', icon: <SettingOutlined />, },
+        //    ]
+        //},
+        //{
+        //    key: '4',
+        //    icon: <LogoutOutlined />,
+        //    label: t('UserManagement'),
+        //    children: [
+        //        { key: 'users', label: 'Users', icon: <SettingOutlined />,onClick: () => router.push('/user-management/users')},
+        //        { key: 'roles', label: 'Roles', icon: <SettingOutlined />,onClick: () => router.push('/user-management/roles') },
+        //        { key: 'permissions', label: 'Permissions', icon: <SettingOutlined />,onClick: () => router.push('/user-management/permissions') },
+        //    ],
+        //},
     ];
 
     return (
