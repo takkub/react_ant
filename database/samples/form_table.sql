@@ -79,12 +79,23 @@ INSERT INTO `products` (
 );
 
 -- Sample INSERT statement for form_data
-INSERT INTO `form_data` (
-  `form_id`,
-  `data`,
-  `created_by`
-) VALUES (
-  'contact_form',
-  '{"name": "Jane Smith", "email": "jane@example.com", "message": "Hello, I would like more information"}',
-  1
-);
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for form_designs
+-- ----------------------------
+DROP TABLE IF EXISTS `form_designs`;
+CREATE TABLE `form_designs`  (
+                                 `id` int NOT NULL AUTO_INCREMENT,
+                                 `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                                 `fields_data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
+                                 `settings_data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
+                                 `crud_options_data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
+                                 `createdAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+                                 `updatedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                 `table` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+                                 PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 0 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+SET FOREIGN_KEY_CHECKS = 1;
