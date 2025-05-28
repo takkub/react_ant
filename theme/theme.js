@@ -77,8 +77,8 @@ export const WSOLTheme = {
             itemSelectedColor: "rgb(255, 255, 255)"
         },
         Table: {
-            rowSelectedBg: "rgb(216, 216, 216)",
-            rowSelectedHoverBg: "rgb(175, 175, 175)"
+            rowSelectedBg: "rgb(245, 245, 245)",
+            rowSelectedHoverBg: "rgb(240, 240, 240)"
         }
     }
 };
