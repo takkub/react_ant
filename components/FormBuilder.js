@@ -24,6 +24,8 @@ import api from "@/lib/api"; // Added import for the API helper
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
+
+
 // FormCodeGenerator component - now included in FormBuilder
 const FormCodeGenerator = ({ formFields, formSettings, formTitle, tableName }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -845,7 +847,7 @@ const FormBuilder = () => {
             }
         }
     ];
-    
+
     // Form builder state - use deep cloning to break potential circular references
     const [currentFieldFormTab, setCurrentFieldFormTab] = useState('basic');
     const [formFields, setFormFields] = useState(() => JSON.parse(JSON.stringify(formTemplates[0].fields)));
@@ -853,41 +855,63 @@ const FormBuilder = () => {
     const [fieldFormVisible, setFieldFormVisible] = useState(false);
     const [currentField, setCurrentField] = useState(null);
     const [form] = Form.useForm();
-    
+
     // Wizard state
     const [selectedTemplate, setSelectedTemplate] = useState(formTemplates[0].id);
     const [currentFieldType, setCurrentFieldType] = useState(null);
     const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Moved here
-
+    
+    useEffect(() => {
+    
+        
+        
+        
+    }, []);
     // Watch for field type changes
     useEffect(() => {
+        const getFormDesign = async () => {
+            const {data} = await api.get('/form-designs');
+            if (data && data.length > 0) {
+                const design = data.find(d => d.id === selectedTemplate);
+                if (design) {
+                    setFormFields(JSON.parse(JSON.stringify(design.fields)));
+                    setFormSettings(JSON.parse(JSON.stringify(design.settings)));
+                } else {
+                    message.error('Selected template not found');
+                }
+            } else {
+                message.warning('No form designs available');
+            }
+        }
+        getFormDesign();
         if (!form || !fieldFormVisible) return;
-        
+
         const type = form.getFieldValue('type');
         if (type !== currentFieldType) {
             setCurrentFieldType(type);
-            
+
             // Check if this field type needs options
             const needsOptions = ['select', 'radio', 'tags', 'checkbox'].includes(type);
             const options = form.getFieldValue('options') || [];
-            
+
             if (needsOptions && options.length === 0) {
                 message.info('This field type requires options. Please add them in the Options tab.');
             }
         }
+
     }, [form, fieldFormVisible, currentFieldType]);
-    
+
     // Handle template selection
     const handleTemplateSelect = (templateId) => {
         try {
             // Find the selected template
             const template = formTemplates.find(t => t.id === templateId);
-            
+
             if (!template) {
                 message.error('Invalid template selected');
                 return;
             }
-            
+
             // Confirm before changing if there are existing fields
             if (formFields.length > 0) {
                 Modal.confirm({
@@ -896,11 +920,11 @@ const FormBuilder = () => {
                     onOk() {
                         // Update selected template
                         setSelectedTemplate(templateId);
-                        
+
                         // Update form fields and settings with deep cloning to avoid circular references
                         setFormFields(JSON.parse(JSON.stringify(template.fields)));
                         setFormSettings(JSON.parse(JSON.stringify(template.settings)));
-                        
+
                         message.success(`Template changed to ${template.name}`);
                     }
                 });
@@ -909,7 +933,7 @@ const FormBuilder = () => {
                 setSelectedTemplate(templateId);
                 setFormFields(JSON.parse(JSON.stringify(template.fields)));
                 setFormSettings(JSON.parse(JSON.stringify(template.settings)));
-                
+
                 message.success(`Template changed to ${template.name}`);
             }
         } catch (error) {
@@ -917,7 +941,7 @@ const FormBuilder = () => {
             message.error('Failed to change template');
         }
     };
-    
+
     // Field type options
     const fieldTypes = [
         { label: 'Text Input', value: 'input', icon: <FormOutlined /> },
@@ -931,7 +955,7 @@ const FormBuilder = () => {
         { label: 'Radio', value: 'radio', icon: <CheckCircleOutlined /> },
         { label: 'Tags', value: 'tags', icon: <TagsOutlined /> }
     ];
-    
+
     // Common field presets for quick addition
     const fieldPresets = [
         {
@@ -1003,7 +1027,7 @@ const FormBuilder = () => {
             icon: <FileTextOutlined />
         }
     ];
-    
+
     // Add a new field
     const handleAddField = () => {
         try {
@@ -1018,7 +1042,7 @@ const FormBuilder = () => {
                 filterable: true,
                 sortable: true
             };
-            
+
             // Use a deep copy to break any potential references
             setCurrentField(JSON.parse(JSON.stringify(newField)));
             form.resetFields();
@@ -1028,7 +1052,7 @@ const FormBuilder = () => {
             message.error('Failed to initialize new field');
         }
     };
-    
+
     // Add a preset field
     const handleAddPresetField = (preset) => {
         try {
@@ -1044,30 +1068,30 @@ const FormBuilder = () => {
                 filterable: Boolean(preset.filterable),
                 sortable: Boolean(preset.sortable)
             };
-            
+
             const newField = {
                 id: uuidv4(),
                 ...sanitizedPreset
             };
-            
+
             // Use functional updates to ensure we're using latest state
             setFormFields(prevFields => {
                 // Create a safe copy of the fields first
                 const safeFields = JSON.parse(JSON.stringify(prevFields));
-                
+
                 // Check for duplicate data indexes
                 const baseDataIndex = newField.dataIndex;
                 let dataIndex = baseDataIndex;
                 let counter = 1;
-                
+
                 // If the field name already exists, add a number to make it unique
                 while (safeFields.some(f => f.dataIndex === dataIndex)) {
                     dataIndex = `${baseDataIndex}${counter}`;
                     counter++;
                 }
-                
+
                 newField.dataIndex = dataIndex;
-                
+
                 message.success(`"${newField.title}" field added`);
                 return [...safeFields, newField];
             });
@@ -1076,7 +1100,7 @@ const FormBuilder = () => {
             message.error('Failed to add preset field');
         }
     };
-    
+
     // Edit an existing field
     const handleEditField = (field) => {
         try {
@@ -1084,12 +1108,12 @@ const FormBuilder = () => {
                 message.error('Invalid field selected for editing');
                 return;
             }
-            
+
             // Create a proper deep copy to avoid reference issues
             // Using JSON.parse(JSON.stringify()) to break all potential circular references
             const fieldCopy = JSON.parse(JSON.stringify(field));
             setCurrentField(fieldCopy);
-            
+
             // Set form values, explicitly extracting only the properties we need
             form.setFieldsValue({
                 dataIndex: fieldCopy.dataIndex,
@@ -1101,25 +1125,25 @@ const FormBuilder = () => {
                 options: Array.isArray(fieldCopy.options) ? fieldCopy.options : [],
                 cardGroup: fieldCopy.cardGroup || null
             });
-            
+
             setFieldFormVisible(true);
         } catch (error) {
             console.error('Error editing field:', error);
             message.error('Failed to edit field');
         }
     };
-    
+
     // Save field from form
     const handleSaveField = async () => {
         try {
             // Validate all form fields
             const values = await form.validateFields();
-            
+
             if (!currentField || !currentField.id) {
                 message.error('Missing field information');
                 return;
             }
-            
+
             // Create a clean field object with only the properties we need
             const fieldToSave = {
                 id: currentField.id,
@@ -1134,15 +1158,15 @@ const FormBuilder = () => {
                 sortable: Boolean(values.sortable),
                 cardGroup: values.cardGroup
             };
-            
+
             // Use functional updates to ensure we're using latest state
             setFormFields(prevFields => {
                 try {
                     // Create a safe copy of previous fields to avoid circular references
                     const safeFields = JSON.parse(JSON.stringify(prevFields));
-                    
+
                     const existingField = safeFields.some(f => f.id === currentField.id);
-                    
+
                     if (existingField) {
                         // Update existing field
                         message.success(`Field "${fieldToSave.title}" updated successfully`);
@@ -1158,14 +1182,14 @@ const FormBuilder = () => {
                     return prevFields; // Return unchanged if there's an error
                 }
             });
-            
+
             setFieldFormVisible(false);
         } catch (error) {
             console.error('Validation failed:', error);
             message.error('Please check form fields and try again');
         }
     };
-    
+
     // Delete a field
     const handleDeleteField = (fieldId) => {
         try {
@@ -1173,10 +1197,10 @@ const FormBuilder = () => {
                 message.error('Invalid field selected for deletion');
                 return;
             }
-            
+
             // Find the field to show in success message
             const fieldToDelete = formFields.find(field => field.id === fieldId);
-            
+
             // Use functional update to ensure we're working with latest state
             setFormFields(prevFields => {
                 // Remove field
@@ -1187,13 +1211,13 @@ const FormBuilder = () => {
                 }
                 return updatedFields;
             });
-            
+
         } catch (error) {
             console.error('Error deleting field:', error);
             message.error('Failed to delete field');
         }
     };
-    
+
     // Component to render visual example of a field type
     const FieldTypeExample = ({ type }) => {
         // Sample data and components for each field type
@@ -1203,8 +1227,8 @@ const FormBuilder = () => {
             textArea: <TextArea placeholder="Enter description..." rows={2} />,
             number: <InputNumber placeholder="0" min={0} />,
             select: (
-                <Select 
-                    placeholder="Select an option" 
+                <Select
+                    placeholder="Select an option"
                     options={[
                         { label: 'Option 1', value: '1' },
                         { label: 'Option 2', value: '2' }
@@ -1221,8 +1245,8 @@ const FormBuilder = () => {
                 </Radio.Group>
             ),
             tags: (
-                <Select 
-                    mode="tags" 
+                <Select
+                    mode="tags"
                     placeholder="Select or add tags"
                     options={[
                         { label: 'Tag 1', value: 'tag1' },
@@ -1232,23 +1256,23 @@ const FormBuilder = () => {
                 />
             )
         };
-    
+
         return examples[type] || <Input disabled placeholder="Select a field type" />;
     };
-    
+
     // Field type selection with visual examples
     const renderFieldTypeSelection = () => {
         const selectedType = form.getFieldValue('type') || 'input';
-        
+
         const handleTypeSelect = (type) => {
             form.setFieldValue('type', type);
             setCurrentFieldType(type); // Update the current field type state to trigger re-render
-            
+
             // Reset options if switching to a type that doesn't use them
             if (!['select', 'radio', 'tags', 'checkbox'].includes(type)) {
                 form.setFieldValue('options', []);
             }
-            
+
             // If switching to a type that uses options but none exist, add default ones
             if (['select', 'radio', 'tags', 'checkbox'].includes(type) &&
                 (!form.getFieldValue('options') || form.getFieldValue('options').length === 0)) {
@@ -1258,7 +1282,7 @@ const FormBuilder = () => {
                 ]);
             }
         };
-        
+
         const typeDescriptions = {
             input: "Standard text input for single-line text",
             email: "Email input with validation",
@@ -1271,7 +1295,7 @@ const FormBuilder = () => {
             radio: "Single selection radio buttons",
             tags: "Multiple tags with ability to add custom values"
         };
-        
+
         return (
             <>
                 <div style={{ marginBottom: 16 }}>
@@ -1280,7 +1304,7 @@ const FormBuilder = () => {
                         Choose how users will input data for this field
                     </Text>
                 </div>
-                
+
                 <Row gutter={[16, 16]}>
                     {fieldTypes.map(type => (
                         <Col span={8} key={type.value}>
@@ -1289,7 +1313,7 @@ const FormBuilder = () => {
                                 size="small"
                                 className={selectedType === type.value ? 'selected-type' : ''}
                                 onClick={() => handleTypeSelect(type.value)}
-                                style={{ 
+                                style={{
                                     cursor: 'pointer',
                                     borderColor: selectedType === type.value ? '#1890ff' : '#f0f0f0',
                                     background: selectedType === type.value ? '#e6f7ff' : '#fff'
@@ -1318,13 +1342,13 @@ const FormBuilder = () => {
             </>
         );
     };
-    
+
     // Live field preview based on current settings
     const renderFieldPreview = () => {
         const fieldValues = form.getFieldsValue();
         const { title, type, required } = fieldValues;
         const displayTitle = title || 'Field Label';
-        
+
         return (
             <Card
                 title="Live Preview"
@@ -1344,29 +1368,29 @@ const FormBuilder = () => {
             </Card>
         );
     };
-    
+
     // State for field form tabs
-    
+
     // Check if the current field type needs options
     const checkNeedsOptions = () => {
         const currentType = form?.getFieldValue('type');
         return ['select', 'radio', 'tags', 'checkbox'].includes(currentType);
     };
-    
+
     // Effect to update tab notification when field type changes - moved outside renderFieldForm
     useEffect(() => {
         // Skip if form is not available
         if (!form) return;
-        
+
         const fieldType = form.getFieldValue('type');
         const needsOptions = ['select', 'radio', 'tags', 'checkbox'].includes(fieldType);
         const options = form.getFieldValue('options') || [];
-        
+
         if (needsOptions && options.length === 0 && fieldFormVisible) {
             message.info('This field type requires options. Please add them in the Options tab.');
         }
     }, [fieldFormVisible, form]);
-    
+
     // Function to handle saving the form design
     const handleSaveDesign = async () => {
 
@@ -1486,7 +1510,7 @@ const FormBuilder = () => {
 
     // Field form for add/edit
     const renderFieldForm = () => {
-        
+
         return (
             <Drawer
                 title={currentField?.id ? 'Edit Field' : 'Add Field'}
@@ -1505,7 +1529,7 @@ const FormBuilder = () => {
                 }
             >
                 <Form
-                    form={form}
+                    form={form} // Pass the form instance here
                     layout="vertical"
                     initialValues={{
                         type: 'input',
@@ -1515,9 +1539,9 @@ const FormBuilder = () => {
                         options: []
                     }}
                 >
-                    <Tabs 
-                                activeKey={currentFieldFormTab} 
-                                onChange={setCurrentFieldFormTab}
+                    <Tabs
+                        activeKey={currentFieldFormTab}
+                        onChange={setCurrentFieldFormTab}
                         items={[
                             {
                                 key: 'basic',
@@ -1540,8 +1564,8 @@ const FormBuilder = () => {
                                                     ]}
                                                     tooltip="This will be used as the data index in code. Use camelCase naming (e.g. userName)"
                                                 >
-                                                    <Input 
-                                                        placeholder="e.g. username, email, status" 
+                                                    <Input
+                                                        placeholder="e.g. username, email, status"
                                                         suffix={<QuestionCircleOutlined />}
                                                     />
                                                 </Form.Item>
@@ -1556,14 +1580,14 @@ const FormBuilder = () => {
                                                     ]}
                                                     tooltip="This will be shown as column header and form label"
                                                 >
-                                                    <Input 
-                                                        placeholder="e.g. Username, Email, Status" 
+                                                    <Input
+                                                        placeholder="e.g. Username, Email, Status"
                                                         suffix={<QuestionCircleOutlined />}
                                                     />
                                                 </Form.Item>
                                             </Col>
                                         </Row>
-                                        
+
                                         <Form.Item
                                             name="type"
                                             hidden
@@ -1584,10 +1608,10 @@ const FormBuilder = () => {
                                                 ))}
                                             </Select>
                                         </Form.Item>
-                                        
+
                                         {renderFieldTypeSelection()}
                                         {renderFieldPreview()}
-                                        
+
                                         <Row gutter={16}>
                                             <Col span={8}>
                                                 <Form.Item
@@ -1625,8 +1649,8 @@ const FormBuilder = () => {
                                 label: (
                                     <span>
                                         <SettingOutlined /> Options
-                                        {checkNeedsOptions() && 
-                                            (form.getFieldValue('options')?.length === 0) && 
+                                        {checkNeedsOptions() &&
+                                            (form.getFieldValue('options')?.length === 0) &&
                                             <Badge count="!" style={{ backgroundColor: '#faad14', marginLeft: 5 }} />
                                         }
                                     </span>
@@ -1636,7 +1660,7 @@ const FormBuilder = () => {
                                         {(fields, { add, remove }) => {
                                             const selectedType = form.getFieldValue('type');
                                             const showOptions = ['select', 'radio', 'tags', 'checkbox'].includes(selectedType);
-                                            
+
                                             if (!showOptions) {
                                                 return (
                                                     <Empty
@@ -1645,8 +1669,8 @@ const FormBuilder = () => {
                                                             <span>
                                                                 Options are only available for Select, Radio, Checkbox, and Tags field types.
                                                                 <br />
-                                                                <Button 
-                                                                    type="link" 
+                                                                <Button
+                                                                    type="link"
                                                                     onClick={() => setCurrentFieldFormTab('basic')}
                                                                 >
                                                                     Change field type
@@ -1656,13 +1680,13 @@ const FormBuilder = () => {
                                                     />
                                                 );
                                             }
-                                            
+
                                             return (
                                                 <>
                                                     <Alert
                                                         message={`Configure options for your ${
-                                                            selectedType === 'select' ? 'dropdown' : 
-                                                            selectedType === 'radio' ? 'radio buttons' : 
+                                                            selectedType === 'select' ? 'dropdown' :
+                                                            selectedType === 'radio' ? 'radio buttons' :
                                                             'tags'
                                                         }`}
                                                         description="Add, edit or remove options that will be available to users"
@@ -1670,7 +1694,7 @@ const FormBuilder = () => {
                                                         showIcon
                                                         style={{ marginBottom: 16 }}
                                                     />
-                                                    
+
                                                     {fields.length === 0 ? (
                                                         <Empty
                                                             image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -1688,9 +1712,9 @@ const FormBuilder = () => {
                                                     ) : (
                                                         <div style={{ maxHeight: '400px', overflow: 'auto', padding: '8px 0' }}>
                                                             {fields.map((field, index) => (
-                                                                <Card 
-                                                                    key={field.key} 
-                                                                    size="small" 
+                                                                <Card
+                                                                    key={field.key}
+                                                                    size="small"
                                                                     style={{ marginBottom: 8 }}
                                                                     title={`Option ${index + 1}`}
                                                                     extra={
@@ -1730,7 +1754,7 @@ const FormBuilder = () => {
                                                             ))}
                                                         </div>
                                                     )}
-                                                    
+
                                                     <Form.Item style={{ marginTop: 16 }}>
                                                         <Button
                                                             type="dashed"
@@ -1753,7 +1777,7 @@ const FormBuilder = () => {
             </Drawer>
         );
     };
-    
+
     // Duplicate a field
     const handleDuplicateField = (field) => {
         try {
@@ -1761,35 +1785,35 @@ const FormBuilder = () => {
                 message.error('Invalid field selected for duplication');
                 return;
             }
-            
+
             // Create a deep copy of the field
             const fieldCopy = JSON.parse(JSON.stringify(field));
-            
+
             // Create a new field based on the copied one
             const newField = {
                 ...fieldCopy,
                 id: uuidv4(), // New unique ID
             };
-            
+
             // Use functional updates to ensure we're using latest state
             setFormFields(prevFields => {
                 // Create a safe copy of the fields first
                 const safeFields = JSON.parse(JSON.stringify(prevFields));
-                
+
                 // Check for duplicate data indexes
                 const baseDataIndex = newField.dataIndex;
                 let dataIndex = `${baseDataIndex}Copy`;
                 let counter = 1;
-                
+
                 // If the field name already exists, add a number to make it unique
                 while (safeFields.some(f => f.dataIndex === dataIndex)) {
                     dataIndex = `${baseDataIndex}Copy${counter}`;
                     counter++;
                 }
-                
+
                 newField.dataIndex = dataIndex;
                 newField.title = `${newField.title} (Copy)`;
-                
+
                 message.success(`Field "${field.title}" duplicated`);
                 return [...safeFields, newField];
             });
@@ -1798,7 +1822,7 @@ const FormBuilder = () => {
             message.error('Failed to duplicate field');
         }
     };
-    
+
     // Field list table
     const renderFieldsTable = () => {
         const columns = [
@@ -1871,7 +1895,7 @@ const FormBuilder = () => {
                 )
             }
         ];
-        
+
         return (
             <Table
                 columns={columns}
@@ -1882,7 +1906,7 @@ const FormBuilder = () => {
             />
         );
     };
-    
+
     // Form settings form
     const renderSettingsForm = () => {
         const handleSettingsChange = (key, value, index, subKey) => {
@@ -1952,7 +1976,7 @@ const FormBuilder = () => {
                     } else {
                         // Validate input based on field type
                         let validatedValue = value;
-                        
+
                         // Special validation for numeric inputs
                         if (['labelCol', 'wrapperCol'].includes(key) && typeof value === 'object') {
                             // Ensure span is a valid number between 1-24
@@ -1988,343 +2012,371 @@ const FormBuilder = () => {
 
         return (
             <Form layout="vertical">
-                <Tabs activeKey={currentSettingsTab} onChange={setCurrentSettingsTab}>
-                    <Tabs.TabPane tab="General" key="general">
-                        <Form.Item label="Page Title">
-                            <Input
-                                value={formSettings.pageTitle}
-                                onChange={(e) => handleSettingsChange('pageTitle', e.target.value)}
-                            />
-                        </Form.Item>
+                <Tabs
+                    activeKey={currentSettingsTab}
+                    onChange={setCurrentSettingsTab}
+                    items={[
+                        {
+                            key: "general",
+                            label: "General",
+                            children: (
+                                <>
+                                    <Form.Item label="Page Title">
+                                        <Input
+                                            value={formSettings.pageTitle}
+                                            onChange={(e) => handleSettingsChange('pageTitle', e.target.value)}
+                                        />
+                                    </Form.Item>
 
-                        <Form.Item label="Form Title">
-                            <Input
-                                value={formSettings.title}
-                                onChange={(e) => handleSettingsChange('title', e.target.value)}
-                            />
-                        </Form.Item>
+                                    <Form.Item label="Form Title">
+                                        <Input
+                                            value={formSettings.title}
+                                            onChange={(e) => handleSettingsChange('title', e.target.value)}
+                                        />
+                                    </Form.Item>
 
-                        <Form.Item label="Modal Title">
-                            <Input
-                                value={formSettings.modalTitle}
-                                onChange={(e) => handleSettingsChange('modalTitle', e.target.value)}
-                            />
-                        </Form.Item>
+                                    <Form.Item label="Modal Title">
+                                        <Input
+                                            value={formSettings.modalTitle}
+                                            onChange={(e) => handleSettingsChange('modalTitle', e.target.value)}
+                                        />
+                                    </Form.Item>
 
-                        <Form.Item label="Form Layout">
-                            <Select
-                                value={formSettings.layout}
-                                onChange={(value) => handleSettingsChange('layout', value)}
-                                options={[
-                                    { label: 'Horizontal', value: 'horizontal' },
-                                    { label: 'Vertical', value: 'vertical' },
-                                    { label: 'Inline', value: 'inline' }
-                                ]}
-                            />
-                        </Form.Item>
+                                    <Form.Item label="Form Layout">
+                                        <Select
+                                            value={formSettings.layout}
+                                            onChange={(value) => handleSettingsChange('layout', value)}
+                                            options={[
+                                                { label: 'Horizontal', value: 'horizontal' },
+                                                { label: 'Vertical', value: 'vertical' },
+                                                { label: 'Inline', value: 'inline' }
+                                            ]}
+                                        />
+                                    </Form.Item>
 
-                        <Form.Item label="Grid Layout Columns (Form & Ungrouped Fields)">
-                            <Segmented
-                                block
-                                options={[
-                                    {
-                                        label: (
-                                            <Tooltip title="Single Column">
-                                                <div style={{ padding: '4px 0' }}>
-                                                    <BarsOutlined />
-                                                    <div>1 Column</div>
+                                    <Form.Item label="Grid Layout Columns (Form & Ungrouped Fields)">
+                                        <Segmented
+                                            block
+                                            options={[
+                                                {
+                                                    label: (
+                                                        <Tooltip title="Single Column">
+                                                            <div style={{ padding: '4px 0' }}>
+                                                                <BarsOutlined />
+                                                                <div>1 Column</div>
+                                                            </div>
+                                                        </Tooltip>
+                                                    ),
+                                                    value: 1
+                                                },
+                                                {
+                                                    label: (
+                                                        <Tooltip title="Two Columns">
+                                                            <div style={{ padding: '4px 0' }}>
+                                                                <LayoutOutlined />
+                                                                <div>2 Columns</div>
+                                                            </div>
+                                                        </Tooltip>
+                                                    ),
+                                                    value: 2
+                                                },
+                                                {
+                                                    label: (
+                                                        <Tooltip title="Three Columns">
+                                                            <div style={{ padding: '4px 0' }}>
+                                                                <TableOutlined />
+                                                                <div>3 Columns</div>
+                                                            </div>
+                                                        </Tooltip>
+                                                    ),
+                                                    value: 3
+                                                },
+                                                {
+                                                    label: (
+                                                        <Tooltip title="Four Columns">
+                                                            <div style={{ padding: '4px 0' }}>
+                                                                <AppstoreOutlined />
+                                                                <div>4 Columns</div>
+                                                            </div>
+                                                        </Tooltip>
+                                                    ),
+                                                    value: 4
+                                                }
+                                            ]}
+                                            value={formSettings.gridColumns || 1}
+                                            onChange={(value) => handleSettingsChange('gridColumns', value)}
+                                        />
+                                    </Form.Item>
+
+                                    <Row gutter={16}>
+                                        <Col span={12}>
+                                            <Form.Item label="Label Column Width (Form & Ungrouped Fields)">
+                                                <Input
+                                                    type="number"
+                                                    min={1}
+                                                    max={24}
+                                                    value={formSettings.labelCol?.span}
+                                                    onChange={(e) => handleSettingsChange('labelCol', { span: parseInt(e.target.value) })}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item label="Wrapper Column Width (Form & Ungrouped Fields)">
+                                                <Input
+                                                    type="number"
+                                                    min={1}
+                                                    max={24}
+                                                    value={formSettings.wrapperCol?.span}
+                                                    onChange={(e) => handleSettingsChange('wrapperCol', { span: parseInt(e.target.value) })}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                </>
+                            )
+                        },
+                        {
+                            key: "pagination",
+                            label: "Pagination",
+                            children: (
+                                <>
+                                    <Row gutter={16}>
+                                        <Col span={12}>
+                                            <Form.Item label="Page Size">
+                                                <InputNumber
+                                                    value={formSettings.paginationSettings?.pageSize}
+                                                    onChange={(value) => handleSettingsChange('paginationSettings', value, undefined, 'pageSize')}
+                                                    min={1}
+                                                    style={{ width: '100%' }}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item label="Page Size Options">
+                                                <Select
+                                                    mode="tags"
+                                                    tokenSeparators={[',']}
+                                                    value={formSettings.paginationSettings?.pageSizeOptions || []}
+                                                    onChange={(values) => {
+                                                        // Convert string values to strings and ensure they're valid numbers
+                                                        const validValues = values
+                                                            .map(val => String(val).trim())
+                                                            .filter(val => val && !isNaN(val));
+                                                        handleSettingsChange('paginationSettings', validValues, undefined, 'pageSizeOptions');
+                                                    }}
+                                                    placeholder="Add page size options (e.g., 10, 20, 50)"
+                                                    style={{ width: '100%' }}
+                                                />
+                                                <div style={{ fontSize: '12px', color: '#8c8c8c', marginTop: '4px' }}>
+                                                    Type numbers and press Enter or comma to add values
                                                 </div>
-                                            </Tooltip>
-                                        ),
-                                        value: 1
-                                    },
-                                    {
-                                        label: (
-                                            <Tooltip title="Two Columns">
-                                                <div style={{ padding: '4px 0' }}>
-                                                    <LayoutOutlined />
-                                                    <div>2 Columns</div>
-                                                </div>
-                                            </Tooltip>
-                                        ),
-                                        value: 2
-                                    },
-                                    {
-                                        label: (
-                                            <Tooltip title="Three Columns">
-                                                <div style={{ padding: '4px 0' }}>
-                                                    <TableOutlined />
-                                                    <div>3 Columns</div>
-                                                </div>
-                                            </Tooltip>
-                                        ),
-                                        value: 3
-                                    },
-                                    {
-                                        label: (
-                                            <Tooltip title="Four Columns">
-                                                <div style={{ padding: '4px 0' }}>
-                                                    <AppstoreOutlined />
-                                                    <div>4 Columns</div>
-                                                </div>
-                                            </Tooltip>
-                                        ),
-                                        value: 4
-                                    }
-                                ]}
-                                value={formSettings.gridColumns || 1}
-                                onChange={(value) => handleSettingsChange('gridColumns', value)}
-                            />
-                        </Form.Item>
-
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item label="Label Column Width (Form & Ungrouped Fields)">
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        max={24}
-                                        value={formSettings.labelCol?.span}
-                                        onChange={(e) => handleSettingsChange('labelCol', { span: parseInt(e.target.value) })}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item label="Wrapper Column Width (Form & Ungrouped Fields)">
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        max={24}
-                                        value={formSettings.wrapperCol?.span}
-                                        onChange={(e) => handleSettingsChange('wrapperCol', { span: parseInt(e.target.value) })}
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </Tabs.TabPane>
-                    <Tabs.TabPane tab="Pagination" key="pagination">
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item label="Page Size">
-                                    <InputNumber
-                                        value={formSettings.paginationSettings?.pageSize}
-                                        onChange={(value) => handleSettingsChange('paginationSettings', value, undefined, 'pageSize')}
-                                        min={1}
-                                        style={{ width: '100%' }}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item label="Page Size Options">
-                                    <Select
-                                        mode="tags"
-                                        tokenSeparators={[',']}
-                                        value={formSettings.paginationSettings?.pageSizeOptions || []}
-                                        onChange={(values) => {
-                                            // Convert string values to strings and ensure they're valid numbers
-                                            const validValues = values
-                                                .map(val => String(val).trim())
-                                                .filter(val => val && !isNaN(val));
-                                            handleSettingsChange('paginationSettings', validValues, undefined, 'pageSizeOptions');
-                                        }}
-                                        placeholder="Add page size options (e.g., 10, 20, 50)"
-                                        style={{ width: '100%' }}
-                                    />
-                                    <div style={{ fontSize: '12px', color: '#8c8c8c', marginTop: '4px' }}>
-                                        Type numbers and press Enter or comma to add values
-                                    </div>
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item label="Show Size Changer" valuePropName="checked">
-                                    <Switch
-                                        checked={formSettings.paginationSettings?.showSizeChanger}
-                                        onChange={(checked) => handleSettingsChange('paginationSettings', checked, undefined, 'showSizeChanger')}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item label="Show Quick Jumper" valuePropName="checked">
-                                    <Switch
-                                        checked={formSettings.paginationSettings?.showQuickJumper}
-                                        onChange={(checked) => handleSettingsChange('paginationSettings', checked, undefined, 'showQuickJumper')}
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </Tabs.TabPane>
-                    <Tabs.TabPane tab="Global Filters" key="globalFilters">
-                        {(formSettings.globalFilters || []).map((filter, index) => (
-                            <Card key={filter.id || index} size="small" title={`Filter ${index + 1}: ${filter.title || 'New Filter'}`} style={{ marginBottom: 16 }} extra={<Button icon={<DeleteOutlined />} danger type="text" onClick={() => handleSettingsChange('globalFilters', null, index)} />}>
-                                <Row gutter={16}>
-                                    <Col span={12}>
-                                        <Form.Item label="Filter Title">
-                                            <Input value={filter.title} onChange={(e) => handleSettingsChange('globalFilters', e.target.value, index, 'title')} placeholder="e.g., Search by Name" />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={12}>
-                                        <Form.Item label="Filter Type">
-                                            <Select value={filter.type} onChange={(value) => handleSettingsChange('globalFilters', value, index, 'type')}>
-                                                <Select.Option value="text">Text Search</Select.Option>
-                                                <Select.Option value="select">Select Dropdown</Select.Option>
-                                                <Select.Option value="dateRange">Date Range</Select.Option>
-                                            </Select>
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                                <Form.Item label="Field(s) to Filter">
-                                    <Select
-                                        mode="multiple"
-                                        allowClear
-                                        style={{ width: '100%' }}
-                                        placeholder="Select fields to filter"
-                                        value={typeof filter.field === 'string' ? filter.field.split(',').map(s => s.trim()).filter(s => s) : (filter.field || [])}
-                                        onChange={(value) => handleSettingsChange('globalFilters', value, index, 'field')}
-                                        options={formFields.map(f => ({ label: f.title || f.dataIndex, value: f.dataIndex }))}
-                                    />
-                                </Form.Item>
-                                {filter.type === 'select' && (
-                                    <Form.List name={['globalFilters', index, 'options']}>
-                                        {(fields, { add, remove }) => (
-                                            <>
-                                                <Text strong style={{ marginBottom: 8, display: 'block' }}>Options for Select Filter:</Text>
-                                                {fields.map((optField, optIndex) => (
-                                                    <Card key={optField.key} size="small" style={{ marginBottom: 8, background: '#f9f9f9' }} title={`Option ${optIndex + 1}`}>
-                                                        <Row gutter={8}>
-                                                            <Col span={10}>
-                                                                <Form.Item name={[optField.name, 'label']} label="Label" rules={[{required: true}]}>
-                                                                    <Input placeholder="Display Label" onChange={(e) => handleSettingsChange('globalFilters', {...(formSettings.globalFilters[index].options[optIndex]), label: e.target.value, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4()}, index, 'options', {optIndex: optIndex, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4(), label: e.target.value, value: formSettings.globalFilters[index].options[optIndex]?.value})} />
-                                                                </Form.Item>
-                                                            </Col>
-                                                            <Col span={10}>
-                                                                <Form.Item name={[optField.name, 'value']} label="Value" rules={[{required: true}]}>
-                                                                    <Input placeholder="Stored Value" onChange={(e) => handleSettingsChange('globalFilters', {...(formSettings.globalFilters[index].options[optIndex]), value: e.target.value, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4()}, index, 'options', {optIndex: optIndex, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4(), label: formSettings.globalFilters[index].options[optIndex]?.label, value: e.target.value})} />
-                                                                </Form.Item>
-                                                            </Col>
-                                                            <Col span={4} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '30px' }}>
-                                                                <Button icon={<DeleteOutlined />} danger type="text" onClick={() => { remove(optField.name); handleSettingsChange('globalFilters', {optIndex: optIndex}, index, 'options', null); }} />
-                                                            </Col>
-                                                        </Row>
-                                                    </Card>
-                                                ))}
-                                                <Button type="dashed" onClick={() => { add({label: '', value: ''}); handleSettingsChange('globalFilters', {label: 'New Option', value: 'new_option', id: uuidv4()}, index, 'options'); }} block icon={<PlusOutlined />}>
-                                                    Add Option
-                                                </Button>
-                                            </>
-                                        )}
-                                    </Form.List>
-                                )}
-                            </Card>
-                        ))}
-                        <Button type="dashed" onClick={() => handleSettingsChange('globalFilters', { id: uuidv4(), title: 'New Filter', field: [], type: 'text', options: [] })} block icon={<PlusOutlined />}>
-                            Add Global Filter
-                        </Button>
-                    </Tabs.TabPane>
-                    <Tabs.TabPane tab="Card Groups" key="cardGroups">
-                        <Paragraph type="secondary">
-                            Define groups of fields to be displayed within separate cards in the form. This is useful for organizing complex forms.
-                        </Paragraph>
-                        {(formSettings.cardGroupSetting || []).map((group, index) => (
-                            <Card
-                                key={index}
-                                title={`Card Group: ${group.title || group.key}`}
-                                size="small"
-                                style={{ marginBottom: 16 }}
-                                extra={
-                                    <Button
-                                        icon={<DeleteOutlined />}
-                                        onClick={() => handleSettingsChange('cardGroupSetting', null, index)}
-                                        danger
-                                        type="text"
-                                        title="Remove Card Group"
-                                    />
-                                }
-                            >
-                                <Row gutter={16}>
-                                    <Col span={12}>
-                                        <Form.Item label="Group Key (Unique ID)">
-                                            <Input
-                                                value={group.key}
-                                                onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'key')}
-                                                placeholder="e.g., personalDetails, addressInfo"
-                                            />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={12}>
-                                        <Form.Item label="Group Title">
-                                            <Input
-                                                value={group.title}
-                                                onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'title')}
-                                                placeholder="e.g., Personal Details"
-                                            />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                                <Form.Item label="Group Description">
-                                    <Input.TextArea
-                                        value={group.description}
-                                        onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'description')}
-                                        placeholder="Optional description for the card group"
-                                        rows={2}
-                                    />
-                                </Form.Item>
-                                <Form.Item label="Group Layout">
-                                    <Select
-                                        value={group.layout}
-                                        onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'layout')}
-                                        options={[
-                                            { label: 'Horizontal', value: 'horizontal' },
-                                            { label: 'Vertical', value: 'vertical' },
-                                            { label: 'Inline', value: 'inline' }
-                                        ]}
-                                    />
-                                </Form.Item>
-                                <Form.Item label="Group Grid Layout Columns">
-                                    <Segmented
-                                        block
-                                        options={[
-                                            { label: (<Tooltip title="Single Column"><BarsOutlined /> 1</Tooltip>), value: 1 },
-                                            { label: (<Tooltip title="Two Columns"><LayoutOutlined /> 2</Tooltip>), value: 2 },
-                                            { label: (<Tooltip title="Three Columns"><TableOutlined /> 3</Tooltip>), value: 3 },
-                                            { label: (<Tooltip title="Four Columns"><AppstoreOutlined /> 4</Tooltip>), value: 4 }
-                                        ]}
-                                        value={group.gridColumns || 1}
-                                        onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'gridColumns')}
-                                    />
-                                </Form.Item>
-                                <Row gutter={16}>
-                                    <Col span={12}>
-                                        <Form.Item label="Group Label Column Width">
-                                            <InputNumber
-                                                min={1}
-                                                max={24}
-                                                value={group.labelCol?.span}
-                                                onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'labelCol')}
-                                                style={{width: '100%'}}
-                                            />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={12}>
-                                        <Form.Item label="Group Wrapper Column Width">
-                                            <InputNumber
-                                                min={1}
-                                                max={24}
-                                                value={group.wrapperCol?.span}
-                                                onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'wrapperCol')}
-                                                style={{width: '100%'}}
-                                            />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                            </Card>
-                        ))}
-                        <Button type="dashed" onClick={addCardGroup} block icon={<PlusOutlined />}>
-                            Add Card Group
-                        </Button>
-                    </Tabs.TabPane>
-                </Tabs>
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                    <Row gutter={16}>
+                                        <Col span={12}>
+                                            <Form.Item label="Show Size Changer" valuePropName="checked">
+                                                <Switch
+                                                    checked={formSettings.paginationSettings?.showSizeChanger}
+                                                    onChange={(checked) => handleSettingsChange('paginationSettings', checked, undefined, 'showSizeChanger')}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item label="Show Quick Jumper" valuePropName="checked">
+                                                <Switch
+                                                    checked={formSettings.paginationSettings?.showQuickJumper}
+                                                    onChange={(checked) => handleSettingsChange('paginationSettings', checked, undefined, 'showQuickJumper')}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                </>
+                            )
+                        },
+                        {
+                            key: "globalFilters",
+                            label: "Global Filters",
+                            children: (
+                                <>
+                                    {(formSettings.globalFilters || []).map((filter, index) => (
+                                        <Card key={filter.id || index} size="small" title={`Filter ${index + 1}: ${filter.title || 'New Filter'}`} style={{ marginBottom: 16 }} extra={<Button icon={<DeleteOutlined />} danger type="text" onClick={() => handleSettingsChange('globalFilters', null, index)} />}>
+                                            <Row gutter={16}>
+                                                <Col span={12}>
+                                                    <Form.Item label="Filter Title">
+                                                        <Input value={filter.title} onChange={(e) => handleSettingsChange('globalFilters', e.target.value, index, 'title')} placeholder="e.g., Search by Name" />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item label="Filter Type">
+                                                        <Select value={filter.type} onChange={(value) => handleSettingsChange('globalFilters', value, index, 'type')}>
+                                                            <Select.Option value="text">Text Search</Select.Option>
+                                                            <Select.Option value="select">Select Dropdown</Select.Option>
+                                                            <Select.Option value="dateRange">Date Range</Select.Option>
+                                                        </Select>
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                            <Form.Item label="Field(s) to Filter">
+                                                <Select
+                                                    mode="multiple"
+                                                    allowClear
+                                                    style={{ width: '100%' }}
+                                                    placeholder="Select fields to filter"
+                                                    value={typeof filter.field === 'string' ? filter.field.split(',').map(s => s.trim()).filter(s => s) : (filter.field || [])}
+                                                    onChange={(value) => handleSettingsChange('globalFilters', value, index, 'field')}
+                                                    options={formFields.map(f => ({ label: f.title || f.dataIndex, value: f.dataIndex }))}
+                                                />
+                                            </Form.Item>
+                                            {filter.type === 'select' && (
+                                                <Form.List name={['globalFilters', index, 'options']}>
+                                                    {(fields, { add, remove }) => (
+                                                        <>
+                                                            <Text strong style={{ marginBottom: 8, display: 'block' }}>Options for Select Filter:</Text>
+                                                            {fields.map((optField, optIndex) => (
+                                                                <Card key={optField.key} size="small" style={{ marginBottom: 8, background: '#f9f9f9' }} title={`Option ${optIndex + 1}`}>
+                                                                    <Row gutter={8}>
+                                                                        <Col span={10}>
+                                                                            <Form.Item name={[optField.name, 'label']} label="Label" rules={[{required: true}]}>
+                                                                                <Input placeholder="Display Label" onChange={(e) => handleSettingsChange('globalFilters', {...(formSettings.globalFilters[index].options[optIndex]), label: e.target.value, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4()}, index, 'options', {optIndex: optIndex, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4(), label: e.target.value, value: formSettings.globalFilters[index].options[optIndex]?.value})} />
+                                                                            </Form.Item>
+                                                                        </Col>
+                                                                        <Col span={10}>
+                                                                            <Form.Item name={[optField.name, 'value']} label="Value" rules={[{required: true}]}>
+                                                                                <Input placeholder="Stored Value" onChange={(e) => handleSettingsChange('globalFilters', {...(formSettings.globalFilters[index].options[optIndex]), value: e.target.value, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4()}, index, 'options', {optIndex: optIndex, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4(), label: formSettings.globalFilters[index].options[optIndex]?.label, value: e.target.value})} />
+                                                                            </Form.Item>
+                                                                        </Col>
+                                                                        <Col span={4} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '30px' }}>
+                                                                            <Button icon={<DeleteOutlined />} danger type="text" onClick={() => { remove(optField.name); handleSettingsChange('globalFilters', {optIndex: optIndex}, index, 'options', null); }} />
+                                                                        </Col>
+                                                                    </Row>
+                                                                </Card>
+                                                            ))}
+                                                            <Button type="dashed" onClick={() => { add({label: '', value: ''}); handleSettingsChange('globalFilters', {label: 'New Option', value: 'new_option', id: uuidv4()}, index, 'options'); }} block icon={<PlusOutlined />}>
+                                                                Add Option
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </Form.List>
+                                            )}
+                                        </Card>
+                                    ))}
+                                    <Button type="dashed" onClick={() => handleSettingsChange('globalFilters', { id: uuidv4(), title: 'New Filter', field: [], type: 'text', options: [] })} block icon={<PlusOutlined />}>
+                                        Add Global Filter
+                                    </Button>
+                                </>
+                            )
+                        },
+                        {
+                            key: "cardGroups",
+                            label: "Card Groups",
+                            children: (
+                                <>
+                                    <Paragraph type="secondary">
+                                        Define groups of fields to be displayed within separate cards in the form. This is useful for organizing complex forms.
+                                    </Paragraph>
+                                    {(formSettings.cardGroupSetting || []).map((group, index) => (
+                                        <Card
+                                            key={index}
+                                            title={`Card Group: ${group.title || group.key}`}
+                                            size="small"
+                                            style={{ marginBottom: 16 }}
+                                            extra={
+                                                <Button
+                                                    icon={<DeleteOutlined />}
+                                                    onClick={() => handleSettingsChange('cardGroupSetting', null, index)}
+                                                    danger
+                                                    type="text"
+                                                    title="Remove Card Group"
+                                                />
+                                            }
+                                        >
+                                            <Row gutter={16}>
+                                                <Col span={12}>
+                                                    <Form.Item label="Group Key (Unique ID)">
+                                                        <Input
+                                                            value={group.key}
+                                                            onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'key')}
+                                                            placeholder="e.g., personalDetails, addressInfo"
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item label="Group Title">
+                                                        <Input
+                                                            value={group.title}
+                                                            onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'title')}
+                                                            placeholder="e.g., Personal Details"
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                            <Form.Item label="Group Description">
+                                                <Input.TextArea
+                                                    value={group.description}
+                                                    onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'description')}
+                                                    placeholder="Optional description for the card group"
+                                                    rows={2}
+                                                />
+                                            </Form.Item>
+                                            <Form.Item label="Group Layout">
+                                                <Select
+                                                    value={group.layout}
+                                                    onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'layout')}
+                                                    options={[
+                                                        { label: 'Horizontal', value: 'horizontal' },
+                                                        { label: 'Vertical', value: 'vertical' },
+                                                        { label: 'Inline', value: 'inline' }
+                                                    ]}
+                                                />
+                                            </Form.Item>
+                                            <Form.Item label="Group Grid Layout Columns">
+                                                <Segmented
+                                                    block
+                                                    options={[
+                                                        { label: (<Tooltip title="Single Column"><BarsOutlined /> 1</Tooltip>), value: 1 },
+                                                        { label: (<Tooltip title="Two Columns"><LayoutOutlined /> 2</Tooltip>), value: 2 },
+                                                        { label: (<Tooltip title="Three Columns"><TableOutlined /> 3</Tooltip>), value: 3 },
+                                                        { label: (<Tooltip title="Four Columns"><AppstoreOutlined /> 4</Tooltip>), value: 4 }
+                                                    ]}
+                                                    value={group.gridColumns || 1}
+                                                    onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'gridColumns')}
+                                                />
+                                            </Form.Item>
+                                            <Row gutter={16}>
+                                                <Col span={12}>
+                                                    <Form.Item label="Group Label Column Width">
+                                                        <InputNumber
+                                                            min={1}
+                                                            max={24}
+                                                            value={group.labelCol?.span}
+                                                            onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'labelCol')}
+                                                            style={{width: '100%'}}
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item label="Group Wrapper Column Width">
+                                                        <InputNumber
+                                                            min={1}
+                                                            max={24}
+                                                            value={group.wrapperCol?.span}
+                                                            onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'wrapperCol')}
+                                                            style={{width: '100%'}}
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                        </Card>
+                                    ))}
+                                    <Button type="dashed" onClick={addCardGroup} block icon={<PlusOutlined />}>
+                                        Add Card Group
+                                    </Button>
+                                </>
+                            )
+                        }
+                    ]}
+                />
             </Form>
         );
     };
@@ -2333,17 +2385,17 @@ const FormBuilder = () => {
         <Card>
             <Title level={2}>Form Builder</Title>
             <Text>Design your user management form structure and generate code</Text>
-            
+
             {/* Template selection */}
             <div style={{ marginBottom: 24 }}>
                 <Card title="Form Template" size="small">
                     <div style={{ display: 'flex', overflowX: 'auto', gap: 16, padding: '8px 0' }}>
                         {formTemplates.map(template => (
-                            <Card 
+                            <Card
                                 key={template.id}
                                 hoverable
-                                style={{ 
-                                    width: 200, 
+                                style={{
+                                    width: 200,
                                     border: selectedTemplate === template.id ? '2px solid #1890ff' : '1px solid #f0f0f0',
                                     background: selectedTemplate === template.id ? '#e6f7ff' : '#fff'
                                 }}
@@ -2363,8 +2415,8 @@ const FormBuilder = () => {
                     </div>
                 </Card>
             </div>
-            
-            <Tabs 
+
+            <Tabs
                 defaultActiveKey="1"
                 items={[
                     {
@@ -2387,13 +2439,13 @@ const FormBuilder = () => {
                                         </Button>
                                     </Tooltip>
                                 </div>
-                                
+
                                 {/* Field Presets Section */}
                                 <div style={{ marginBottom: '16px' }}>
                                     <Card size="small" title="Common Field Presets" style={{ marginBottom: '16px' }}>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                             {fieldPresets.map(preset => (
-                                                <Button 
+                                                <Button
                                                     key={preset.name}
                                                     icon={preset.icon}
                                                     onClick={() => handleAddPresetField(preset)}
@@ -2404,7 +2456,7 @@ const FormBuilder = () => {
                                         </div>
                                     </Card>
                                 </div>
-                                
+
                                 {renderFieldsTable()}
                             </>
                         )
@@ -2512,12 +2564,12 @@ const FormBuilder = () => {
                                         </Card>
                                     );
                                 })}
-                                
+
                                 {/* Show Empty state if no fields and no groups with fields */}
                                 {formFields.length === 0 && (!formSettings.cardGroupSetting || formSettings.cardGroupSetting.length === 0) && (
                                     <Empty description="No fields defined for preview." />
                                 )}
-                                
+
                                 {/* Common Submit/Cancel buttons at the end */}
                                 {(formFields.length > 0) && (
                                   <Form
@@ -2543,9 +2595,9 @@ const FormBuilder = () => {
                     }
                 ]}
             />
-            
+
             <Divider />
-            
+
             <div style={{ textAlign: 'right' }}>
                 <Space>
                     <Button onClick={handleSaveDesign} icon={<DatabaseOutlined />} type="default">
@@ -2559,7 +2611,7 @@ const FormBuilder = () => {
                     />
                 </Space>
             </div>
-            
+
             {renderFieldForm()}
         </Card>
     );

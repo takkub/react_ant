@@ -20,7 +20,7 @@ export const GET = async (req) => {
     try {
         // Parse request parameters
         const params = await checkPayload('get', req);
-        const {data} = await getData('form_designs',  { where: params });
+        const {data} = await getData('form_designs', params);
         if (data) {
             return new Response(JSON.stringify({
                 success: true,
