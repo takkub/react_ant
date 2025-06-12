@@ -44,7 +44,8 @@ export default function ProfilePage() {
                 form={form}
                 name="control-hooks"
                 onFinish={onFinish}
-            // style={{ maxWidth: 600 }}
+                // style={{ maxWidth: 600 }}
+                labelWrap
             >
                 <Row gutter={[16, 16]}>
                     <Col span={12}>
@@ -64,7 +65,7 @@ export default function ProfilePage() {
                         </Form.Item>
                     </Col>
                     <Col span={12}>
-                        <Form.Item name="status" label="Status" rules={[{ required: true }]}>
+                        <Form.Item name="status" label="Status">
                             <Select
                                 placeholder="Select Status"
                                 allowClear
