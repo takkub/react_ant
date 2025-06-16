@@ -1,84 +1,65 @@
-import React, { useState, useEffect } from "react";
-import { Select, Tooltip } from "antd";
-import { GlobalOutlined } from "@ant-design/icons";
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from "react";
+import { Dropdown, Menu, Tooltip } from "antd";
 import { useTranslation } from "react-i18next";
+import { useRouter } from 'next/navigation';
+import Image from "next/image";
 
-export default function LanguageSwitcher() {
-    const [isMounted, setIsMounted] = useState(false);
-    const router = useRouter();
-    const { i18n } = useTranslation();
-    const [currentLanguage, setCurrentLanguage] = useState("en");
+const LanguageSwitcher = () => {
+  const { i18n } = useTranslation();
+  const router = useRouter();
+  const [currentLanguage, setCurrentLanguage] = useState("en");
 
-    // Language options
-    const languages = [
-        { value: "en", label: "English" },
-        { value: "th", label: "ไทย" },
-    ];
+  const languages = [
+    { key: "en", label: "English", icon: "/flags/en.png" },
+    { key: "th", label: "ไทย", icon: "/flags/th.png" },
+  ];
 
-    useEffect(() => {
-        // Mark component as mounted
-        setIsMounted(true);
-        
-        // Initialize with current language from i18n
-        if (i18n.language) {
-            setCurrentLanguage(i18n.language);
-        }
-    }, [i18n.language]);
+  useEffect(() => {
+    const savedLang = localStorage.getItem("preferredLanguage");
+    const initialLang = savedLang || i18n.language || "en";
+    setCurrentLanguage(initialLang);
+    i18n.changeLanguage(initialLang);
+  }, []);
 
-    const handleLanguageChange = (value) => {
-        if (!isMounted) return;
-        
-        setCurrentLanguage(value);
-        
-        // Change language in i18n
-        i18n.changeLanguage(value);
-        
-        // Only use router when component is mounted (client-side)
-        if (typeof window !== "undefined" && router) {
-            try {
-                // In Next.js 13 app router, we don't have pathname, query, or asPath
-                // We can use simple push with locale parameter
-                const currentPath = window.location.pathname;
-                // Using the new router.push format for Next.js App Router
-                router.push(currentPath);
-                
-                // Store language preference in localStorage for persistence
-                localStorage.setItem('preferredLanguage', value);
-            } catch (error) {
-                console.error("Error changing language:", error);
-            }
-        }
-    };
+  const handleMenuClick = ({ key }) => {
+    setCurrentLanguage(key);
+    i18n.changeLanguage(key);
+    localStorage.setItem("preferredLanguage", key);
 
-    // If not mounted yet (server-side), render a simpler version
-    if (!isMounted) {
-        return (
-            <Tooltip title="Change Language">
-                <Select
-                    value={currentLanguage}
-                    options={languages}
-                    variant={'outlined'}
-                    style={{ width: 100 }}
-                    suffixIcon={<GlobalOutlined style={{ color: "black" }} />}
-                    dropdownStyle={{ minWidth: 120 }}
-                    disabled
-                />
-            </Tooltip>
-        );
+    if (typeof window !== "undefined" && router) {
+      router.push(window.location.pathname);
     }
+  };
 
-    return (
-        <Tooltip title="Change Language">
-            <Select
-                value={currentLanguage}
-                onChange={handleLanguageChange}
-                options={languages}
-                variant={'outlined'}
-                style={{ width: 100 }}
-                suffixIcon={<GlobalOutlined style={{ color: "black" }} />}
-                dropdownStyle={{ minWidth: 120 }}
-            />
-        </Tooltip>
-    );
-}
+  const menu = (
+    <Menu onClick={handleMenuClick} selectedKeys={[currentLanguage]}>
+      {languages.map(lang => (
+        <Menu.Item key={lang.key}>
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Image src={lang.icon} alt={lang.label} width={26} height={26} />
+            {lang.label}
+          </span>
+        </Menu.Item>
+      ))}
+    </Menu>
+  );
+
+  const currentLangData = languages.find(lang => lang.key === currentLanguage);
+
+  return (
+    <Tooltip>
+      <Dropdown overlay={menu} trigger={["hover"]}>
+        <span style={{ cursor: "pointer", display: "inline-block" }}>
+          <Image
+            src={currentLangData?.icon || "/flags/en.png"}
+            alt={currentLangData?.label || "Language"}
+            width={26}
+            height={26}
+          />
+        </span>
+      </Dropdown>
+    </Tooltip>
+  );
+};
+
+export default LanguageSwitcher;
