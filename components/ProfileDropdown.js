@@ -29,7 +29,9 @@ export default function ProfileDropdown() {
         router.push('/login');
     };
     const navigateTo = (path) => {
-        if (isMounted && router.isReady) {
+        
+        // if (isMounted && router.isReady) {
+        if (isMounted) {
             router.push(path);
         }
     };
@@ -39,18 +41,18 @@ export default function ProfileDropdown() {
             key: "profile",
             label: "My Profile",
             icon: <UserOutlined />,
-            // onClick: () => navigateTo("/profile"),
-            onClick: () => openDrawer({
-                title: 'My Profile',
-                content: (
-                    <div>
-                        <p><strong>Name:</strong> {user.name}</p>
-                        <p><strong>Username:</strong> {user.name}</p>
-                        <p><strong>Email:</strong> {user.email}</p>
-                        <p><strong>Role:</strong> Super Admin</p>
-                    </div>
-                )
-            })
+            onClick: () => navigateTo("/profile"),
+            // onClick: () => openDrawer({
+            //     title: 'My Profile',
+            //     content: (
+            //         <div>
+            //             <p><strong>Name:</strong> {user.name}</p>
+            //             <p><strong>Username:</strong> {user.name}</p>
+            //             <p><strong>Email:</strong> {user.email}</p>
+            //             <p><strong>Role:</strong> Super Admin</p>
+            //         </div>
+            //     )
+            // })
         },
         {
             key: "settings",

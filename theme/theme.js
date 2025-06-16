@@ -34,9 +34,9 @@ export const lightTheme = {
 export const darkTheme = {
     token: {
         fontFamily: 'Prompt, sans-serif',
-        colorPrimary: '#006964', 
-        colorTextBase: '#fff', 
-        colorTextSecondary: '#fff', 
+        colorPrimary: '#006964',
+        colorTextBase: '#fff',
+        colorTextSecondary: '#fff',
         colorBgContainer: '#212121',
         colorBgBase: '#5f5f5f',
         colorLink: '#1890ff',
@@ -53,6 +53,16 @@ export const darkTheme = {
             itemSelectedBg: "#006964",
             itemSelectedColor: "rgb(255, 255, 255)"
         },
+        Alert: {
+            colorInfoBg: "rgb(124, 124, 124)",
+            colorText: "rgb(0,0,0)",
+            colorTextHeading: "rgb(0,0,0)",
+            colorInfoBorder: "#006964",
+            colorInfo: "#006964"
+        },
+        Tooltip: {
+            colorBgSpotlight: "rgba(108,108,108,0.85)"
+        }
     },
 };
 export const WSOLTheme = {

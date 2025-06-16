@@ -926,6 +926,10 @@ const FormBuilder = () => {
                         setFormSettings(JSON.parse(JSON.stringify(template.settings)));
 
                         message.success(`Template changed to ${template.name}`);
+                    },
+                    okButtonProps: { 
+                    //    type: 'primary' ,
+                       style: { background: "#006964"}
                     }
                 });
             } else {
@@ -1315,8 +1319,8 @@ const FormBuilder = () => {
                                 onClick={() => handleTypeSelect(type.value)}
                                 style={{
                                     cursor: 'pointer',
-                                    borderColor: selectedType === type.value ? '#1890ff' : '#f0f0f0',
-                                    background: selectedType === type.value ? '#e6f7ff' : '#fff'
+                                    borderColor: selectedType === type.value ? '#006964' : '#f0f0f0',
+                                    // background: selectedType === type.value ? '#e6f7ff' : '#fff'
                                 }}
                                 title={
                                     <Space>
@@ -1326,7 +1330,7 @@ const FormBuilder = () => {
                                 }
                                 extra={
                                     selectedType === type.value && (
-                                        <CheckOutlined style={{ color: '#1890ff' }} />
+                                        <CheckOutlined style={{ color: '#006964' }} />
                                     )
                                 }
                             >
@@ -1857,7 +1861,7 @@ const FormBuilder = () => {
                 key: 'options',
                 render: (options) => options?.length > 0 ? (
                     <Tooltip title={options.map(o => `${o.label} (${o.value})`).join(', ')}>
-                        <Tag color="blue">{options.length} options</Tag>
+                        <Tag color="#006964">{options.length} options</Tag>
                     </Tooltip>
                 ) : null
             },
@@ -2396,8 +2400,8 @@ const FormBuilder = () => {
                                 hoverable
                                 style={{
                                     width: 200,
-                                    border: selectedTemplate === template.id ? '2px solid #1890ff' : '1px solid #f0f0f0',
-                                    background: selectedTemplate === template.id ? '#e6f7ff' : '#fff'
+                                    border: selectedTemplate === template.id ? '2px solid #006964' : '1px solid #f0f0f0',
+                                    // background: selectedTemplate === template.id ? '#e6f7ff' : '#fff'
                                 }}
                                 size="small"
                                 onClick={() => handleTemplateSelect(template.id)}
@@ -2407,7 +2411,7 @@ const FormBuilder = () => {
                                     <div style={{ fontWeight: 'bold' }}>{template.name}</div>
                                     <div style={{ fontSize: 12, color: '#666', textAlign: 'center' }}>{template.description}</div>
                                     {selectedTemplate === template.id && (
-                                        <Tag color="blue">Selected</Tag>
+                                        <Tag color="#006964">Selected</Tag>
                                     )}
                                 </div>
                             </Card>
