@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Dropdown, Menu, Tooltip } from "antd";
+import { Dropdown, Tooltip } from "antd";
 import { useTranslation } from "react-i18next";
 import { useRouter } from 'next/navigation';
 import Image from "next/image";
@@ -31,34 +31,32 @@ const LanguageSwitcher = () => {
     }
   };
 
-  const menu = (
-    <Menu onClick={handleMenuClick} selectedKeys={[currentLanguage]}>
-      {languages.map(lang => (
-        <Menu.Item key={lang.key}>
-          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Image src={lang.icon} alt={lang.label} width={26} height={26} />
-            {lang.label}
-          </span>
-        </Menu.Item>
-      ))}
-    </Menu>
-  );
+  const menuItems = languages.map(lang => ({
+    key: lang.key,
+    label: (
+      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Image src={lang.icon} alt={lang.label} width={26} height={26} />
+        {lang.label}
+      </span>
+    )
+  }));
 
   const currentLangData = languages.find(lang => lang.key === currentLanguage);
 
   return (
-    <Tooltip>
-      <Dropdown menu={menu} trigger={["hover"]}>
-        <span style={{ cursor: "pointer", display: "inline-block" }}>
-          <Image
-            src={currentLangData?.icon || "/flags/en.png"}
-            alt={currentLangData?.label || "Language"}
-            width={26}
-            height={26}
-          />
-        </span>
-      </Dropdown>
-    </Tooltip>
+    <Dropdown
+      menu={{ items: menuItems, onClick: handleMenuClick, selectedKeys: [currentLanguage] }}
+      trigger={["hover"]}
+    >
+      <span style={{ cursor: "pointer", display: "inline-block" }}>
+        <Image
+          src={currentLangData?.icon || "/flags/en.png"}
+          alt={currentLangData?.label || "Language"}
+          width={26}
+          height={26}
+        />
+      </span>
+    </Dropdown>
   );
 };
 

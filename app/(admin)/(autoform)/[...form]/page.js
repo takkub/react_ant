@@ -3,7 +3,6 @@ import React, {useEffect, useState, useCallback} from 'react';
 import {Card, Typography, App} from 'antd';
 import CrudTable from '@/components/CrudTable';
 import {useTitleContext} from "@/components/TitleContext";
-import {DatabaseOutlined} from "@ant-design/icons";
 import dayjs from 'dayjs';
 import api from "@/lib/api";
 import { useParams } from 'next/navigation';
@@ -11,7 +10,6 @@ import { useParams } from 'next/navigation';
 export default function AutoFormPage() {
     const params = useParams();
     const slugFormName = params.form ? params.form.join('/') : 'default_form_slug';
-
     const { setTitle, setIcon } = useTitleContext();
     const [data, setData] = useState([]);
     const [crudOptions, setCrudOptions] = useState(null);
@@ -136,7 +134,6 @@ export default function AutoFormPage() {
                 setPageLoading(false);
             }
         };
-
         fetchFormDesignAndThenData();
     }, [slugFormName, setTitle, setIcon, fetchData, message]);
 

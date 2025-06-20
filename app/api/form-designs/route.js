@@ -1,4 +1,4 @@
-import { getData, insertData, deleteData, updateData } from "@/lib/mysqldb";
+import {getData, insertData, deleteData, updateData} from "@/lib/mysqldb";
 
 const checkPayload = async (method, req) => {
     let body;
@@ -18,9 +18,17 @@ const checkPayload = async (method, req) => {
  */
 export const GET = async (req) => {
     try {
-        const params = await checkPayload("get", req);
-        const { data } = await getData("form_designs", params);
-
+        
+        let where = {};
+        const params = await checkPayload('get', req);
+        if (Object.keys(params).length > 0) {
+            where = {where: params};
+        } else {
+            where = {all: true};
+        }
+        
+        const {data} = await getData("form_designs", where);
+        
         if (data) {
             const parsed = data.map((item) => ({
                 ...item,
@@ -28,24 +36,24 @@ export const GET = async (req) => {
                 settings: item.settings_data ? JSON.parse(item.settings_data) : {},
                 crud_options: item.crud_options_data
                     ? JSON.parse(item.crud_options_data)
-                    : {},
+                    : {}
             }));
-
+            
             return new Response(
-                JSON.stringify({ success: true, data: parsed, total: parsed.length }),
-                { status: 200 }
+                JSON.stringify({success: true, data: parsed, total: parsed.length}),
+                {status: 200}
             );
         }
-
+        
         return new Response(
-            JSON.stringify({ success: false, message: "No form_designs data found" }),
-            { status: 404 }
+            JSON.stringify({success: false, message: "No form_designs data found"}),
+            {status: 404}
         );
     } catch (error) {
         console.error("❌ Error fetching form_designs data:", error);
         return new Response(
-            JSON.stringify({ success: false, message: "Internal Server Error" }),
-            { status: 500 }
+            JSON.stringify({success: false, message: "Internal Server Error"}),
+            {status: 500}
         );
     }
 };
@@ -58,7 +66,7 @@ export const POST = async (req) => {
     try {
         // Parse request body
         const params = await checkPayload('post', req);
-        const insertParams = { ...params };
+        const insertParams = {...params};
         if (insertParams.fields_data && typeof insertParams.fields_data !== "string") {
             insertParams.fields_data = JSON.stringify(insertParams.fields_data);
         }
@@ -75,19 +83,19 @@ export const POST = async (req) => {
                 success: true,
                 message: 'Form design created successfully',
                 data: {...params, id: data.id}
-            }), { status: 201 });
+            }), {status: 201});
         } else {
             return new Response(JSON.stringify({
                 success: false,
                 message: data.message || 'Failed to create form design'
-            }), { status: 400 });
+            }), {status: 400});
         }
     } catch (error) {
         console.error('❌ Error creating form design:', error);
         return new Response(JSON.stringify({
             success: false,
             message: 'Internal Server Error'
-        }), { status: 500 });
+        }), {status: 500});
     }
 }
 
@@ -98,8 +106,8 @@ export const POST = async (req) => {
 export const PUT = async (req) => {
     try {
         // Parse request body
-        const { body, where } = await checkPayload('put', req);
-        const updateBody = { ...body };
+        const {body, where} = await checkPayload('put', req);
+        const updateBody = {...body};
         if (updateBody.fields_data && typeof updateBody.fields_data !== "string") {
             updateBody.fields_data = JSON.stringify(updateBody.fields_data);
         }
@@ -117,19 +125,19 @@ export const PUT = async (req) => {
                 success: true,
                 message: 'Form design updated successfully',
                 data: body
-            }), { status: 200 });
+            }), {status: 200});
         } else {
             return new Response(JSON.stringify({
                 success: false,
                 message: 'Form design not found'
-            }), { status: 404 });
+            }), {status: 404});
         }
     } catch (error) {
         console.error('❌ Error updating form design:', error);
         return new Response(JSON.stringify({
             success: false,
             message: 'Internal Server Error'
-        }), { status: 500 });
+        }), {status: 500});
     }
 }
 
@@ -144,20 +152,20 @@ export const DELETE = async (req) => {
         if (data.status) {
             return new Response(JSON.stringify({
                 success: true,
-                message: 'Form design deleted successfully',
-            }), { status: 200 });
+                message: 'Form design deleted successfully'
+            }), {status: 200});
         } else {
             return new Response(JSON.stringify({
                 success: false,
                 message: 'Form design not found'
-            }), { status: 404 });
+            }), {status: 404});
         }
     } catch (error) {
         console.error('❌ Error deleting form design:', error);
         return new Response(JSON.stringify({
             success: false,
             message: 'Internal Server Error'
-        }), { status: 500 });
+        }), {status: 500});
     }
 }
 

@@ -167,7 +167,7 @@ export const POST = async (req) => {
             return new Response(JSON.stringify({
                 success: false,
                 message: data.message || 'Failed to create ${formTitle}'
-            }), { status: 400 });
+            ), { status: 400 });
         }
     } catch (error) {
         console.error('❌ Error creating ${formTitle}:', error);
@@ -679,6 +679,7 @@ const FormBuilder = () => {
                 if (field.cardGroup) {
                     formField.cardGroup = field.cardGroup;
                 }
+                
                 return formField;
             });
         };
@@ -704,12 +705,12 @@ const FormBuilder = () => {
                 cardGroupSetting: cardGroupSetting || []
             },
             filters: {
-                fields: (globalFilters || []).map(f => ({
+                fields: globalFilters?.map(f => ({
                     title: f.title,
                     field: Array.isArray(f.field) ? f.field : (f.field ? [f.field] : []),
                     type: f.type,
                     options: f.options || []
-                }))
+                })) || []
             },
             pagination: paginationSettings || {
                 pageSize: 10,
@@ -1200,7 +1201,9 @@ const FormBuilder = () => {
                 style={{marginTop: 24, marginBottom: 24}}
                 extra={<InfoCircleOutlined/>}
             >
-                <Form layout={formSettings.layout}>
+                <Form
+                    form={form}
+                    layout={formSettings.layout}>
                     <Form.Item
                         label={displayTitle}
                         required={required}
