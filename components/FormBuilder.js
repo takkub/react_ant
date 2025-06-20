@@ -476,7 +476,6 @@ export default function ${componentName}() {
         element.click();
         document.body.removeChild(element);
     };
-
     const handleSyncTable = async () => {
         try {
             const schema = {
