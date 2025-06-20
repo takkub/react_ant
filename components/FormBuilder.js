@@ -614,9 +614,7 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
             const combined = dbTemplates;
             setFormTemplates(combined);
 
-            const target =
-                combined.find((t) => t.id === (selectId || selectedTemplate)) ||
-                combined[0];
+            const target = combined.find((t) => t.id === (selectId || selectedTemplate));
             if (target) {
                 setSelectedTemplate(target.id);
                 setFormFields(JSON.parse(JSON.stringify(target.fields)));
