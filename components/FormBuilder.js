@@ -20,6 +20,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import api from "@/lib/api"; // Added import for the API helper
+import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -858,8 +859,127 @@ const FormBuilder = () => {
 
     // Wizard state
     const [selectedTemplate, setSelectedTemplate] = useState(formTemplates[0].id);
-    const [currentFieldType, setCurrentFieldType] = useState(null);
-    const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Moved here
+const [currentFieldType, setCurrentFieldType] = useState(null);
+const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Moved here
+
+    // Preview state
+    const [previewData, setPreviewData] = useState([]);
+
+    const computeCrudOptions = () => {
+        const buildCrudColumns = (fields) => {
+            return fields.map(field => {
+                let column = {
+                    title: field.title || field.label || field.name,
+                    dataIndex: field.dataIndex || field.name,
+                    key: field.dataIndex || field.name,
+                    filterable: field.filterable !== undefined ? field.filterable : true,
+                };
+                if (field.sortable) {
+                    column.sorter = true;
+                }
+                if (field.type === 'date' || field.type === 'datetime') {
+                    column.render = (text) => text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '';
+                }
+                if ((field.type === 'select' || field.type === 'radio') && field.options?.length > 0) {
+                    column.filters = field.options.map(opt => ({ text: opt.label, value: opt.value }));
+                    column.onFilter = (value, record) => record[field.dataIndex || field.name] === value;
+                }
+                return column;
+            });
+        };
+
+        const buildCrudFormFields = (fields) => {
+            return fields.map(field => {
+                let formField = {
+                    dataIndex: field.dataIndex || field.name,
+                    label: field.title || field.label || field.name,
+                    type: field.type,
+                    rules: field.rules || [{ required: true, message: `Please input ${field.title || field.label || field.name}!` }]
+                };
+                if (field.options && field.options.length > 0) {
+                    formField.options = field.options;
+                }
+                if (field.cardGroup) {
+                    formField.cardGroup = field.cardGroup;
+                }
+                return formField;
+            });
+        };
+
+        const { cardGroupSetting, globalFilters, paginationSettings, ...otherSettings } = formSettings || {};
+
+        return {
+            columns: buildCrudColumns(formFields),
+            form: {
+                settings: {
+                    title: otherSettings?.title ? `${otherSettings.title} Form` : 'Generated Form',
+                    labelCol: otherSettings?.labelCol || { span: 6 },
+                    wrapperCol: otherSettings?.wrapperCol || { span: 18 },
+                    layout: otherSettings?.layout || 'horizontal',
+                    gridColumns: otherSettings?.gridColumns || 1,
+                    addModalTitle: otherSettings?.modalTitle || `Add New ${otherSettings?.title || 'Record'}`,
+                    editModalTitle: otherSettings?.modalTitle ? `Edit ${otherSettings.modalTitle}` : `Edit ${otherSettings?.title || 'Record'}`,
+                    modalWidth: otherSettings?.modalWidth || '80%',
+                    initialValues: otherSettings?.initialValues || {},
+                    style: otherSettings?.style || {}
+                },
+                fields: buildCrudFormFields(formFields),
+                cardGroupSetting: cardGroupSetting || []
+            },
+            filters: {
+                fields: (globalFilters || []).map(f => ({
+                    title: f.title,
+                    field: Array.isArray(f.field) ? f.field : (f.field ? [f.field] : []),
+                    type: f.type,
+                    options: f.options || []
+                }))
+            },
+            pagination: paginationSettings || {
+                pageSize: 10,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showQuickJumper: true
+            }
+        };
+    };
+
+    const generatePreviewData = () => {
+        const records = [];
+        for (let i = 1; i <= 3; i++) {
+            const record = { id: i };
+            formFields.forEach(field => {
+                const key = field.dataIndex || field.name;
+                switch (field.type) {
+                    case 'number':
+                        record[key] = i;
+                        break;
+                    case 'boolean':
+                        record[key] = i % 2 === 0;
+                        break;
+                    case 'date':
+                    case 'datetime':
+                        record[key] = dayjs().format('YYYY-MM-DD');
+                        break;
+                    case 'select':
+                    case 'radio':
+                        record[key] = field.options?.[0]?.value || '';
+                        break;
+                    case 'tags':
+                    case 'checkbox':
+                        record[key] = [field.options?.[0]?.value || ''];
+                        break;
+                    default:
+                        record[key] = `${key}_${i}`;
+                }
+            });
+            records.push(record);
+        }
+        return records;
+    };
+
+    useEffect(() => {
+        setPreviewData(generatePreviewData());
+    }, [formFields]);
     
     useEffect(() => {
     
@@ -2469,132 +2589,25 @@ const FormBuilder = () => {
                         key: '3',
                         label: 'Preview',
                         children: (
-                            <div>
-                                <Alert
-                                    message="Form Preview"
-                                    description="This is a preview of how your form will look for data entry."
-                                    type="info"
-                                    showIcon
-                                    style={{ marginBottom: 16 }}
+                            <Card>
+                                <CrudTable
+                                    title={formSettings.title || 'Preview'}
+                                    data={previewData}
+                                    setData={setPreviewData}
+                                    onAdd={(curr, set) => async (record) => set([...curr, { id: Date.now(), ...record }])}
+                                    onEdit={(curr, set) => async (key, record) => {
+                                        const newData = curr.map(item => item.id === key ? { ...item, ...record } : item);
+                                        set(newData);
+                                    }}
+                                    onDelete={(curr, set) => async (keys) => {
+                                        set(curr.filter(item => !keys.includes(item.id)));
+                                    }}
+                                    onExport={() => {}}
+                                    loading={false}
+                                    customColumns={computeCrudOptions()}
+                                    rowkeys={['id']}
                                 />
-
-                                {/* Render fields NOT in any card group first */}
-                                {(() => {
-                                    const ungroupedFields = formFields.filter(field =>
-                                        !field.cardGroup ||
-                                        !(formSettings.cardGroupSetting || []).find(g => g.key === field.cardGroup)
-                                    );
-                                    if (ungroupedFields.length > 0) {
-                                        return (
-                                            <Card title={formSettings.modalTitle || "Form (Ungrouped Fields)"} style={{ marginBottom: 16 }}>
-                                                <Form
-                                                    layout={formSettings.layout}
-                                                    labelCol={{ span: formSettings.labelCol?.span || 6 }}
-                                                    wrapperCol={{ span: formSettings.wrapperCol?.span || 18 }}
-                                                >
-                                                    <Row gutter={[16, 16]}>
-                                                        {ungroupedFields.map(field => (
-                                                            <Col
-                                                                key={field.id}
-                                                                xs={24}
-                                                                sm={formSettings.gridColumns > 1 ? 12 : 24}
-                                                                md={24 / (formSettings.gridColumns || 1)}
-                                                            >
-                                                                <Form.Item
-                                                                    label={field.title}
-                                                                    required={field.rules?.some(rule => rule.required)}
-                                                                    tooltip={field.rules?.some(rule => rule.required) ? "This field is required" : "This field is optional"}
-                                                                >
-                                                                    <FieldTypeExample type={field.type} />
-                                                                </Form.Item>
-                                                            </Col>
-                                                        ))}
-                                                    </Row>
-                                                </Form>
-                                            </Card>
-                                        );
-                                    }
-                                    return null;
-                                })()}
-
-                                {/* Render fields within their respective card groups */}
-                                {(formSettings.cardGroupSetting || []).map(group => {
-                                    const groupFields = formFields.filter(field => field.cardGroup === group.key);
-                                    if (groupFields.length === 0 && !(formFields.filter(field => !field.cardGroup || !(formSettings.cardGroupSetting || []).find(g => g.key === field.cardGroup)).length > 0)) {
-                                        // If no ungrouped fields and this group is empty, show a general message if it's the only thing to show
-                                        if ((formSettings.cardGroupSetting || []).length === 1) {
-                                            return <Empty key="empty-groups" description="No fields defined or assigned to groups for preview." />;
-                                        }
-                                        return null; // Don't render empty groups if other content exists
-                                    }
-                                    if (groupFields.length === 0) return null; // Skip rendering this specific group if it has no fields
-
-                                    const currentLayout = group.layout || formSettings.layout;
-                                    const currentLabelCol = group.labelCol?.span || formSettings.labelCol?.span || 6;
-                                    const currentWrapperCol = group.wrapperCol?.span || formSettings.wrapperCol?.span || 18;
-                                    const currentGridColumns = group.gridColumns || formSettings.gridColumns || 1;
-
-                                    return (
-                                        <Card
-                                            key={group.key}
-                                            title={group.title || group.key}
-                                            style={{ marginBottom: 16 }}
-                                            extra={group.description ? <Text type="secondary">{group.description}</Text> : null}
-                                        >
-                                            <Form
-                                                layout={currentLayout}
-                                                labelCol={{ span: currentLabelCol }}
-                                                wrapperCol={{ span: currentWrapperCol }}
-                                            >
-                                                <Row gutter={[16, 16]}>
-                                                    {groupFields.map(field => (
-                                                        <Col
-                                                            key={field.id}
-                                                            xs={24}
-                                                            sm={currentGridColumns > 1 ? 12 : 24}
-                                                            md={24 / currentGridColumns}
-                                                        >
-                                                            <Form.Item
-                                                                label={field.title}
-                                                                required={field.rules?.some(rule => rule.required)}
-                                                                tooltip={field.rules?.some(rule => rule.required) ? "This field is required" : "This field is optional"}
-                                                            >
-                                                                <FieldTypeExample type={field.type} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                    ))}
-                                                </Row>
-                                            </Form>
-                                        </Card>
-                                    );
-                                })}
-
-                                {/* Show Empty state if no fields and no groups with fields */}
-                                {formFields.length === 0 && (!formSettings.cardGroupSetting || formSettings.cardGroupSetting.length === 0) && (
-                                    <Empty description="No fields defined for preview." />
-                                )}
-
-                                {/* Common Submit/Cancel buttons at the end */}
-                                {(formFields.length > 0) && (
-                                  <Form
-                                      layout={formSettings.layout}
-                                      labelCol={{ span: formSettings.labelCol?.span || 6 }}
-                                      wrapperCol={{ span: formSettings.wrapperCol?.span || 18 }}
-                                  >
-                                      <Form.Item wrapperCol={{
-                                          offset: formSettings.layout === 'horizontal' ? (formSettings.labelCol?.span || 6) : 0,
-                                          span: formSettings.wrapperCol?.span || 18
-                                      }}>
-                                          <Button type="primary" htmlType="submit" onClick={() => message.info('Preview submit clicked!')}>
-                                              Submit
-                                          </Button>
-                                          <Button style={{ marginLeft: 8 }} onClick={() => message.info('Preview cancel clicked!')}>
-                                              Cancel
-                                          </Button>
-                                      </Form.Item>
-                                  </Form>
-                                )}
-                            </div>
+                            </Card>
                         )
                     }
                 ]}
