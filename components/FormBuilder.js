@@ -567,304 +567,22 @@ export default function ${componentName}() {
 
 // FormBuilder - An easy-to-use form generation tool
 const FormBuilder = () => {
-    // Default templates used if database fetch fails
-    const defaultFormTemplates = [
-        {
-            id: 'blank',
-            name: 'Blank Form',
-            icon: <FileAddOutlined />,
-            description: 'Start with a blank form and add your own fields',
-            fields: [],
-            settings: {
-                title: 'New Form',
-                layout: 'horizontal',
-                labelCol: { span: 6 },
-                wrapperCol: { span: 18 },
-                modalTitle: 'Data Form',
-                pageTitle: 'Data Management',
-                gridColumns: 1,
-                cardGroupSetting: [],
-                paginationSettings: {
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                    showQuickJumper: true
-                },
-                globalFilters: [
-                    { id: uuidv4(), title: 'Search', field: ['name'], type: 'text', options: [] }
-                ]
-            }
-        },
-        {
-            id: 'user',
-            name: 'User Management',
-            icon: <UserOutlined />,
-            description: 'Create, edit and manage user accounts with roles',
-            fields: [
-                {
-                    id: uuidv4(),
-                    dataIndex: 'username',
-                    title: 'Username',
-                    type: 'input',
-                    rules: [
-                        { required: true, message: 'Please input username!' },
-                        { min: 3, message: 'Username must be at least 3 characters!' }
-                    ],
-                    options: [],
-                    filterable: true,
-                    sortable: true
-                },
-                {
-                    id: uuidv4(),
-                    dataIndex: 'email',
-                    title: 'Email',
-                    type: 'email',
-                    rules: [
-                        { required: true, message: 'Please input email!' },
-                        { type: 'email', message: 'Please enter a valid email!' }
-                    ],
-                    options: [],
-                    filterable: true,
-                    sortable: true
-                },
-                {
-                    id: uuidv4(),
-                    dataIndex: 'role',
-                    title: 'Role',
-                    type: 'tags',
-                    rules: [
-                        { required: true, message: 'Please select role!' }
-                    ],
-                    options: [
-                        { label: 'Admin', value: 'Admin' },
-                        { label: 'Manager', value: 'Manager' },
-                        { label: 'User', value: 'User' }
-                    ],
-                    filterable: true,
-                    sortable: false
-                }
-            ],
-            settings: {
-                title: 'User Management',
-                layout: 'horizontal',
-                labelCol: { span: 6 },
-                wrapperCol: { span: 18 },
-                modalTitle: 'User Form',
-                pageTitle: 'User Management',
-                gridColumns: 1,
-                cardGroupSetting: [],
-                paginationSettings: {
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                    showQuickJumper: true
-                },
-                globalFilters: [
-                    { id: uuidv4(), title: 'Search Users', field: ['username', 'email'], type: 'text', options: [] },
-                    { id: uuidv4(), title: 'Filter by Role', field: ['role'], type: 'select', options: [{label: 'Admin', value: 'Admin'}, {label: 'User', value: 'User'}] }
-                ]
-            }
-        },
-        {
-            id: 'product',
-            name: 'Product Catalog',
-            icon: <AppstoreOutlined />,
-            description: 'Manage products with price, inventory and categories',
-            fields: [
-                {
-                    id: uuidv4(),
-                    dataIndex: 'productName',
-                    title: 'Product Name',
-                    type: 'input',
-                    rules: [{ required: true, message: 'Please input product name!' }],
-                    options: [],
-                    filterable: true,
-                    sortable: true
-                },
-                {
-                    id: uuidv4(),
-                    dataIndex: 'price',
-                    title: 'Price',
-                    type: 'number',
-                    rules: [{ required: true, message: 'Please input price!' }],
-                    options: [],
-                    filterable: true,
-                    sortable: true
-                },
-                {
-                    id: uuidv4(),
-                    dataIndex: 'category',
-                    title: 'Category',
-                    type: 'select',
-                    rules: [{ required: true, message: 'Please select category!' }],
-                    options: [
-                        { label: 'Electronics', value: 'Electronics' },
-                        { label: 'Clothing', value: 'Clothing' },
-                        { label: 'Food', value: 'Food' }
-                    ],
-                    filterable: true,
-                    sortable: true
-                },
-                {
-                    id: uuidv4(),
-                    dataIndex: 'description',
-                    title: 'Description',
-                    type: 'textArea',
-                    rules: [],
-                    options: [],
-                    filterable: false,
-                    sortable: false
-                }
-            ],
-            settings: {
-                title: 'Product Catalog',
-                layout: 'horizontal',
-                labelCol: { span: 6 },
-                wrapperCol: { span: 18 },
-                modalTitle: 'Product Form',
-                pageTitle: 'Product Catalog',
-                gridColumns: 1,
-                cardGroupSetting: [],
-                paginationSettings: {
-                    pageSize: 15,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['15', '30', '50'],
-                    showQuickJumper: true
-                },
-                globalFilters: [
-                    { id: uuidv4(), title: 'Search Products', field: ['productName', 'category'], type: 'text', options: [] }
-                ]
-            }
-        },
-        {
-            id: 'orderProduct',
-            name: 'Product Order Form',
-            icon: <ShoppingCartOutlined />,
-            description: 'Create and manage product orders, assigning items to specific groups.',
-            fields: [
-                { id: uuidv4(), dataIndex: 'orderId', title: 'Order ID', type: 'input', rules: [{ required: true, message: 'Order ID is required!' }], filterable: true, sortable: true, cardGroup: 'orderDetails' },
-                { id: uuidv4(), dataIndex: 'customerName', title: 'Customer Name', type: 'input', rules: [{ required: true, message: 'Customer name is required!' }], filterable: true, sortable: true, cardGroup: 'orderDetails' },
-                { id: uuidv4(), dataIndex: 'orderDate', title: 'Order Date', type: 'date', rules: [{ required: true, message: 'Order date is required!' }], filterable: true, sortable: true, cardGroup: 'orderDetails' },
-                {
-                    id: uuidv4(), dataIndex: 'orderStatus', title: 'Order Status', type: 'select',
-                    rules: [{ required: true, message: 'Please select order status!' }],
-                    options: [
-                        { label: 'Pending', value: 'pending' },
-                        { label: 'Processing', value: 'processing' },
-                        { label: 'Shipped', value: 'shipped' },
-                        { label: 'Delivered', value: 'delivered' },
-                        { label: 'Cancelled', value: 'cancelled' },
-                    ],
-                    filterable: true, sortable: false, cardGroup: 'orderDetails'
-                },
-                {
-                    id: uuidv4(), dataIndex: 'productId', title: 'Product', type: 'select',
-                    rules: [{ required: true, message: 'Please select a product!' }],
-                    options: [
-                        { label: 'Laptop Model X', value: 'PROD001' },
-                        { label: 'Wireless Mouse', value: 'PROD002' },
-                        { label: 'Keyboard Pro', value: 'PROD003' },
-                    ],
-                    filterable: true, sortable: true, cardGroup: 'productInfo'
-                },
-                { id: uuidv4(), dataIndex: 'quantity', title: 'Quantity', type: 'number', rules: [{ required: true, message: 'Quantity is required!', type: 'number', min: 1 }], filterable: false, sortable: true, cardGroup: 'productInfo' },
-                { id: uuidv4(), dataIndex: 'unitPrice', title: 'Unit Price', type: 'number', rules: [{ type: 'number', min: 0 }], filterable: false, sortable: true, cardGroup: 'productInfo' },
-                { id: uuidv4(), dataIndex: 'shippingAddress', title: 'Shipping Address', type: 'textArea', rules: [], filterable: false, sortable: false, cardGroup: 'shippingInfo' },
-                { id: uuidv4(), dataIndex: 'billingAddress', title: 'Billing Address', type: 'textArea', rules: [], filterable: false, sortable: false, cardGroup: 'shippingInfo' },
-            ],
-            settings: {
-                title: 'Product Order Management',
-                layout: 'horizontal',
-                labelCol: { span: 8 },
-                wrapperCol: { span: 16 },
-                modalTitle: 'Product Order Form',
-                pageTitle: 'Product Orders',
-                gridColumns: 1,
-                cardGroupSetting: [
-                    { key: 'orderDetails', title: 'Order Details', description: 'Basic order information', layout: 'horizontal', gridColumns: 1, labelCol: { span: 6 }, wrapperCol: { span: 18 } },
-                    { key: 'productInfo', title: 'Product Information', description: 'Details of products ordered', layout: 'horizontal', gridColumns: 2, labelCol: { span: 8 }, wrapperCol: { span: 16 } },
-                    { key: 'shippingInfo', title: 'Address Information', description: 'Shipping and billing details', layout: 'vertical', gridColumns: 1, labelCol: { span: 24 }, wrapperCol: { span: 24 } },
-                ],
-                paginationSettings: {
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50'],
-                    showQuickJumper: true
-                },
-                globalFilters: [
-                    { id: uuidv4(), title: 'Search by Order ID', field: ['orderId'], type: 'text', options: [] },
-                    { id: uuidv4(), title: 'Filter by Status', field: ['orderStatus'], type: 'select', options: [ { label: 'Pending', value: 'pending' }, { label: 'Processing', value: 'processing' } ] }
-                ]
-            }
-        },
-        {
-            id: 'salesReport',
-            name: 'Sales Report Form',
-            icon: <LineChartOutlined />,
-            description: 'Configure and view sales report data with grouped sections.',
-            fields: [
-                { id: uuidv4(), dataIndex: 'reportName', title: 'Report Name', type: 'input', rules: [{ required: true, message: 'Report name is required!' }], filterable: true, sortable: false, cardGroup: 'reportConfig' },
-                {
-                    id: uuidv4(), dataIndex: 'reportType', title: 'Report Type', type: 'select',
-                    options: [
-                        { label: 'Daily Summary', value: 'daily' },
-                        { label: 'Weekly Summary', value: 'weekly' },
-                        { label: 'Monthly Summary', value: 'monthly' },
-                        { label: 'Custom Range', value: 'custom' },
-                    ],
-                    rules: [{ required: true, message: 'Report type is required!' }],
-                    filterable: true, sortable: false, cardGroup: 'reportConfig'
-                },
-                { id: uuidv4(), dataIndex: 'dateFrom', title: 'Date From', type: 'date', rules: [{ required: true, message: 'Start date is required!' }], filterable: false, sortable: false, cardGroup: 'reportConfig' },
-                { id: uuidv4(), dataIndex: 'dateTo', title: 'Date To', type: 'date', rules: [{ required: true, message: 'End date is required!' }], filterable: false, sortable: false, cardGroup: 'reportConfig' },
-                { id: uuidv4(), dataIndex: 'totalSales', title: 'Total Sales', type: 'number', rules: [], filterable: false, sortable: true, cardGroup: 'reportOutput' },
-                { id: uuidv4(), dataIndex: 'numberOfTransactions', title: 'Number of Transactions', type: 'number', rules: [], filterable: false, sortable: true, cardGroup: 'reportOutput' },
-                { id: uuidv4(), dataIndex: 'averageTransactionValue', title: 'Avg. Transaction Value', type: 'number', rules: [], filterable: false, sortable: true, cardGroup: 'reportOutput' },
-                { id: uuidv4(), dataIndex: 'generatedOn', title: 'Generated On', type: 'datetime', rules: [], filterable: false, sortable: false, cardGroup: 'reportOutput' },
-            ],
-            settings: {
-                title: 'Sales Report Generation',
-                layout: 'vertical',
-                labelCol: { span: 24 },
-                wrapperCol: { span: 24 },
-                modalTitle: 'Sales Report Parameters',
-                pageTitle: 'Sales Reports',
-                gridColumns: 1,
-                cardGroupSetting: [
-                    { key: 'reportConfig', title: 'Report Configuration', description: 'Set parameters for the report', layout: 'horizontal', gridColumns: 2, labelCol: { span: 8 }, wrapperCol: { span: 16 } },
-                    { key: 'reportOutput', title: 'Report Output', description: 'Summary of the generated report', layout: 'vertical', gridColumns: 1, labelCol: { span: 6 }, wrapperCol: { span: 18 } },
-                ],
-                paginationSettings: {
-                    pageSize: 20,
-                    showSizeChanger: false,
-                    pageSizeOptions: ['20', '40', '60'],
-                    showQuickJumper: false
-                },
-                globalFilters: [
-                    { id: uuidv4(), title: 'Filter by Report Type', field: ['reportType'], type: 'select', options: [ { label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' } ] }
-                ]
-            }
-        }
+    // Templates will be loaded from the database
+    const defaultFormTemplates = [];
 
-    ];
-
-    const [formTemplates, setFormTemplates] = useState(defaultFormTemplates);
+    const [formTemplates, setFormTemplates] = useState([]);
 
     // Form builder state - use deep cloning to break potential circular references
     const [currentFieldFormTab, setCurrentFieldFormTab] = useState('basic');
-    const [formFields, setFormFields] = useState(() =>
-        JSON.parse(JSON.stringify(defaultFormTemplates[0].fields))
-    );
-    const [formSettings, setFormSettings] = useState(() =>
-        JSON.parse(JSON.stringify(defaultFormTemplates[0].settings))
-    );
+    const [formFields, setFormFields] = useState([]);
+    const [formSettings, setFormSettings] = useState({});
     const [fieldFormVisible, setFieldFormVisible] = useState(false);
     const [currentField, setCurrentField] = useState(null);
     const [form] = Form.useForm();
     const { message } = App.useApp();
 
     // Wizard state
-    const [selectedTemplate, setSelectedTemplate] = useState(defaultFormTemplates[0].id);
+    const [selectedTemplate, setSelectedTemplate] = useState('');
 const [currentFieldType, setCurrentFieldType] = useState(null);
 const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Moved here
 
@@ -893,20 +611,26 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
                   }))
                 : [];
 
-            const combined = [...defaultFormTemplates, ...dbTemplates];
+            const combined = dbTemplates;
             setFormTemplates(combined);
 
             const target =
                 combined.find((t) => t.id === (selectId || selectedTemplate)) ||
                 combined[0];
-            setSelectedTemplate(target.id);
-            setFormFields(JSON.parse(JSON.stringify(target.fields)));
-            setFormSettings(JSON.parse(JSON.stringify(target.settings)));
+            if (target) {
+                setSelectedTemplate(target.id);
+                setFormFields(JSON.parse(JSON.stringify(target.fields)));
+                setFormSettings(JSON.parse(JSON.stringify(target.settings)));
+            } else {
+                setSelectedTemplate('');
+                setFormFields([]);
+                setFormSettings({});
+            }
         } catch (err) {
             console.error('Failed to load templates from DB:', err);
-            setFormTemplates(defaultFormTemplates);
+            setFormTemplates([]);
         }
-    }, [defaultFormTemplates, selectedTemplate]);
+    }, [selectedTemplate]);
 
     useEffect(() => {
         fetchTemplates();
@@ -1122,7 +846,7 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
                     const res = await api.delete('form-designs', { id: templateId });
                     if (res && res.success) {
                         message.success(res.message || 'Template deleted');
-                        await fetchTemplates('blank');
+                        await fetchTemplates();
                     } else {
                         message.error(res?.message || 'Failed to delete template');
                     }
@@ -2613,26 +2337,22 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
                                     border: selectedTemplate === template.id ? '2px solid #006964' : '1px solid #f0f0f0',
                                 }}
                                 size="small"
-                                actions={
-                                    template.id !== 'blank'
-                                        ? [
-                                              <EditOutlined
-                                                  key="edit"
-                                                  onClick={e => {
-                                                      e.stopPropagation();
-                                                      handleTemplateSelect(template.id);
-                                                  }}
-                                              />,
-                                              <DeleteOutlined
-                                                  key="del"
-                                                  onClick={e => {
-                                                      e.stopPropagation();
-                                                      handleDeleteTemplate(template.id);
-                                                  }}
-                                              />,
-                                          ]
-                                        : []
-                                }
+                                actions={[
+                                    <EditOutlined
+                                        key="edit"
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            handleTemplateSelect(template.id);
+                                        }}
+                                    />,
+                                    <DeleteOutlined
+                                        key="del"
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            handleDeleteTemplate(template.id);
+                                        }}
+                                    />,
+                                ]}
                                 onClick={() => handleTemplateSelect(template.id)}
                             >
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
