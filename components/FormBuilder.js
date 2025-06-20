@@ -1,95 +1,109 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
     Card, Button, Form, Input, Select, Switch, Typography, Space, Divider,
-    Tag, Table, Modal, Tabs, Tooltip, message, Drawer, Row, Col, Empty,
+    Tag, Table, Modal, Tabs, Tooltip, Drawer, Row, Col, Empty,
     Radio, Segmented, Badge, Alert, DatePicker, Checkbox,
-    InputNumber
+    InputNumber, App
 } from 'antd';
 import {
-    PlusOutlined, DeleteOutlined, CopyOutlined, CodeOutlined, DownloadOutlined, 
+    PlusOutlined, DeleteOutlined, CopyOutlined, CodeOutlined, DownloadOutlined,
     FileTextOutlined, EditOutlined, SettingOutlined, UserOutlined,
     FormOutlined, CheckCircleOutlined, AppstoreOutlined, BarsOutlined,
     CheckOutlined, LayoutOutlined, TableOutlined, ThunderboltOutlined, FileAddOutlined,
     MailOutlined,
     NumberOutlined, CalendarOutlined, CheckSquareOutlined, TagsOutlined, DownOutlined,
     InfoCircleOutlined, PhoneOutlined, QuestionCircleOutlined,
-    DatabaseOutlined, ShoppingCartOutlined, LineChartOutlined
+    DatabaseOutlined, ShoppingCartOutlined, LineChartOutlined, EyeOutlined
 } from '@ant-design/icons';
-import { v4 as uuidv4 } from 'uuid';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import api from "@/lib/api"; // Added import for the API helper
+import {v4 as uuidv4} from 'uuid';
+import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter';
+import {tomorrow} from 'react-syntax-highlighter/dist/esm/styles/prism';
+import api from "@/lib/api";
+import dayjs from 'dayjs';
+import CrudTable from '@/components/CrudTable';
+import {useRouter} from "next/navigation";
+const {Title, Text, Paragraph} = Typography;
+const {TextArea} = Input;
 
-const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
-
-
-
-// FormCodeGenerator component - now included in FormBuilder
-const FormCodeGenerator = ({ formFields, formSettings, formTitle, tableName }) => {
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState('1');
-  const sanitizedTableName = tableName || formTitle?.toLowerCase().replace(/\s+/g, '_') || 'custom_form';
-  
-  // Function to generate the SQL CREATE TABLE statement
-  const generateSqlCode = () => {
-    // Map form field types to SQL column types
-    const getColumnType = (fieldType) => {
-      switch (fieldType) {
-        case 'input': return 'VARCHAR(255)';
-        case 'textArea': return 'TEXT';
-        case 'email': return 'VARCHAR(255)';
-        case 'number': return 'INT';
-        case 'date': return 'DATE';
-        case 'datetime': return 'DATETIME';
-        case 'dateRange': return 'VARCHAR(255)';
-        case 'radio': return 'VARCHAR(50)';
-        case 'select': return 'VARCHAR(100)';
-        case 'checkbox': return 'VARCHAR(255)';
-        case 'tags': return 'JSON';
-        case 'boolean': return 'TINYINT(1)';
-        default: return 'VARCHAR(255)';
-      }
+const FormCodeGenerator = ({formFields, formSettings, formTitle, tableName}) => {
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [activeTab, setActiveTab] = useState('1');
+    const sanitizedTableName = tableName || formTitle?.toLowerCase().replace(/\s+/g, '_') || 'custom_form';
+    const { message } = App.useApp();
+    
+    // Function to generate the SQL CREATE TABLE statement
+    const generateSqlCode = () => {
+        // Map form field types to SQL column types
+        const getColumnType = (fieldType) => {
+            switch (fieldType) {
+                case 'input':
+                    return 'VARCHAR(255)';
+                case 'textArea':
+                    return 'TEXT';
+                case 'email':
+                    return 'VARCHAR(255)';
+                case 'number':
+                    return 'INT';
+                case 'date':
+                    return 'DATE';
+                case 'datetime':
+                    return 'DATETIME';
+                case 'dateRange':
+                    return 'VARCHAR(255)';
+                case 'radio':
+                    return 'VARCHAR(50)';
+                case 'select':
+                    return 'VARCHAR(100)';
+                case 'checkbox':
+                    return 'VARCHAR(255)';
+                case 'tags':
+                    return 'JSON';
+                case 'boolean':
+                    return 'TINYINT(1)';
+                default:
+                    return 'VARCHAR(255)';
+            }
+        };
+        
+        // Generate the CREATE TABLE statement with columns
+        let sql = `-- SQL CREATE TABLE statement for ${formTitle}\n`;
+        sql += `CREATE TABLE \`${sanitizedTableName}\`
+                (  `;
+        sql += `  \`id\` INT AUTO_INCREMENT PRIMARY KEY,\n`;
+        
+        // Add columns for each form field
+        formFields.forEach(field => {
+            // Get SQL column type
+            const columnType = getColumnType(field.type);
+            
+            // Check if the field is required
+            const isRequired = field.rules?.some(rule => rule.required);
+            const nullableStr = isRequired ? 'NOT NULL' : 'NULL';
+            
+            // Add the column definition
+            sql += `  \`${field.dataIndex || field.name}\` ${columnType} ${nullableStr},\n`;
+        });
+        
+        // Add created/updated timestamps
+        sql += `  \`createdAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n`;
+        sql += `  \`updatedAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n`;
+        sql += `);\n\n`;
+        
+        // Add sample INSERT statement
+        sql += `-- Sample INSERT statement\n`;
+        sql += `INSERT INTO \`${sanitizedTableName}\` (    `;
+        sql += formFields.map(field => `\`${field.dataIndex || field.name}\``).join(',\n  ');
+        sql += `\n) VALUES (\n  `;
+        sql += formFields.map(() => '?').join(',\n  ');
+        sql += `\n);\n`;
+        
+        return sql;
     };
-
-    // Generate the CREATE TABLE statement with columns
-    let sql = `-- SQL CREATE TABLE statement for ${formTitle}\n`;
-    sql += `CREATE TABLE \`${sanitizedTableName}\` (\n`;
-    sql += `  \`id\` INT AUTO_INCREMENT PRIMARY KEY,\n`;
     
-    // Add columns for each form field
-    formFields.forEach(field => {
-      // Get SQL column type
-      const columnType = getColumnType(field.type);
-      
-      // Check if the field is required
-      const isRequired = field.rules?.some(rule => rule.required);
-      const nullableStr = isRequired ? 'NOT NULL' : 'NULL';
-      
-      // Add the column definition
-      sql += `  \`${field.dataIndex || field.name}\` ${columnType} ${nullableStr},\n`;
-    });
-    
-    // Add created/updated timestamps
-    sql += `  \`createdAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n`;
-    sql += `  \`updatedAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n`;
-    sql += `);\n\n`;
-    
-    // Add sample INSERT statement
-    sql += `-- Sample INSERT statement\n`;
-    sql += `INSERT INTO \`${sanitizedTableName}\` (\n  `;
-    sql += formFields.map(field => `\`${field.dataIndex || field.name}\``).join(',\n  ');
-    sql += `\n) VALUES (\n  `;
-    sql += formFields.map(() => '?').join(',\n  ');
-    sql += `\n);\n`;
-    
-    return sql;
-  };
-
-  // Function to generate the route.js code
-  const generateRouteCode = () => {
-    return `import {getData, insertData, deleteData, updateData} from "@/lib/mysqldb";
+    // Function to generate the route.js code
+    const generateRouteCode = () => {
+        return `import {getData, insertData, deleteData, updateData} from "@/lib/mysqldb";
 
 const checkPayload = async (method, req) => {
     let body;
@@ -153,7 +167,7 @@ export const POST = async (req) => {
             return new Response(JSON.stringify({
                 success: false,
                 message: data.message || 'Failed to create ${formTitle}'
-            }), { status: 400 });
+            ), { status: 400 });
         }
     } catch (error) {
         console.error('❌ Error creating ${formTitle}:', error);
@@ -223,67 +237,67 @@ export const DELETE = async (req) => {
         }), { status: 500 });
     }
 }`;
-  };
-
-  // Function to generate the page code
-  const generatePageCode = () => {
-    // Format field for columns config
-    const formatColumns = (fields) => {
-      return fields.map(field => {
-        let column = {
-          title: field.title || field.label,
-          dataIndex: field.dataIndex || field.name,
-          key: field.dataIndex || field.name,
-          filterable: true
-        };
-        
-        // Add special handlers for specific field types
-        if (field.type === 'date' || field.type === 'datetime') {
-          column.render = `(text) => { return dayjs(text).format('YYYY-MM-DD'); }`;
-          column.sorter = true;
-        }
-        
-        if (field.type === 'select' || field.type === 'radio') {
-          column.filters = field.options?.map(opt => ({ text: opt.label, value: opt.value }));
-          column.onFilter = `(value, record) => record.${field.dataIndex || field.name} === value`;
-        }
-        
-        return column;
-      });
     };
     
-    // Format field for form config
-    const formatFormFields = (fields) => {
-      return fields.map(field => {
-        let formField = {
-          dataIndex: field.dataIndex || field.name,
-          label: field.title || field.label, // Ensure label is included for form fields
-          type: field.type,
-          rules: field.rules || [{ required: true, message: `Please input ${field.title || field.label}!` }]
+    // Function to generate the page code
+    const generatePageCode = () => {
+        // Format field for columns config
+        const formatColumns = (fields) => {
+            return fields.map(field => {
+                let column = {
+                    title: field.title || field.label,
+                    dataIndex: field.dataIndex || field.name,
+                    key: field.dataIndex || field.name,
+                    filterable: true
+                };
+                
+                // Add special handlers for specific field types
+                if (field.type === 'date' || field.type === 'datetime') {
+                    column.render = `(text) => { return dayjs(text).format('YYYY-MM-DD'); }`;
+                    column.sorter = true;
+                }
+                
+                if (field.type === 'select' || field.type === 'radio') {
+                    column.filters = field.options?.map(opt => ({text: opt.label, value: opt.value}));
+                    column.onFilter = `(value, record) => record.${field.dataIndex || field.name} === value`;
+                }
+                
+                return column;
+            });
         };
         
-        if (field.options && field.options.length > 0) {
-          formField.options = field.options;
-        }
-        if (field.cardGroup) {
-          formField.cardGroup = field.cardGroup;
-        }
+        // Format field for form config
+        const formatFormFields = (fields) => {
+            return fields.map(field => {
+                let formField = {
+                    dataIndex: field.dataIndex || field.name,
+                    label: field.title || field.label, // Ensure label is included for form fields
+                    type: field.type,
+                    rules: field.rules || [{required: true, message: `Please input ${field.title || field.label}!`}]
+                };
+                
+                if (field.options && field.options.length > 0) {
+                    formField.options = field.options;
+                }
+                if (field.cardGroup) {
+                    formField.cardGroup = field.cardGroup;
+                }
+                
+                return formField;
+            });
+        };
         
-        return formField;
-      });
-    };
-    
-    // Generate component name based on table name
-    const componentName = formTitle
-      .replace(/\s+/g, '')
-      .replace(/[^a-zA-Z0-9]/g, '')
-      .replace(/^./, str => str.toUpperCase());
-
-    // Create a copy of formSettings without cardGroupSetting for the main settings block
-    const { cardGroupSetting, ...otherFormSettings } = formSettings || {};
-    
-    // Generate the page code
-    return `'use client';
+        // Generate component name based on table name
+        const componentName = formTitle
+        ?.replace(/\s+/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .replace(/^./, str => str.toUpperCase());
+        
+        // Create a copy of formSettings without cardGroupSetting for the main settings block
+        const {cardGroupSetting, ...otherFormSettings} = formSettings || {};
+        
+        // Generate the page code
+        return `'use client';
 import React, {useEffect, useState} from 'react';
 import {Card, message, Typography} from 'antd';
 import CrudTable from '@/components/CrudTable';
@@ -301,8 +315,8 @@ export default function ${componentName}() {
     
     const options = {
         columns: ${JSON.stringify(formatColumns(formFields), null, 8)
-          .replace(/"render": "(.*?)"/g, '"render": $1')
-          .replace(/"onFilter": "(.*?)"/g, '"onFilter": $1')},
+        .replace(/"render": "(.*?)"/g, '"render": $1')
+        .replace(/"onFilter": "(.*?)"/g, '"onFilter": $1')},
         form: {
             settings: {
                 title: '${otherFormSettings?.title || 'Form'} Form',
@@ -314,8 +328,8 @@ export default function ${componentName}() {
             fields: ${JSON.stringify(formatFormFields(formFields), null, 8)},
             cardGroupSetting: ${JSON.stringify(cardGroupSetting || [], null, 8)}
         },
-        filters: ${JSON.stringify(formSettings.globalFilters?.map(f => ({ title: f.title, field: f.field || [], type: f.type, options: f.options })) || [], null, 8)},
-        pagination: ${JSON.stringify(formSettings.paginationSettings || { pageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '20', '50', '100'], showQuickJumper: true }, null, 4)}
+        filters: ${JSON.stringify(formSettings.globalFilters?.map(f => ({title: f.title, field: f.field || [], type: f.type, options: f.options})) || [], null, 8)},
+        pagination: ${JSON.stringify(formSettings.paginationSettings || {pageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '20', '50', '100'], showQuickJumper: true}, null, 4)}
     }
     
     useEffect(() => {
@@ -443,475 +457,351 @@ export default function ${componentName}() {
         </Card>
     );
 }`;
-  };
+    };
+    
+    // Copy code to clipboard
+    const copyToClipboard = (content) => {
+        navigator.clipboard.writeText(content)
+        .then(() => message.success('Code copied to clipboard!'))
+        .catch(() => message.error('Failed to copy code.'));
+    };
+    
+    // Download code
+    const downloadCode = (content, filename) => {
+        const element = document.createElement('a');
+        const file = new Blob([content], {type: 'text/plain'});
+        element.href = URL.createObjectURL(file);
+        element.download = filename;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    };
+    const handleSyncTable = async () => {
+        try {
+            const schema = {
+                id: 'INT AUTO_INCREMENT PRIMARY KEY',
+            };
+            const getColumnType = (fieldType) => {
+                switch (fieldType) {
+                    case 'input':
+                        return 'VARCHAR(255)';
+                    case 'textArea':
+                        return 'TEXT';
+                    case 'email':
+                        return 'VARCHAR(255)';
+                    case 'number':
+                        return 'INT';
+                    case 'date':
+                        return 'DATE';
+                    case 'datetime':
+                        return 'DATETIME';
+                    case 'dateRange':
+                        return 'VARCHAR(255)';
+                    case 'radio':
+                        return 'VARCHAR(50)';
+                    case 'select':
+                        return 'VARCHAR(100)';
+                    case 'checkbox':
+                        return 'VARCHAR(255)';
+                    case 'tags':
+                        return 'JSON';
+                    case 'boolean':
+                        return 'TINYINT(1)';
+                    default:
+                        return 'VARCHAR(255)';
+                }
+            };
 
-  // Copy code to clipboard
-  const copyToClipboard = (content) => {
-    navigator.clipboard.writeText(content)
-      .then(() => message.success('Code copied to clipboard!'))
-      .catch(() => message.error('Failed to copy code.'));
-  };
+            formFields.forEach(field => {
+                const columnType = getColumnType(field.type);
+                const isRequired = field.rules?.some(rule => rule.required);
+                const nullableStr = isRequired ? 'NOT NULL' : 'NULL';
+                schema[field.dataIndex || field.name] = `${columnType} ${nullableStr}`;
+            });
 
-  // Download code
-  const downloadCode = (content, filename) => {
-    const element = document.createElement('a');
-    const file = new Blob([content], {type: 'text/plain'});
-    element.href = URL.createObjectURL(file);
-    element.download = filename;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  };
+            schema['createdAt'] = 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
+            schema['updatedAt'] = 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP';
 
-  return (
-    <>
-      <Button
-        type="primary"
-        icon={<CodeOutlined />}
-        onClick={() => setIsModalVisible(true)}
-      >
-        Generate Code
-      </Button>
-
-      <Modal
-        title="Generated Code"
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        width={1000}
-        footer={null}
-      >
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={[
-            {
-              key: '1',
-              label: 'Page Code',
-              children: (
-                <Card>
-                  <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button
-                      icon={<CopyOutlined />}
-                      onClick={() => copyToClipboard(generatePageCode())}
-                    >
-                      Copy
-                    </Button>
-                    <Button
-                      icon={<DownloadOutlined />}
-                      onClick={() => downloadCode(generatePageCode(), `${sanitizedTableName}.page.js`)}
-                    >
-                      Download
-                    </Button>
-                  </Space>
-                  <SyntaxHighlighter language="javascript" style={tomorrow} showLineNumbers>
-                    {generatePageCode()}
-                  </SyntaxHighlighter>
-                </Card>
-              )
-            },
-            {
-              key: '2',
-              label: 'Route Code',
-              children: (
-                <Card>
-                  <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button
-                      icon={<CopyOutlined />}
-                      onClick={() => copyToClipboard(generateRouteCode())}
-                    >
-                      Copy
-                    </Button>
-                    <Button
-                      icon={<DownloadOutlined />}
-                      onClick={() => downloadCode(generateRouteCode(), `${sanitizedTableName}.route.js`)}
-                    >
-                      Download
-                    </Button>
-                  </Space>
-                  <SyntaxHighlighter language="javascript" style={tomorrow} showLineNumbers>
-                    {generateRouteCode()}
-                  </SyntaxHighlighter>
-                </Card>
-              )
-            },
-            {
-              key: '3',
-              label: 'Create Table Code',
-              children: (
-                <Card>
-                  <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button
-                      icon={<CopyOutlined />}
-                      onClick={() => copyToClipboard(generateSqlCode())}
-                    >
-                      Copy
-                    </Button>
-                    <Button
-                      icon={<DownloadOutlined />}
-                      onClick={() => downloadCode(generateSqlCode(), `${sanitizedTableName}.sql`)}
-                    >
-                      Download
-                    </Button>
-                  </Space>
-                  <SyntaxHighlighter language="sql" style={tomorrow} showLineNumbers>
-                    {generateSqlCode()}
-                  </SyntaxHighlighter>
-                </Card>
-              )
+            const res = await api.post('create-table', { tableName: sanitizedTableName, schema });
+            if (res.success) {
+                message.success(res.message || 'Table synced successfully');
+            } else {
+                message.error(res.message || 'Failed to sync table');
             }
-          ]}
-        />
-      </Modal>
-    </>
-  );
+        } catch (error) {
+            console.error('Failed to sync table:', error);
+            message.error('Failed to sync table');
+        }
+    };
+    
+    return (
+        <>
+            <Button
+                type="primary"
+                icon={<CodeOutlined/>}
+                onClick={() => setIsModalVisible(true)}
+            >
+                Generate Code
+            </Button>
+            
+            <Modal
+                title="Generated Code"
+                open={isModalVisible}
+                onCancel={() => setIsModalVisible(false)}
+                width={1000}
+                footer={null}
+            >
+                <Tabs
+                    activeKey={activeTab}
+                    onChange={setActiveTab}
+                    items={[
+                        {
+                            key: '1',
+                            label: 'Page Code',
+                            children: (
+                                <Card>
+                                    <Space style={{marginBottom: 16, display: 'flex', justifyContent: 'flex-end'}}>
+                                        <Button
+                                            icon={<CopyOutlined/>}
+                                            onClick={() => copyToClipboard(generatePageCode())}
+                                        >
+                                            Copy
+                                        </Button>
+                                        <Button
+                                            icon={<DownloadOutlined/>}
+                                            onClick={() => downloadCode(generatePageCode(), `${sanitizedTableName}.page.js`)}
+                                        >
+                                            Download
+                                        </Button>
+                                    </Space>
+                                    <SyntaxHighlighter language="javascript" style={tomorrow} showLineNumbers>
+                                        {generatePageCode()}
+                                    </SyntaxHighlighter>
+                                </Card>
+                            )
+                        },
+                        {
+                            key: '2',
+                            label: 'Route Code',
+                            children: (
+                                <Card>
+                                    <Space style={{marginBottom: 16, display: 'flex', justifyContent: 'flex-end'}}>
+                                        <Button
+                                            icon={<CopyOutlined/>}
+                                            onClick={() => copyToClipboard(generateRouteCode())}
+                                        >
+                                            Copy
+                                        </Button>
+                                        <Button
+                                            icon={<DownloadOutlined/>}
+                                            onClick={() => downloadCode(generateRouteCode(), `${sanitizedTableName}.route.js`)}
+                                        >
+                                            Download
+                                        </Button>
+                                    </Space>
+                                    <SyntaxHighlighter language="javascript" style={tomorrow} showLineNumbers>
+                                        {generateRouteCode()}
+                                    </SyntaxHighlighter>
+                                </Card>
+                            )
+                        },
+                        {
+                            key: '3',
+                            label: 'Create Table Code',
+                            children: (
+                                <Card>
+                                    <Space style={{marginBottom: 16, display: 'flex', justifyContent: 'flex-end'}}>
+                                        <Button
+                                            icon={<CopyOutlined/>}
+                                            onClick={() => copyToClipboard(generateSqlCode())}
+                                        >
+                                            Copy
+                                        </Button>
+                                        <Button
+                                            icon={<DownloadOutlined/>}
+                                            onClick={() => downloadCode(generateSqlCode(), `${sanitizedTableName}.sql`)}
+                                        >
+                                            Download
+                                        </Button>
+                                        <Button
+                                            type="primary"
+                                            icon={<DatabaseOutlined />}
+                                            onClick={handleSyncTable}
+                                        >
+                                            Sync Table
+                                        </Button>
+                                    </Space>
+                                    <SyntaxHighlighter language="sql" style={tomorrow} showLineNumbers>
+                                        {generateSqlCode()}
+                                    </SyntaxHighlighter>
+                                </Card>
+                            )
+                        }
+                    ]}
+                />
+            </Modal>
+        </>
+    );
 };
 
-// FormBuilder - An easy-to-use form generation tool
 const FormBuilder = () => {
-    // Available form templates
-    const formTemplates = [
-        {
-            id: 'user',
-            name: 'User Management',
-            icon: <UserOutlined />,
-            description: 'Create, edit and manage user accounts with roles',
-            fields: [
-                {
-                    id: uuidv4(),
-                    dataIndex: 'username',
-                    title: 'Username',
-                    type: 'input',
-                    rules: [
-                        { required: true, message: 'Please input username!' },
-                        { min: 3, message: 'Username must be at least 3 characters!' }
-                    ],
-                    options: [],
-                    filterable: true,
-                    sortable: true
-                },
-                {
-                    id: uuidv4(),
-                    dataIndex: 'email',
-                    title: 'Email',
-                    type: 'email',
-                    rules: [
-                        { required: true, message: 'Please input email!' },
-                        { type: 'email', message: 'Please enter a valid email!' }
-                    ],
-                    options: [],
-                    filterable: true,
-                    sortable: true
-                },
-                {
-                    id: uuidv4(),
-                    dataIndex: 'role',
-                    title: 'Role',
-                    type: 'tags',
-                    rules: [
-                        { required: true, message: 'Please select role!' }
-                    ],
-                    options: [
-                        { label: 'Admin', value: 'Admin' },
-                        { label: 'Manager', value: 'Manager' },
-                        { label: 'User', value: 'User' }
-                    ],
-                    filterable: true,
-                    sortable: false
-                }
-            ],
-            settings: {
-                title: 'User Management',
-                layout: 'horizontal',
-                labelCol: { span: 6 },
-                wrapperCol: { span: 18 },
-                modalTitle: 'User Form',
-                pageTitle: 'User Management',
-                gridColumns: 1,
-                cardGroupSetting: [],
-                paginationSettings: {
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                    showQuickJumper: true
-                },
-                globalFilters: [
-                    { id: uuidv4(), title: 'Search Users', field: ['username', 'email'], type: 'text', options: [] },
-                    { id: uuidv4(), title: 'Filter by Role', field: ['role'], type: 'select', options: [{label: 'Admin', value: 'Admin'}, {label: 'User', value: 'User'}] }
-                ]
-            }
-        },
-        {
-            id: 'product',
-            name: 'Product Catalog',
-            icon: <AppstoreOutlined />,
-            description: 'Manage products with price, inventory and categories',
-            fields: [
-                {
-                    id: uuidv4(),
-                    dataIndex: 'productName',
-                    title: 'Product Name',
-                    type: 'input',
-                    rules: [{ required: true, message: 'Please input product name!' }],
-                    options: [],
-                    filterable: true,
-                    sortable: true
-                },
-                {
-                    id: uuidv4(),
-                    dataIndex: 'price',
-                    title: 'Price',
-                    type: 'number',
-                    rules: [{ required: true, message: 'Please input price!' }],
-                    options: [],
-                    filterable: true,
-                    sortable: true
-                },
-                {
-                    id: uuidv4(),
-                    dataIndex: 'category',
-                    title: 'Category',
-                    type: 'select',
-                    rules: [{ required: true, message: 'Please select category!' }],
-                    options: [
-                        { label: 'Electronics', value: 'Electronics' },
-                        { label: 'Clothing', value: 'Clothing' },
-                        { label: 'Food', value: 'Food' }
-                    ],
-                    filterable: true,
-                    sortable: true
-                },
-                {
-                    id: uuidv4(),
-                    dataIndex: 'description',
-                    title: 'Description',
-                    type: 'textArea',
-                    rules: [],
-                    options: [],
-                    filterable: false,
-                    sortable: false
-                }
-            ],
-            settings: {
-                title: 'Product Catalog',
-                layout: 'horizontal',
-                labelCol: { span: 6 },
-                wrapperCol: { span: 18 },
-                modalTitle: 'Product Form',
-                pageTitle: 'Product Catalog',
-                gridColumns: 1,
-                cardGroupSetting: [],
-                paginationSettings: {
-                    pageSize: 15,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['15', '30', '50'],
-                    showQuickJumper: true
-                },
-                globalFilters: [
-                    { id: uuidv4(), title: 'Search Products', field: ['productName', 'category'], type: 'text', options: [] }
-                ]
-            }
-        },
-        {
-            id: 'orderProduct',
-            name: 'Product Order Form',
-            icon: <ShoppingCartOutlined />,
-            description: 'Create and manage product orders, assigning items to specific groups.',
-            fields: [
-                { id: uuidv4(), dataIndex: 'orderId', title: 'Order ID', type: 'input', rules: [{ required: true, message: 'Order ID is required!' }], filterable: true, sortable: true, cardGroup: 'orderDetails' },
-                { id: uuidv4(), dataIndex: 'customerName', title: 'Customer Name', type: 'input', rules: [{ required: true, message: 'Customer name is required!' }], filterable: true, sortable: true, cardGroup: 'orderDetails' },
-                { id: uuidv4(), dataIndex: 'orderDate', title: 'Order Date', type: 'date', rules: [{ required: true, message: 'Order date is required!' }], filterable: true, sortable: true, cardGroup: 'orderDetails' },
-                {
-                    id: uuidv4(), dataIndex: 'orderStatus', title: 'Order Status', type: 'select',
-                    rules: [{ required: true, message: 'Please select order status!' }],
-                    options: [
-                        { label: 'Pending', value: 'pending' },
-                        { label: 'Processing', value: 'processing' },
-                        { label: 'Shipped', value: 'shipped' },
-                        { label: 'Delivered', value: 'delivered' },
-                        { label: 'Cancelled', value: 'cancelled' },
-                    ],
-                    filterable: true, sortable: false, cardGroup: 'orderDetails'
-                },
-                {
-                    id: uuidv4(), dataIndex: 'productId', title: 'Product', type: 'select',
-                    rules: [{ required: true, message: 'Please select a product!' }],
-                    options: [
-                        { label: 'Laptop Model X', value: 'PROD001' },
-                        { label: 'Wireless Mouse', value: 'PROD002' },
-                        { label: 'Keyboard Pro', value: 'PROD003' },
-                    ],
-                    filterable: true, sortable: true, cardGroup: 'productInfo'
-                },
-                { id: uuidv4(), dataIndex: 'quantity', title: 'Quantity', type: 'number', rules: [{ required: true, message: 'Quantity is required!', type: 'number', min: 1 }], filterable: false, sortable: true, cardGroup: 'productInfo' },
-                { id: uuidv4(), dataIndex: 'unitPrice', title: 'Unit Price', type: 'number', rules: [{ type: 'number', min: 0 }], filterable: false, sortable: true, cardGroup: 'productInfo' },
-                { id: uuidv4(), dataIndex: 'shippingAddress', title: 'Shipping Address', type: 'textArea', rules: [], filterable: false, sortable: false, cardGroup: 'shippingInfo' },
-                { id: uuidv4(), dataIndex: 'billingAddress', title: 'Billing Address', type: 'textArea', rules: [], filterable: false, sortable: false, cardGroup: 'shippingInfo' },
-            ],
-            settings: {
-                title: 'Product Order Management',
-                layout: 'horizontal',
-                labelCol: { span: 8 },
-                wrapperCol: { span: 16 },
-                modalTitle: 'Product Order Form',
-                pageTitle: 'Product Orders',
-                gridColumns: 1,
-                cardGroupSetting: [
-                    { key: 'orderDetails', title: 'Order Details', description: 'Basic order information', layout: 'horizontal', gridColumns: 1, labelCol: { span: 6 }, wrapperCol: { span: 18 } },
-                    { key: 'productInfo', title: 'Product Information', description: 'Details of products ordered', layout: 'horizontal', gridColumns: 2, labelCol: { span: 8 }, wrapperCol: { span: 16 } },
-                    { key: 'shippingInfo', title: 'Address Information', description: 'Shipping and billing details', layout: 'vertical', gridColumns: 1, labelCol: { span: 24 }, wrapperCol: { span: 24 } },
-                ],
-                paginationSettings: {
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50'],
-                    showQuickJumper: true
-                },
-                globalFilters: [
-                    { id: uuidv4(), title: 'Search by Order ID', field: ['orderId'], type: 'text', options: [] },
-                    { id: uuidv4(), title: 'Filter by Status', field: ['orderStatus'], type: 'select', options: [ { label: 'Pending', value: 'pending' }, { label: 'Processing', value: 'processing' } ] }
-                ]
-            }
-        },
-        {
-            id: 'salesReport',
-            name: 'Sales Report Form',
-            icon: <LineChartOutlined />,
-            description: 'Configure and view sales report data with grouped sections.',
-            fields: [
-                { id: uuidv4(), dataIndex: 'reportName', title: 'Report Name', type: 'input', rules: [{ required: true, message: 'Report name is required!' }], filterable: true, sortable: false, cardGroup: 'reportConfig' },
-                {
-                    id: uuidv4(), dataIndex: 'reportType', title: 'Report Type', type: 'select',
-                    options: [
-                        { label: 'Daily Summary', value: 'daily' },
-                        { label: 'Weekly Summary', value: 'weekly' },
-                        { label: 'Monthly Summary', value: 'monthly' },
-                        { label: 'Custom Range', value: 'custom' },
-                    ],
-                    rules: [{ required: true, message: 'Report type is required!' }],
-                    filterable: true, sortable: false, cardGroup: 'reportConfig'
-                },
-                { id: uuidv4(), dataIndex: 'dateFrom', title: 'Date From', type: 'date', rules: [{ required: true, message: 'Start date is required!' }], filterable: false, sortable: false, cardGroup: 'reportConfig' },
-                { id: uuidv4(), dataIndex: 'dateTo', title: 'Date To', type: 'date', rules: [{ required: true, message: 'End date is required!' }], filterable: false, sortable: false, cardGroup: 'reportConfig' },
-                { id: uuidv4(), dataIndex: 'totalSales', title: 'Total Sales', type: 'number', rules: [], filterable: false, sortable: true, cardGroup: 'reportOutput' },
-                { id: uuidv4(), dataIndex: 'numberOfTransactions', title: 'Number of Transactions', type: 'number', rules: [], filterable: false, sortable: true, cardGroup: 'reportOutput' },
-                { id: uuidv4(), dataIndex: 'averageTransactionValue', title: 'Avg. Transaction Value', type: 'number', rules: [], filterable: false, sortable: true, cardGroup: 'reportOutput' },
-                { id: uuidv4(), dataIndex: 'generatedOn', title: 'Generated On', type: 'datetime', rules: [], filterable: false, sortable: false, cardGroup: 'reportOutput' },
-            ],
-            settings: {
-                title: 'Sales Report Generation',
-                layout: 'vertical',
-                labelCol: { span: 24 },
-                wrapperCol: { span: 24 },
-                modalTitle: 'Sales Report Parameters',
-                pageTitle: 'Sales Reports',
-                gridColumns: 1,
-                cardGroupSetting: [
-                    { key: 'reportConfig', title: 'Report Configuration', description: 'Set parameters for the report', layout: 'horizontal', gridColumns: 2, labelCol: { span: 8 }, wrapperCol: { span: 16 } },
-                    { key: 'reportOutput', title: 'Report Output', description: 'Summary of the generated report', layout: 'vertical', gridColumns: 1, labelCol: { span: 6 }, wrapperCol: { span: 18 } },
-                ],
-                paginationSettings: {
-                    pageSize: 20,
-                    showSizeChanger: false,
-                    pageSizeOptions: ['20', '40', '60'],
-                    showQuickJumper: false
-                },
-                globalFilters: [
-                    { id: uuidv4(), title: 'Filter by Report Type', field: ['reportType'], type: 'select', options: [ { label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' } ] }
-                ]
-            }
-        },
-        {
-            id: 'blank',
-            name: 'Blank Form',
-            icon: <FileAddOutlined />,
-            description: 'Start with a blank form and add your own fields',
-            fields: [],
-            settings: {
-                title: 'New Form',
-                layout: 'horizontal',
-                labelCol: { span: 6 },
-                wrapperCol: { span: 18 },
-                modalTitle: 'Data Form',
-                pageTitle: 'Data Management',
-                gridColumns: 1,
-                cardGroupSetting: [],
-                paginationSettings: {
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                    showQuickJumper: true
-                },
-                globalFilters: [
-                    { id: uuidv4(), title: 'Search', field: ['name'], type: 'text', options: [] }
-                ]
-            }
-        }
-    ];
-
-    // Form builder state - use deep cloning to break potential circular references
+    
+    const [formTemplates, setFormTemplates] = useState([]);
+    
     const [currentFieldFormTab, setCurrentFieldFormTab] = useState('basic');
-    const [formFields, setFormFields] = useState(() => JSON.parse(JSON.stringify(formTemplates[0].fields)));
-    const [formSettings, setFormSettings] = useState(() => JSON.parse(JSON.stringify(formTemplates[0].settings)));
+    const [formFields, setFormFields] = useState([]);
+    const [formSettings, setFormSettings] = useState({});
     const [fieldFormVisible, setFieldFormVisible] = useState(false);
     const [currentField, setCurrentField] = useState(null);
     const [form] = Form.useForm();
-
-    // Wizard state
-    const [selectedTemplate, setSelectedTemplate] = useState(formTemplates[0].id);
+    const {message} = App.useApp();
+    const router = useRouter();
+    const [selectedTemplate, setSelectedTemplate] = useState('');
     const [currentFieldType, setCurrentFieldType] = useState(null);
     const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Moved here
     
-    useEffect(() => {
+    // Preview state
+    const [previewData, setPreviewData] = useState([]);
     
-        
-        
-        
-    }, []);
-    // Watch for field type changes
-    useEffect(() => {
-        const getFormDesign = async () => {
-            const {data} = await api.get('/form-designs');
-            if (data && data.length > 0) {
-                const design = data.find(d => d.id === selectedTemplate);
-                if (design) {
-                    setFormFields(JSON.parse(JSON.stringify(design.fields)));
-                    setFormSettings(JSON.parse(JSON.stringify(design.settings)));
-                } else {
-                    message.error('Selected template not found');
-                }
+    const fetchTemplates = useCallback(async (selectId) => {
+        try {
+            const res = await api.get('form-designs');
+            const dbTemplates = res?.data?.length
+                ? res.data.map((t) => ({
+                    id: t.id?.toString() || t.name,
+                    name: t.name,
+                    icon: <FileAddOutlined/>,
+                    description: t.description || '',
+                    fields: t.fields
+                        ? t.fields
+                        : t.fields_data
+                            ? JSON.parse(t.fields_data)
+                            : [],
+                    settings: t.settings
+                        ? t.settings
+                        : t.settings_data
+                            ? JSON.parse(t.settings_data)
+                            : {}
+                }))
+                : [];
+            const combined = dbTemplates;
+            setFormTemplates(combined);
+            const target = combined.find((t) => t.id === (selectId || selectedTemplate));
+            if (target) {
+                setSelectedTemplate(target.id);
+                setFormFields(JSON.parse(JSON.stringify(target.fields)));
+                setFormSettings(JSON.parse(JSON.stringify(target.settings)));
             } else {
-                message.warning('No form designs available');
+                setSelectedTemplate('');
+                setFormFields([]);
+                setFormSettings({});
             }
+        } catch (err) {
+            console.error('Failed to load templates from DB:', err);
+            setFormTemplates([]);
         }
-        getFormDesign();
-        if (!form || !fieldFormVisible) return;
-
-        const type = form.getFieldValue('type');
-        if (type !== currentFieldType) {
-            setCurrentFieldType(type);
-
-            // Check if this field type needs options
-            const needsOptions = ['select', 'radio', 'tags', 'checkbox'].includes(type);
-            const options = form.getFieldValue('options') || [];
-
-            if (needsOptions && options.length === 0) {
-                message.info('This field type requires options. Please add them in the Options tab.');
+    }, [selectedTemplate]);
+    
+    useEffect(() => {
+        fetchTemplates();
+    }, [fetchTemplates]);
+    
+    const computeCrudOptions = () => {
+        const buildCrudColumns = (fields) => {
+            return fields.map(field => {
+                let column = {
+                    title: field.title || field.label || field.name,
+                    dataIndex: field.dataIndex || field.name,
+                    key: field.dataIndex || field.name,
+                    filterable: field.filterable !== undefined ? field.filterable : true
+                };
+                if (field.sortable) {
+                    column.sorter = true;
+                }
+                if (field.type === 'date' || field.type === 'datetime') {
+                    column.render = (text) => text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '';
+                }
+                if ((field.type === 'select' || field.type === 'radio') && field.options?.length > 0) {
+                    column.filters = field.options.map(opt => ({text: opt.label, value: opt.value}));
+                    column.onFilter = (value, record) => record[field.dataIndex || field.name] === value;
+                }
+                return column;
+            });
+        };
+        
+        const buildCrudFormFields = (fields) => {
+            return fields.map(field => {
+                let formField = {
+                    dataIndex: field.dataIndex || field.name,
+                    label: field.title || field.label || field.name,
+                    type: field.type,
+                    rules: field.rules || [{required: true, message: `Please input ${field.title || field.label || field.name}!`}]
+                };
+                if (field.options && field.options.length > 0) {
+                    formField.options = field.options;
+                }
+                if (field.cardGroup) {
+                    formField.cardGroup = field.cardGroup;
+                }
+                
+                return formField;
+            });
+        };
+        
+        const {cardGroupSetting, globalFilters, paginationSettings, ...otherSettings} = formSettings || {};
+        
+        return {
+            columns: buildCrudColumns(formFields),
+            form: {
+                settings: {
+                    title: otherSettings?.title ? `${otherSettings.title} Form` : 'Generated Form',
+                    labelCol: otherSettings?.labelCol || {span: 6},
+                    wrapperCol: otherSettings?.wrapperCol || {span: 18},
+                    layout: otherSettings?.layout || 'horizontal',
+                    gridColumns: otherSettings?.gridColumns || 1,
+                    addModalTitle: otherSettings?.modalTitle || `Add New ${otherSettings?.title || 'Record'}`,
+                    editModalTitle: otherSettings?.modalTitle ? `Edit ${otherSettings.modalTitle}` : `Edit ${otherSettings?.title || 'Record'}`,
+                    modalWidth: otherSettings?.modalWidth || '80%',
+                    initialValues: otherSettings?.initialValues || {},
+                    style: otherSettings?.style || {}
+                },
+                fields: buildCrudFormFields(formFields),
+                cardGroupSetting: cardGroupSetting || []
+            },
+            filters: {
+                fields: globalFilters?.map(f => ({
+                    title: f.title,
+                    field: Array.isArray(f.field) ? f.field : (f.field ? [f.field] : []),
+                    type: f.type,
+                    options: f.options || []
+                })) || []
+            },
+            pagination: paginationSettings || {
+                pageSize: 10,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showQuickJumper: true
             }
-        }
-
-    }, [form, fieldFormVisible, currentFieldType]);
-
+        };
+    };
+    const handleViewPage = (templateName) => {
+        if (!templateName) return;
+        // Convert template name to URL format (lowercase with underscores)
+        const urlPath = templateName.toLowerCase().replace(/\s+/g, '_');
+        router.push(`/${urlPath}`);
+    };
+    
     // Handle template selection
     const handleTemplateSelect = (templateId) => {
         try {
             // Find the selected template
             const template = formTemplates.find(t => t.id === templateId);
-
+            
             if (!template) {
                 message.error('Invalid template selected');
                 return;
             }
-
+            
             // Confirm before changing if there are existing fields
             if (formFields.length > 0) {
                 Modal.confirm({
@@ -920,16 +810,16 @@ const FormBuilder = () => {
                     onOk() {
                         // Update selected template
                         setSelectedTemplate(templateId);
-
+                        
                         // Update form fields and settings with deep cloning to avoid circular references
                         setFormFields(JSON.parse(JSON.stringify(template.fields)));
                         setFormSettings(JSON.parse(JSON.stringify(template.settings)));
-
+                        
                         message.success(`Template changed to ${template.name}`);
                     },
-                    okButtonProps: { 
-                    //    type: 'primary' ,
-                       style: { background: "#006964"}
+                    okButtonProps: {
+                        //    type: 'primary' ,
+                        style: {background: "#006964"}
                     }
                 });
             } else {
@@ -937,7 +827,7 @@ const FormBuilder = () => {
                 setSelectedTemplate(templateId);
                 setFormFields(JSON.parse(JSON.stringify(template.fields)));
                 setFormSettings(JSON.parse(JSON.stringify(template.settings)));
-
+                
                 message.success(`Template changed to ${template.name}`);
             }
         } catch (error) {
@@ -945,21 +835,42 @@ const FormBuilder = () => {
             message.error('Failed to change template');
         }
     };
-
+    
+    const handleDeleteTemplate = (templateId) => {
+        Modal.confirm({
+            title: 'Delete Template?',
+            content: 'This will permanently remove the template.',
+            onOk: async () => {
+                try {
+                    const res = await api.delete('form-designs', {id: templateId});
+                    if (res && res.success) {
+                        message.success(res.message || 'Template deleted');
+                        await fetchTemplates();
+                    } else {
+                        message.error(res?.message || 'Failed to delete template');
+                    }
+                } catch (err) {
+                    console.error('Error deleting template:', err);
+                    message.error('Failed to delete template');
+                }
+            }
+        });
+    };
+    
     // Field type options
     const fieldTypes = [
-        { label: 'Text Input', value: 'input', icon: <FormOutlined /> },
-        { label: 'Email', value: 'email', icon: <MailOutlined /> },
-        { label: 'Text Area', value: 'textArea', icon: <FileTextOutlined /> },
-        { label: 'Number', value: 'number', icon: <NumberOutlined /> },
-        { label: 'Select', value: 'select', icon: <DownOutlined /> },
-        { label: 'Date Picker', value: 'date', icon: <CalendarOutlined /> },
-        { label: 'Date Range', value: 'dateRange', icon: <CalendarOutlined /> },
-        { label: 'Checkbox', value: 'checkbox', icon: <CheckSquareOutlined /> },
-        { label: 'Radio', value: 'radio', icon: <CheckCircleOutlined /> },
-        { label: 'Tags', value: 'tags', icon: <TagsOutlined /> }
+        {label: 'Text Input', value: 'input', icon: <FormOutlined/>},
+        {label: 'Email', value: 'email', icon: <MailOutlined/>},
+        {label: 'Text Area', value: 'textArea', icon: <FileTextOutlined/>},
+        {label: 'Number', value: 'number', icon: <NumberOutlined/>},
+        {label: 'Select', value: 'select', icon: <DownOutlined/>},
+        {label: 'Date Picker', value: 'date', icon: <CalendarOutlined/>},
+        {label: 'Date Range', value: 'dateRange', icon: <CalendarOutlined/>},
+        {label: 'Checkbox', value: 'checkbox', icon: <CheckSquareOutlined/>},
+        {label: 'Radio', value: 'radio', icon: <CheckCircleOutlined/>},
+        {label: 'Tags', value: 'tags', icon: <TagsOutlined/>}
     ];
-
+    
     // Common field presets for quick addition
     const fieldPresets = [
         {
@@ -967,10 +878,10 @@ const FormBuilder = () => {
             dataIndex: 'name',
             title: 'Name',
             type: 'input',
-            rules: [{ required: true, message: 'Please input name!' }],
+            rules: [{required: true, message: 'Please input name!'}],
             filterable: true,
             sortable: true,
-            icon: <UserOutlined />
+            icon: <UserOutlined/>
         },
         {
             name: 'Email Address',
@@ -978,22 +889,22 @@ const FormBuilder = () => {
             title: 'Email',
             type: 'email',
             rules: [
-                { required: true, message: 'Please input email!' },
-                { type: 'email', message: 'Please enter a valid email!' }
+                {required: true, message: 'Please input email!'},
+                {type: 'email', message: 'Please enter a valid email!'}
             ],
             filterable: true,
             sortable: true,
-            icon: <MailOutlined />
+            icon: <MailOutlined/>
         },
         {
             name: 'Phone Number',
             dataIndex: 'phone',
             title: 'Phone',
             type: 'input',
-            rules: [{ required: false, message: 'Please input phone number!' }],
+            rules: [{required: false, message: 'Please input phone number!'}],
             filterable: true,
             sortable: true,
-            icon: <PhoneOutlined />
+            icon: <PhoneOutlined/>
         },
         {
             name: 'Status',
@@ -1001,14 +912,14 @@ const FormBuilder = () => {
             title: 'Status',
             type: 'select',
             options: [
-                { label: 'Active', value: 'active' },
-                { label: 'Inactive', value: 'inactive' },
-                { label: 'Pending', value: 'pending' }
+                {label: 'Active', value: 'active'},
+                {label: 'Inactive', value: 'inactive'},
+                {label: 'Pending', value: 'pending'}
             ],
-            rules: [{ required: true, message: 'Please select status!' }],
+            rules: [{required: true, message: 'Please select status!'}],
             filterable: true,
             sortable: true,
-            icon: <CheckCircleOutlined />
+            icon: <CheckCircleOutlined/>
         },
         {
             name: 'Date Created',
@@ -1018,7 +929,7 @@ const FormBuilder = () => {
             rules: [],
             filterable: true,
             sortable: true,
-            icon: <CalendarOutlined />
+            icon: <CalendarOutlined/>
         },
         {
             name: 'Description',
@@ -1028,10 +939,10 @@ const FormBuilder = () => {
             rules: [],
             filterable: false,
             sortable: false,
-            icon: <FileTextOutlined />
+            icon: <FileTextOutlined/>
         }
     ];
-
+    
     // Add a new field
     const handleAddField = () => {
         try {
@@ -1041,12 +952,12 @@ const FormBuilder = () => {
                 dataIndex: '',
                 title: '',
                 type: 'input',
-                rules: [{ required: true, message: 'This field is required!' }],
+                rules: [{required: true, message: 'This field is required!'}],
                 options: [],
                 filterable: true,
                 sortable: true
             };
-
+            
             // Use a deep copy to break any potential references
             setCurrentField(JSON.parse(JSON.stringify(newField)));
             form.resetFields();
@@ -1056,7 +967,7 @@ const FormBuilder = () => {
             message.error('Failed to initialize new field');
         }
     };
-
+    
     // Add a preset field
     const handleAddPresetField = (preset) => {
         try {
@@ -1072,30 +983,30 @@ const FormBuilder = () => {
                 filterable: Boolean(preset.filterable),
                 sortable: Boolean(preset.sortable)
             };
-
+            
             const newField = {
                 id: uuidv4(),
                 ...sanitizedPreset
             };
-
+            
             // Use functional updates to ensure we're using latest state
             setFormFields(prevFields => {
                 // Create a safe copy of the fields first
                 const safeFields = JSON.parse(JSON.stringify(prevFields));
-
+                
                 // Check for duplicate data indexes
                 const baseDataIndex = newField.dataIndex;
                 let dataIndex = baseDataIndex;
                 let counter = 1;
-
+                
                 // If the field name already exists, add a number to make it unique
                 while (safeFields.some(f => f.dataIndex === dataIndex)) {
                     dataIndex = `${baseDataIndex}${counter}`;
                     counter++;
                 }
-
+                
                 newField.dataIndex = dataIndex;
-
+                
                 message.success(`"${newField.title}" field added`);
                 return [...safeFields, newField];
             });
@@ -1104,7 +1015,7 @@ const FormBuilder = () => {
             message.error('Failed to add preset field');
         }
     };
-
+    
     // Edit an existing field
     const handleEditField = (field) => {
         try {
@@ -1112,12 +1023,12 @@ const FormBuilder = () => {
                 message.error('Invalid field selected for editing');
                 return;
             }
-
+            
             // Create a proper deep copy to avoid reference issues
             // Using JSON.parse(JSON.stringify()) to break all potential circular references
             const fieldCopy = JSON.parse(JSON.stringify(field));
             setCurrentField(fieldCopy);
-
+            
             // Set form values, explicitly extracting only the properties we need
             form.setFieldsValue({
                 dataIndex: fieldCopy.dataIndex,
@@ -1129,25 +1040,25 @@ const FormBuilder = () => {
                 options: Array.isArray(fieldCopy.options) ? fieldCopy.options : [],
                 cardGroup: fieldCopy.cardGroup || null
             });
-
+            
             setFieldFormVisible(true);
         } catch (error) {
             console.error('Error editing field:', error);
             message.error('Failed to edit field');
         }
     };
-
+    
     // Save field from form
     const handleSaveField = async () => {
         try {
             // Validate all form fields
             const values = await form.validateFields();
-
+            
             if (!currentField || !currentField.id) {
                 message.error('Missing field information');
                 return;
             }
-
+            
             // Create a clean field object with only the properties we need
             const fieldToSave = {
                 id: currentField.id,
@@ -1155,22 +1066,22 @@ const FormBuilder = () => {
                 title: values.title.trim(),
                 type: values.type,
                 rules: [
-                    ...(values.required ? [{ required: true, message: `Please input ${values.title.trim()}!` }] : []),
+                    ...(values.required ? [{required: true, message: `Please input ${values.title.trim()}!`}] : [])
                 ],
                 options: Array.isArray(values.options) ? [...values.options] : [],
                 filterable: Boolean(values.filterable),
                 sortable: Boolean(values.sortable),
                 cardGroup: values.cardGroup
             };
-
+            
             // Use functional updates to ensure we're using latest state
             setFormFields(prevFields => {
                 try {
                     // Create a safe copy of previous fields to avoid circular references
                     const safeFields = JSON.parse(JSON.stringify(prevFields));
-
+                    
                     const existingField = safeFields.some(f => f.id === currentField.id);
-
+                    
                     if (existingField) {
                         // Update existing field
                         message.success(`Field "${fieldToSave.title}" updated successfully`);
@@ -1186,14 +1097,14 @@ const FormBuilder = () => {
                     return prevFields; // Return unchanged if there's an error
                 }
             });
-
+            
             setFieldFormVisible(false);
         } catch (error) {
             console.error('Validation failed:', error);
             message.error('Please check form fields and try again');
         }
     };
-
+    
     // Delete a field
     const handleDeleteField = (fieldId) => {
         try {
@@ -1201,10 +1112,10 @@ const FormBuilder = () => {
                 message.error('Invalid field selected for deletion');
                 return;
             }
-
+            
             // Find the field to show in success message
             const fieldToDelete = formFields.find(field => field.id === fieldId);
-
+            
             // Use functional update to ensure we're working with latest state
             setFormFields(prevFields => {
                 // Remove field
@@ -1215,33 +1126,33 @@ const FormBuilder = () => {
                 }
                 return updatedFields;
             });
-
+            
         } catch (error) {
             console.error('Error deleting field:', error);
             message.error('Failed to delete field');
         }
     };
-
+    
     // Component to render visual example of a field type
-    const FieldTypeExample = ({ type }) => {
+    const FieldTypeExample = ({type}) => {
         // Sample data and components for each field type
         const examples = {
-            input: <Input placeholder="Type here..." />,
-            email: <Input placeholder="user@example.com" prefix={<MailOutlined />} />,
-            textArea: <TextArea placeholder="Enter description..." rows={2} />,
-            number: <InputNumber placeholder="0" min={0} />,
+            input: <Input placeholder="Type here..."/>,
+            email: <Input placeholder="user@example.com" prefix={<MailOutlined/>}/>,
+            textArea: <TextArea placeholder="Enter description..." rows={2}/>,
+            number: <InputNumber placeholder="0" min={0}/>,
             select: (
                 <Select
                     placeholder="Select an option"
                     options={[
-                        { label: 'Option 1', value: '1' },
-                        { label: 'Option 2', value: '2' }
+                        {label: 'Option 1', value: '1'},
+                        {label: 'Option 2', value: '2'}
                     ]}
                 />
             ),
-            date: <DatePicker style={{ width: '100%' }} />,
-            dateRange: <DatePicker.RangePicker style={{ width: '100%' }} />,
-            checkbox: <Checkbox.Group options={['Option 1', 'Option 2']} />,
+            date: <DatePicker style={{width: '100%'}}/>,
+            dateRange: <DatePicker.RangePicker style={{width: '100%'}}/>,
+            checkbox: <Checkbox.Group options={['Option 1', 'Option 2']}/>,
             radio: (
                 <Radio.Group>
                     <Radio value="1">Option 1</Radio>
@@ -1253,40 +1164,40 @@ const FormBuilder = () => {
                     mode="tags"
                     placeholder="Select or add tags"
                     options={[
-                        { label: 'Tag 1', value: 'tag1' },
-                        { label: 'Tag 2', value: 'tag2' }
+                        {label: 'Tag 1', value: 'tag1'},
+                        {label: 'Tag 2', value: 'tag2'}
                     ]}
-                    style={{ width: '100%' }}
+                    style={{width: '100%'}}
                 />
             )
         };
-
-        return examples[type] || <Input disabled placeholder="Select a field type" />;
+        
+        return examples[type] || <Input disabled placeholder="Select a field type"/>;
     };
-
+    
     // Field type selection with visual examples
     const renderFieldTypeSelection = () => {
         const selectedType = form.getFieldValue('type') || 'input';
-
+        
         const handleTypeSelect = (type) => {
             form.setFieldValue('type', type);
             setCurrentFieldType(type); // Update the current field type state to trigger re-render
-
+            
             // Reset options if switching to a type that doesn't use them
             if (!['select', 'radio', 'tags', 'checkbox'].includes(type)) {
                 form.setFieldValue('options', []);
             }
-
+            
             // If switching to a type that uses options but none exist, add default ones
             if (['select', 'radio', 'tags', 'checkbox'].includes(type) &&
                 (!form.getFieldValue('options') || form.getFieldValue('options').length === 0)) {
                 form.setFieldValue('options', [
-                    { label: 'Option 1', value: 'option1' },
-                    { label: 'Option 2', value: 'option2' }
+                    {label: 'Option 1', value: 'option1'},
+                    {label: 'Option 2', value: 'option2'}
                 ]);
             }
         };
-
+        
         const typeDescriptions = {
             input: "Standard text input for single-line text",
             email: "Email input with validation",
@@ -1299,16 +1210,16 @@ const FormBuilder = () => {
             radio: "Single selection radio buttons",
             tags: "Multiple tags with ability to add custom values"
         };
-
+        
         return (
             <>
-                <div style={{ marginBottom: 16 }}>
+                <div style={{marginBottom: 16}}>
                     <Text strong>Select Field Type</Text>
-                    <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                    <Text type="secondary" style={{display: 'block', marginBottom: 8}}>
                         Choose how users will input data for this field
                     </Text>
                 </div>
-
+                
                 <Row gutter={[16, 16]}>
                     {fieldTypes.map(type => (
                         <Col span={8} key={type.value}>
@@ -1319,7 +1230,7 @@ const FormBuilder = () => {
                                 onClick={() => handleTypeSelect(type.value)}
                                 style={{
                                     cursor: 'pointer',
-                                    borderColor: selectedType === type.value ? '#006964' : '#f0f0f0',
+                                    borderColor: selectedType === type.value ? '#006964' : '#f0f0f0'
                                     // background: selectedType === type.value ? '#e6f7ff' : '#fff'
                                 }}
                                 title={
@@ -1330,13 +1241,13 @@ const FormBuilder = () => {
                                 }
                                 extra={
                                     selectedType === type.value && (
-                                        <CheckOutlined style={{ color: '#006964' }} />
+                                        <CheckOutlined style={{color: '#006964'}}/>
                                     )
                                 }
                             >
                                 <Tooltip title={typeDescriptions[type.value]}>
-                                    <div style={{ minHeight: 60 }}>
-                                        <FieldTypeExample type={type.value} />
+                                    <div style={{minHeight: 60}}>
+                                        <FieldTypeExample type={type.value}/>
                                     </div>
                                 </Tooltip>
                             </Card>
@@ -1346,58 +1257,60 @@ const FormBuilder = () => {
             </>
         );
     };
-
+    
     // Live field preview based on current settings
     const renderFieldPreview = () => {
         const fieldValues = form.getFieldsValue();
-        const { title, type, required } = fieldValues;
+        const {title, type, required} = fieldValues;
         const displayTitle = title || 'Field Label';
-
+        
         return (
             <Card
                 title="Live Preview"
                 size="small"
-                style={{ marginTop: 24, marginBottom: 24 }}
-                extra={<InfoCircleOutlined />}
+                style={{marginTop: 24, marginBottom: 24}}
+                extra={<InfoCircleOutlined/>}
             >
-                <Form layout={formSettings.layout}>
+                <Form
+                    form={form}
+                    layout={formSettings.layout}>
                     <Form.Item
                         label={displayTitle}
                         required={required}
                         tooltip={required ? "This field is required" : "This field is optional"}
                     >
-                        <FieldTypeExample type={type} />
+                        <FieldTypeExample type={type}/>
                     </Form.Item>
                 </Form>
             </Card>
         );
     };
-
+    
     // State for field form tabs
-
+    
     // Check if the current field type needs options
     const checkNeedsOptions = () => {
         const currentType = form?.getFieldValue('type');
         return ['select', 'radio', 'tags', 'checkbox'].includes(currentType);
     };
-
+    
     // Effect to update tab notification when field type changes - moved outside renderFieldForm
     useEffect(() => {
         // Skip if form is not available
         if (!form) return;
-
+        
         const fieldType = form.getFieldValue('type');
         const needsOptions = ['select', 'radio', 'tags', 'checkbox'].includes(fieldType);
         const options = form.getFieldValue('options') || [];
-
+        
         if (needsOptions && options.length === 0 && fieldFormVisible) {
             message.info('This field type requires options. Please add them in the Options tab.');
         }
-    }, [fieldFormVisible, form]);
-
+    }, [fieldFormVisible, form, message]);
+    
     // Function to handle saving the form design
     const handleSaveDesign = async () => {
-
+        
         // Helper to build columns for CrudTable options
         const buildCrudColumns = (fields) => {
             return fields.map(field => {
@@ -1405,7 +1318,7 @@ const FormBuilder = () => {
                     title: field.title || field.label || field.name,
                     dataIndex: field.dataIndex || field.name,
                     key: field.dataIndex || field.name,
-                    filterable: field.filterable !== undefined ? field.filterable : true,
+                    filterable: field.filterable !== undefined ? field.filterable : true
                 };
                 if (field.sortable) {
                     column.sorter = true; // For antd's basic sort. Generated page.js might have specific functions.
@@ -1415,14 +1328,14 @@ const FormBuilder = () => {
                 }
                 if (field.type === 'select' || field.type === 'radio') {
                     if (field.options && field.options.length > 0) {
-                        column.filters = field.options.map(opt => ({ text: opt.label, value: opt.value }));
+                        column.filters = field.options.map(opt => ({text: opt.label, value: opt.value}));
                         column.onFilter = ` (value, record) => record['${field.dataIndex || field.name}'] === value `;
                     }
                 }
                 return column;
             });
         };
-
+        
         // Helper to build form fields for CrudTable options
         const buildCrudFormFields = (fields) => {
             return fields.map(field => {
@@ -1430,7 +1343,7 @@ const FormBuilder = () => {
                     dataIndex: field.dataIndex || field.name,
                     label: field.title || field.label || field.name,
                     type: field.type,
-                    rules: field.rules || [{ required: true, message: `Please input ${field.title || field.label || field.name}!` }]
+                    rules: field.rules || [{required: true, message: `Please input ${field.title || field.label || field.name}!`}]
                 };
                 if (field.options && field.options.length > 0) {
                     formField.options = field.options;
@@ -1451,16 +1364,16 @@ const FormBuilder = () => {
                 return formField;
             });
         };
-
-        const { cardGroupSetting, globalFilters, paginationSettings, ...otherSettings } = formSettings || {};
-
+        
+        const {cardGroupSetting, globalFilters, paginationSettings, ...otherSettings} = formSettings || {};
+        
         const crudTableOptions = {
             columns: buildCrudColumns(formFields),
             form: {
                 settings: {
                     title: otherSettings?.title ? `${otherSettings.title} Form` : 'Generated Form',
-                    labelCol: otherSettings?.labelCol || { span: 6 },
-                    wrapperCol: otherSettings?.wrapperCol || { span: 18 },
+                    labelCol: otherSettings?.labelCol || {span: 6},
+                    wrapperCol: otherSettings?.wrapperCol || {span: 18},
                     layout: otherSettings?.layout || "horizontal",
                     gridColumns: otherSettings?.gridColumns || 1,
                     addModalTitle: otherSettings?.modalTitle || `Add New ${otherSettings?.title || 'Record'}`,
@@ -1487,7 +1400,7 @@ const FormBuilder = () => {
                 showQuickJumper: true
             }
         };
-
+        
         const formDesignPayload = {
             name: formSettings.title || 'Untitled Form Design',
             fields_data: formFields,
@@ -1495,13 +1408,22 @@ const FormBuilder = () => {
             crud_options_data: crudTableOptions // Added crud_options_data
         };
         console.log("Payload to save:", formDesignPayload);
-
+        
         try {
-            // Assuming api.post handles the /api prefix and returns parsed JSON response
-            const response = await api.post('form-designs', formDesignPayload);
-
+            let response;
+            if (selectedTemplate && !isNaN(Number(selectedTemplate))) {
+                response = await api.put('form-designs', {
+                    body: formDesignPayload,
+                    where: {id: Number(selectedTemplate)}
+                });
+            } else {
+                response = await api.post('form-designs', formDesignPayload);
+            }
+            
             if (response && response.success) {
                 message.success(response.message || 'Form design saved successfully!');
+                const newId = response.data?.id || selectedTemplate;
+                await fetchTemplates(newId.toString());
             } else {
                 message.error(response?.message || 'Failed to save form design. Unknown error.');
             }
@@ -1511,10 +1433,10 @@ const FormBuilder = () => {
             message.error(errorMessage);
         }
     };
-
+    
     // Field form for add/edit
     const renderFieldForm = () => {
-
+        
         return (
             <Drawer
                 title={currentField?.id ? 'Edit Field' : 'Add Field'}
@@ -1522,8 +1444,8 @@ const FormBuilder = () => {
                 onClose={() => setFieldFormVisible(false)}
                 width={700}
                 footer={
-                    <div style={{ textAlign: 'right' }}>
-                        <Button onClick={() => setFieldFormVisible(false)} style={{ marginRight: 8 }}>
+                    <div style={{textAlign: 'right'}}>
+                        <Button onClick={() => setFieldFormVisible(false)} style={{marginRight: 8}}>
                             Cancel
                         </Button>
                         <Button onClick={handleSaveField} type="primary">
@@ -1551,7 +1473,7 @@ const FormBuilder = () => {
                                 key: 'basic',
                                 label: (
                                     <span>
-                                        <FormOutlined /> Basic Info
+                                        <FormOutlined/> Basic Info
                                     </span>
                                 ),
                                 children: (
@@ -1562,15 +1484,15 @@ const FormBuilder = () => {
                                                     name="dataIndex"
                                                     label="Field Name (dataIndex)"
                                                     rules={[
-                                                        { required: true, message: 'Please input field name!' },
-                                                        { pattern: /^[a-zA-Z0-9_]+$/, message: 'Field name can only contain letters, numbers and underscore' },
-                                                        { min: 2, message: 'Field name must be at least 2 characters' }
+                                                        {required: true, message: 'Please input field name!'},
+                                                        {pattern: /^[a-zA-Z0-9_]+$/, message: 'Field name can only contain letters, numbers and underscore'},
+                                                        {min: 2, message: 'Field name must be at least 2 characters'}
                                                     ]}
                                                     tooltip="This will be used as the data index in code. Use camelCase naming (e.g. userName)"
                                                 >
                                                     <Input
                                                         placeholder="e.g. username, email, status"
-                                                        suffix={<QuestionCircleOutlined />}
+                                                        suffix={<QuestionCircleOutlined/>}
                                                     />
                                                 </Form.Item>
                                             </Col>
@@ -1579,26 +1501,26 @@ const FormBuilder = () => {
                                                     name="title"
                                                     label="Display Title"
                                                     rules={[
-                                                        { required: true, message: 'Please input display title!' },
-                                                        { min: 2, message: 'Title must be at least 2 characters' }
+                                                        {required: true, message: 'Please input display title!'},
+                                                        {min: 2, message: 'Title must be at least 2 characters'}
                                                     ]}
                                                     tooltip="This will be shown as column header and form label"
                                                 >
                                                     <Input
                                                         placeholder="e.g. Username, Email, Status"
-                                                        suffix={<QuestionCircleOutlined />}
+                                                        suffix={<QuestionCircleOutlined/>}
                                                     />
                                                 </Form.Item>
                                             </Col>
                                         </Row>
-
+                                        
                                         <Form.Item
                                             name="type"
                                             hidden
                                         >
-                                            <Input />
+                                            <Input/>
                                         </Form.Item>
-
+                                        
                                         <Form.Item
                                             name="cardGroup"
                                             label="Card Group (Optional)"
@@ -1612,10 +1534,10 @@ const FormBuilder = () => {
                                                 ))}
                                             </Select>
                                         </Form.Item>
-
+                                        
                                         {renderFieldTypeSelection()}
                                         {renderFieldPreview()}
-
+                                        
                                         <Row gutter={16}>
                                             <Col span={8}>
                                                 <Form.Item
@@ -1623,7 +1545,7 @@ const FormBuilder = () => {
                                                     valuePropName="checked"
                                                     label="Required"
                                                 >
-                                                    <Switch />
+                                                    <Switch/>
                                                 </Form.Item>
                                             </Col>
                                             <Col span={8}>
@@ -1632,7 +1554,7 @@ const FormBuilder = () => {
                                                     valuePropName="checked"
                                                     label="Filterable"
                                                 >
-                                                    <Switch />
+                                                    <Switch/>
                                                 </Form.Item>
                                             </Col>
                                             <Col span={8}>
@@ -1641,7 +1563,7 @@ const FormBuilder = () => {
                                                     valuePropName="checked"
                                                     label="Sortable"
                                                 >
-                                                    <Switch />
+                                                    <Switch/>
                                                 </Form.Item>
                                             </Col>
                                         </Row>
@@ -1652,19 +1574,19 @@ const FormBuilder = () => {
                                 key: 'options',
                                 label: (
                                     <span>
-                                        <SettingOutlined /> Options
+                                        <SettingOutlined/> Options
                                         {checkNeedsOptions() &&
                                             (form.getFieldValue('options')?.length === 0) &&
-                                            <Badge count="!" style={{ backgroundColor: '#faad14', marginLeft: 5 }} />
+                                            <Badge count="!" style={{backgroundColor: '#faad14', marginLeft: 5}}/>
                                         }
                                     </span>
                                 ),
                                 children: (
                                     <Form.List name="options">
-                                        {(fields, { add, remove }) => {
+                                        {(fields, {add, remove}) => {
                                             const selectedType = form.getFieldValue('type');
                                             const showOptions = ['select', 'radio', 'tags', 'checkbox'].includes(selectedType);
-
+                                            
                                             if (!showOptions) {
                                                 return (
                                                     <Empty
@@ -1672,7 +1594,7 @@ const FormBuilder = () => {
                                                         description={
                                                             <span>
                                                                 Options are only available for Select, Radio, Checkbox, and Tags field types.
-                                                                <br />
+                                                                <br/>
                                                                 <Button
                                                                     type="link"
                                                                     onClick={() => setCurrentFieldFormTab('basic')}
@@ -1684,46 +1606,46 @@ const FormBuilder = () => {
                                                     />
                                                 );
                                             }
-
+                                            
                                             return (
                                                 <>
                                                     <Alert
                                                         message={`Configure options for your ${
                                                             selectedType === 'select' ? 'dropdown' :
-                                                            selectedType === 'radio' ? 'radio buttons' :
-                                                            'tags'
+                                                                selectedType === 'radio' ? 'radio buttons' :
+                                                                    'tags'
                                                         }`}
                                                         description="Add, edit or remove options that will be available to users"
                                                         type="info"
                                                         showIcon
-                                                        style={{ marginBottom: 16 }}
+                                                        style={{marginBottom: 16}}
                                                     />
-
+                                                    
                                                     {fields.length === 0 ? (
                                                         <Empty
                                                             image={Empty.PRESENTED_IMAGE_SIMPLE}
                                                             description="No options added yet"
-                                                            style={{ margin: '20px 0' }}
+                                                            style={{margin: '20px 0'}}
                                                         >
                                                             <Button
                                                                 type="primary"
-                                                                onClick={() => add({ label: 'New Option', value: 'newOption' })}
-                                                                icon={<PlusOutlined />}
+                                                                onClick={() => add({label: 'New Option', value: 'newOption'})}
+                                                                icon={<PlusOutlined/>}
                                                             >
                                                                 Add First Option
                                                             </Button>
                                                         </Empty>
                                                     ) : (
-                                                        <div style={{ maxHeight: '400px', overflow: 'auto', padding: '8px 0' }}>
+                                                        <div style={{maxHeight: '400px', overflow: 'auto', padding: '8px 0'}}>
                                                             {fields.map((field, index) => (
                                                                 <Card
                                                                     key={field.key}
                                                                     size="small"
-                                                                    style={{ marginBottom: 8 }}
+                                                                    style={{marginBottom: 8}}
                                                                     title={`Option ${index + 1}`}
                                                                     extra={
                                                                         <Button
-                                                                            icon={<DeleteOutlined />}
+                                                                            icon={<DeleteOutlined/>}
                                                                             onClick={() => remove(field.name)}
                                                                             danger
                                                                             type="text"
@@ -1735,22 +1657,22 @@ const FormBuilder = () => {
                                                                             <Form.Item
                                                                                 {...field}
                                                                                 name={[field.name, 'label']}
-                                                                                rules={[{ required: true, message: 'Missing label' }]}
+                                                                                rules={[{required: true, message: 'Missing label'}]}
                                                                                 label="Label"
                                                                                 tooltip="Text shown to users"
                                                                             >
-                                                                                <Input placeholder="Display text" />
+                                                                                <Input placeholder="Display text"/>
                                                                             </Form.Item>
                                                                         </Col>
                                                                         <Col span={12}>
                                                                             <Form.Item
                                                                                 {...field}
                                                                                 name={[field.name, 'value']}
-                                                                                rules={[{ required: true, message: 'Missing value' }]}
+                                                                                rules={[{required: true, message: 'Missing value'}]}
                                                                                 label="Value"
                                                                                 tooltip="Value stored in database"
                                                                             >
-                                                                                <Input placeholder="Stored value" />
+                                                                                <Input placeholder="Stored value"/>
                                                                             </Form.Item>
                                                                         </Col>
                                                                     </Row>
@@ -1758,12 +1680,12 @@ const FormBuilder = () => {
                                                             ))}
                                                         </div>
                                                     )}
-
-                                                    <Form.Item style={{ marginTop: 16 }}>
+                                                    
+                                                    <Form.Item style={{marginTop: 16}}>
                                                         <Button
                                                             type="dashed"
-                                                            onClick={() => add({ label: '', value: '' })}
-                                                            icon={<PlusOutlined />}
+                                                            onClick={() => add({label: '', value: ''})}
+                                                            icon={<PlusOutlined/>}
                                                             block
                                                         >
                                                             Add Option
@@ -1781,7 +1703,7 @@ const FormBuilder = () => {
             </Drawer>
         );
     };
-
+    
     // Duplicate a field
     const handleDuplicateField = (field) => {
         try {
@@ -1789,35 +1711,35 @@ const FormBuilder = () => {
                 message.error('Invalid field selected for duplication');
                 return;
             }
-
+            
             // Create a deep copy of the field
             const fieldCopy = JSON.parse(JSON.stringify(field));
-
+            
             // Create a new field based on the copied one
             const newField = {
                 ...fieldCopy,
-                id: uuidv4(), // New unique ID
+                id: uuidv4() // New unique ID
             };
-
+            
             // Use functional updates to ensure we're using latest state
             setFormFields(prevFields => {
                 // Create a safe copy of the fields first
                 const safeFields = JSON.parse(JSON.stringify(prevFields));
-
+                
                 // Check for duplicate data indexes
                 const baseDataIndex = newField.dataIndex;
                 let dataIndex = `${baseDataIndex}Copy`;
                 let counter = 1;
-
+                
                 // If the field name already exists, add a number to make it unique
                 while (safeFields.some(f => f.dataIndex === dataIndex)) {
                     dataIndex = `${baseDataIndex}Copy${counter}`;
                     counter++;
                 }
-
+                
                 newField.dataIndex = dataIndex;
                 newField.title = `${newField.title} (Copy)`;
-
+                
                 message.success(`Field "${field.title}" duplicated`);
                 return [...safeFields, newField];
             });
@@ -1826,7 +1748,11 @@ const FormBuilder = () => {
             message.error('Failed to duplicate field');
         }
     };
-
+    
+    const handleUpdateFieldCardGroup = useCallback((fieldId, groupKey) => {
+        setFormFields(prevFields => prevFields.map(f => f.id === fieldId ? {...f, cardGroup: groupKey || null} : f));
+    }, []);
+    
     // Field list table
     const renderFieldsTable = () => {
         const columns = [
@@ -1869,7 +1795,16 @@ const FormBuilder = () => {
                 title: 'Card Group',
                 dataIndex: 'cardGroup',
                 key: 'cardGroup',
-                render: (cardGroup) => cardGroup || 'None'
+                render: (cardGroup, record) => (
+                    <Select
+                        value={cardGroup}
+                        allowClear
+                        style={{width: 150}}
+                        placeholder="None"
+                        onChange={(val) => handleUpdateFieldCardGroup(record.id, val)}
+                        options={(formSettings.cardGroupSetting || []).map(g => ({label: g.title || g.key, value: g.key}))}
+                    />
+                )
             },
             {
                 title: 'Actions',
@@ -1878,20 +1813,20 @@ const FormBuilder = () => {
                     <Space>
                         <Button
                             type="text"
-                            icon={<EditOutlined />}
+                            icon={<EditOutlined/>}
                             onClick={() => handleEditField(record)}
                             title="Edit Field"
                         />
                         <Button
                             type="text"
-                            icon={<CopyOutlined />}
+                            icon={<CopyOutlined/>}
                             onClick={() => handleDuplicateField(record)}
                             title="Duplicate Field"
                         />
                         <Button
                             type="text"
                             danger
-                            icon={<DeleteOutlined />}
+                            icon={<DeleteOutlined/>}
                             onClick={() => handleDeleteField(record.id)}
                             title="Delete Field"
                         />
@@ -1899,7 +1834,7 @@ const FormBuilder = () => {
                 )
             }
         ];
-
+        
         return (
             <Table
                 columns={columns}
@@ -1910,13 +1845,13 @@ const FormBuilder = () => {
             />
         );
     };
-
+    
     // Form settings form
     const renderSettingsForm = () => {
         const handleSettingsChange = (key, value, index, subKey) => {
             try {
                 setFormSettings(prevSettings => {
-                    const newSettings = { ...prevSettings };
+                    const newSettings = {...prevSettings};
                     if (key === 'cardGroupSetting') {
                         if (!newSettings.cardGroupSetting) {
                             newSettings.cardGroupSetting = [];
@@ -1932,7 +1867,7 @@ const FormBuilder = () => {
                                         else if (span > 24) validatedSpan = 24;
                                         else validatedSpan = span;
                                     }
-                                    newSettings.cardGroupSetting[index][subKey] = { span: validatedSpan };
+                                    newSettings.cardGroupSetting[index][subKey] = {span: validatedSpan};
                                 } else {
                                     newSettings.cardGroupSetting[index][subKey] = value;
                                 }
@@ -1941,8 +1876,8 @@ const FormBuilder = () => {
                             // Removing a card group
                             newSettings.cardGroupSetting = newSettings.cardGroupSetting.filter((_, i) => i !== index);
                         } else if (value && typeof value === 'object' && !subKey) {
-                             // Adding a new card group (value is the new group object)
-                             newSettings.cardGroupSetting = [...(newSettings.cardGroupSetting || []), value];
+                            // Adding a new card group (value is the new group object)
+                            newSettings.cardGroupSetting = [...(newSettings.cardGroupSetting || []), value];
                         }
                     } else if (key === 'paginationSettings') {
                         newSettings.paginationSettings = {
@@ -1980,15 +1915,15 @@ const FormBuilder = () => {
                     } else {
                         // Validate input based on field type
                         let validatedValue = value;
-
+                        
                         // Special validation for numeric inputs
                         if (['labelCol', 'wrapperCol'].includes(key) && typeof value === 'object') {
                             // Ensure span is a valid number between 1-24
                             const span = parseInt(value.span);
                             if (isNaN(span) || span < 1) {
-                                validatedValue = { span: 1 };
+                                validatedValue = {span: 1};
                             } else if (span > 24) {
-                                validatedValue = { span: 24 };
+                                validatedValue = {span: 24};
                             }
                         }
                         newSettings[key] = validatedValue;
@@ -2000,20 +1935,20 @@ const FormBuilder = () => {
                 message.error('Failed to update form settings');
             }
         };
-
+        
         const addCardGroup = () => {
             const newGroup = {
                 key: `group${(formSettings.cardGroupSetting?.length || 0) + 1}`,
                 title: `New Card Group ${(formSettings.cardGroupSetting?.length || 0) + 1}`,
                 description: '', // Added description field
-                labelCol: { span: formSettings.labelCol?.span || 6 },
-                wrapperCol: { span: formSettings.wrapperCol?.span || 18 },
+                labelCol: {span: formSettings.labelCol?.span || 6},
+                wrapperCol: {span: formSettings.wrapperCol?.span || 18},
                 layout: formSettings.layout || 'horizontal',
-                gridColumns: formSettings.gridColumns || 1,
+                gridColumns: formSettings.gridColumns || 1
             };
             handleSettingsChange('cardGroupSetting', newGroup);
         };
-
+        
         return (
             <Form layout="vertical">
                 <Tabs
@@ -2031,33 +1966,33 @@ const FormBuilder = () => {
                                             onChange={(e) => handleSettingsChange('pageTitle', e.target.value)}
                                         />
                                     </Form.Item>
-
+                                    
                                     <Form.Item label="Form Title">
                                         <Input
                                             value={formSettings.title}
                                             onChange={(e) => handleSettingsChange('title', e.target.value)}
                                         />
                                     </Form.Item>
-
+                                    
                                     <Form.Item label="Modal Title">
                                         <Input
                                             value={formSettings.modalTitle}
                                             onChange={(e) => handleSettingsChange('modalTitle', e.target.value)}
                                         />
                                     </Form.Item>
-
+                                    
                                     <Form.Item label="Form Layout">
                                         <Select
                                             value={formSettings.layout}
                                             onChange={(value) => handleSettingsChange('layout', value)}
                                             options={[
-                                                { label: 'Horizontal', value: 'horizontal' },
-                                                { label: 'Vertical', value: 'vertical' },
-                                                { label: 'Inline', value: 'inline' }
+                                                {label: 'Horizontal', value: 'horizontal'},
+                                                {label: 'Vertical', value: 'vertical'},
+                                                {label: 'Inline', value: 'inline'}
                                             ]}
                                         />
                                     </Form.Item>
-
+                                    
                                     <Form.Item label="Grid Layout Columns (Form & Ungrouped Fields)">
                                         <Segmented
                                             block
@@ -2065,8 +2000,8 @@ const FormBuilder = () => {
                                                 {
                                                     label: (
                                                         <Tooltip title="Single Column">
-                                                            <div style={{ padding: '4px 0' }}>
-                                                                <BarsOutlined />
+                                                            <div style={{padding: '4px 0'}}>
+                                                                <BarsOutlined/>
                                                                 <div>1 Column</div>
                                                             </div>
                                                         </Tooltip>
@@ -2076,8 +2011,8 @@ const FormBuilder = () => {
                                                 {
                                                     label: (
                                                         <Tooltip title="Two Columns">
-                                                            <div style={{ padding: '4px 0' }}>
-                                                                <LayoutOutlined />
+                                                            <div style={{padding: '4px 0'}}>
+                                                                <LayoutOutlined/>
                                                                 <div>2 Columns</div>
                                                             </div>
                                                         </Tooltip>
@@ -2087,8 +2022,8 @@ const FormBuilder = () => {
                                                 {
                                                     label: (
                                                         <Tooltip title="Three Columns">
-                                                            <div style={{ padding: '4px 0' }}>
-                                                                <TableOutlined />
+                                                            <div style={{padding: '4px 0'}}>
+                                                                <TableOutlined/>
                                                                 <div>3 Columns</div>
                                                             </div>
                                                         </Tooltip>
@@ -2098,8 +2033,8 @@ const FormBuilder = () => {
                                                 {
                                                     label: (
                                                         <Tooltip title="Four Columns">
-                                                            <div style={{ padding: '4px 0' }}>
-                                                                <AppstoreOutlined />
+                                                            <div style={{padding: '4px 0'}}>
+                                                                <AppstoreOutlined/>
                                                                 <div>4 Columns</div>
                                                             </div>
                                                         </Tooltip>
@@ -2111,7 +2046,7 @@ const FormBuilder = () => {
                                             onChange={(value) => handleSettingsChange('gridColumns', value)}
                                         />
                                     </Form.Item>
-
+                                    
                                     <Row gutter={16}>
                                         <Col span={12}>
                                             <Form.Item label="Label Column Width (Form & Ungrouped Fields)">
@@ -2120,7 +2055,7 @@ const FormBuilder = () => {
                                                     min={1}
                                                     max={24}
                                                     value={formSettings.labelCol?.span}
-                                                    onChange={(e) => handleSettingsChange('labelCol', { span: parseInt(e.target.value) })}
+                                                    onChange={(e) => handleSettingsChange('labelCol', {span: parseInt(e.target.value)})}
                                                 />
                                             </Form.Item>
                                         </Col>
@@ -2131,143 +2066,11 @@ const FormBuilder = () => {
                                                     min={1}
                                                     max={24}
                                                     value={formSettings.wrapperCol?.span}
-                                                    onChange={(e) => handleSettingsChange('wrapperCol', { span: parseInt(e.target.value) })}
+                                                    onChange={(e) => handleSettingsChange('wrapperCol', {span: parseInt(e.target.value)})}
                                                 />
                                             </Form.Item>
                                         </Col>
                                     </Row>
-                                </>
-                            )
-                        },
-                        {
-                            key: "pagination",
-                            label: "Pagination",
-                            children: (
-                                <>
-                                    <Row gutter={16}>
-                                        <Col span={12}>
-                                            <Form.Item label="Page Size">
-                                                <InputNumber
-                                                    value={formSettings.paginationSettings?.pageSize}
-                                                    onChange={(value) => handleSettingsChange('paginationSettings', value, undefined, 'pageSize')}
-                                                    min={1}
-                                                    style={{ width: '100%' }}
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={12}>
-                                            <Form.Item label="Page Size Options">
-                                                <Select
-                                                    mode="tags"
-                                                    tokenSeparators={[',']}
-                                                    value={formSettings.paginationSettings?.pageSizeOptions || []}
-                                                    onChange={(values) => {
-                                                        // Convert string values to strings and ensure they're valid numbers
-                                                        const validValues = values
-                                                            .map(val => String(val).trim())
-                                                            .filter(val => val && !isNaN(val));
-                                                        handleSettingsChange('paginationSettings', validValues, undefined, 'pageSizeOptions');
-                                                    }}
-                                                    placeholder="Add page size options (e.g., 10, 20, 50)"
-                                                    style={{ width: '100%' }}
-                                                />
-                                                <div style={{ fontSize: '12px', color: '#8c8c8c', marginTop: '4px' }}>
-                                                    Type numbers and press Enter or comma to add values
-                                                </div>
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
-                                    <Row gutter={16}>
-                                        <Col span={12}>
-                                            <Form.Item label="Show Size Changer" valuePropName="checked">
-                                                <Switch
-                                                    checked={formSettings.paginationSettings?.showSizeChanger}
-                                                    onChange={(checked) => handleSettingsChange('paginationSettings', checked, undefined, 'showSizeChanger')}
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={12}>
-                                            <Form.Item label="Show Quick Jumper" valuePropName="checked">
-                                                <Switch
-                                                    checked={formSettings.paginationSettings?.showQuickJumper}
-                                                    onChange={(checked) => handleSettingsChange('paginationSettings', checked, undefined, 'showQuickJumper')}
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
-                                </>
-                            )
-                        },
-                        {
-                            key: "globalFilters",
-                            label: "Global Filters",
-                            children: (
-                                <>
-                                    {(formSettings.globalFilters || []).map((filter, index) => (
-                                        <Card key={filter.id || index} size="small" title={`Filter ${index + 1}: ${filter.title || 'New Filter'}`} style={{ marginBottom: 16 }} extra={<Button icon={<DeleteOutlined />} danger type="text" onClick={() => handleSettingsChange('globalFilters', null, index)} />}>
-                                            <Row gutter={16}>
-                                                <Col span={12}>
-                                                    <Form.Item label="Filter Title">
-                                                        <Input value={filter.title} onChange={(e) => handleSettingsChange('globalFilters', e.target.value, index, 'title')} placeholder="e.g., Search by Name" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item label="Filter Type">
-                                                        <Select value={filter.type} onChange={(value) => handleSettingsChange('globalFilters', value, index, 'type')}>
-                                                            <Select.Option value="text">Text Search</Select.Option>
-                                                            <Select.Option value="select">Select Dropdown</Select.Option>
-                                                            <Select.Option value="dateRange">Date Range</Select.Option>
-                                                        </Select>
-                                                    </Form.Item>
-                                                </Col>
-                                            </Row>
-                                            <Form.Item label="Field(s) to Filter">
-                                                <Select
-                                                    mode="multiple"
-                                                    allowClear
-                                                    style={{ width: '100%' }}
-                                                    placeholder="Select fields to filter"
-                                                    value={typeof filter.field === 'string' ? filter.field.split(',').map(s => s.trim()).filter(s => s) : (filter.field || [])}
-                                                    onChange={(value) => handleSettingsChange('globalFilters', value, index, 'field')}
-                                                    options={formFields.map(f => ({ label: f.title || f.dataIndex, value: f.dataIndex }))}
-                                                />
-                                            </Form.Item>
-                                            {filter.type === 'select' && (
-                                                <Form.List name={['globalFilters', index, 'options']}>
-                                                    {(fields, { add, remove }) => (
-                                                        <>
-                                                            <Text strong style={{ marginBottom: 8, display: 'block' }}>Options for Select Filter:</Text>
-                                                            {fields.map((optField, optIndex) => (
-                                                                <Card key={optField.key} size="small" style={{ marginBottom: 8, background: '#f9f9f9' }} title={`Option ${optIndex + 1}`}>
-                                                                    <Row gutter={8}>
-                                                                        <Col span={10}>
-                                                                            <Form.Item name={[optField.name, 'label']} label="Label" rules={[{required: true}]}>
-                                                                                <Input placeholder="Display Label" onChange={(e) => handleSettingsChange('globalFilters', {...(formSettings.globalFilters[index].options[optIndex]), label: e.target.value, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4()}, index, 'options', {optIndex: optIndex, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4(), label: e.target.value, value: formSettings.globalFilters[index].options[optIndex]?.value})} />
-                                                                            </Form.Item>
-                                                                        </Col>
-                                                                        <Col span={10}>
-                                                                            <Form.Item name={[optField.name, 'value']} label="Value" rules={[{required: true}]}>
-                                                                                <Input placeholder="Stored Value" onChange={(e) => handleSettingsChange('globalFilters', {...(formSettings.globalFilters[index].options[optIndex]), value: e.target.value, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4()}, index, 'options', {optIndex: optIndex, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4(), label: formSettings.globalFilters[index].options[optIndex]?.label, value: e.target.value})} />
-                                                                            </Form.Item>
-                                                                        </Col>
-                                                                        <Col span={4} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '30px' }}>
-                                                                            <Button icon={<DeleteOutlined />} danger type="text" onClick={() => { remove(optField.name); handleSettingsChange('globalFilters', {optIndex: optIndex}, index, 'options', null); }} />
-                                                                        </Col>
-                                                                    </Row>
-                                                                </Card>
-                                                            ))}
-                                                            <Button type="dashed" onClick={() => { add({label: '', value: ''}); handleSettingsChange('globalFilters', {label: 'New Option', value: 'new_option', id: uuidv4()}, index, 'options'); }} block icon={<PlusOutlined />}>
-                                                                Add Option
-                                                            </Button>
-                                                        </>
-                                                    )}
-                                                </Form.List>
-                                            )}
-                                        </Card>
-                                    ))}
-                                    <Button type="dashed" onClick={() => handleSettingsChange('globalFilters', { id: uuidv4(), title: 'New Filter', field: [], type: 'text', options: [] })} block icon={<PlusOutlined />}>
-                                        Add Global Filter
-                                    </Button>
                                 </>
                             )
                         },
@@ -2284,10 +2087,10 @@ const FormBuilder = () => {
                                             key={index}
                                             title={`Card Group: ${group.title || group.key}`}
                                             size="small"
-                                            style={{ marginBottom: 16 }}
+                                            style={{marginBottom: 16}}
                                             extra={
                                                 <Button
-                                                    icon={<DeleteOutlined />}
+                                                    icon={<DeleteOutlined/>}
                                                     onClick={() => handleSettingsChange('cardGroupSetting', null, index)}
                                                     danger
                                                     type="text"
@@ -2328,9 +2131,9 @@ const FormBuilder = () => {
                                                     value={group.layout}
                                                     onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'layout')}
                                                     options={[
-                                                        { label: 'Horizontal', value: 'horizontal' },
-                                                        { label: 'Vertical', value: 'vertical' },
-                                                        { label: 'Inline', value: 'inline' }
+                                                        {label: 'Horizontal', value: 'horizontal'},
+                                                        {label: 'Vertical', value: 'vertical'},
+                                                        {label: 'Inline', value: 'inline'}
                                                     ]}
                                                 />
                                             </Form.Item>
@@ -2338,10 +2141,10 @@ const FormBuilder = () => {
                                                 <Segmented
                                                     block
                                                     options={[
-                                                        { label: (<Tooltip title="Single Column"><BarsOutlined /> 1</Tooltip>), value: 1 },
-                                                        { label: (<Tooltip title="Two Columns"><LayoutOutlined /> 2</Tooltip>), value: 2 },
-                                                        { label: (<Tooltip title="Three Columns"><TableOutlined /> 3</Tooltip>), value: 3 },
-                                                        { label: (<Tooltip title="Four Columns"><AppstoreOutlined /> 4</Tooltip>), value: 4 }
+                                                        {label: (<Tooltip title="Single Column"><BarsOutlined/> 1</Tooltip>), value: 1},
+                                                        {label: (<Tooltip title="Two Columns"><LayoutOutlined/> 2</Tooltip>), value: 2},
+                                                        {label: (<Tooltip title="Three Columns"><TableOutlined/> 3</Tooltip>), value: 3},
+                                                        {label: (<Tooltip title="Four Columns"><AppstoreOutlined/> 4</Tooltip>), value: 4}
                                                     ]}
                                                     value={group.gridColumns || 1}
                                                     onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'gridColumns')}
@@ -2354,7 +2157,7 @@ const FormBuilder = () => {
                                                             min={1}
                                                             max={24}
                                                             value={group.labelCol?.span}
-                                                            onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'labelCol')}
+                                                            onChange={(value) => handleSettingsChange('cardGroupSetting', {span: value}, index, 'labelCol')}
                                                             style={{width: '100%'}}
                                                         />
                                                     </Form.Item>
@@ -2365,7 +2168,7 @@ const FormBuilder = () => {
                                                             min={1}
                                                             max={24}
                                                             value={group.wrapperCol?.span}
-                                                            onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'wrapperCol')}
+                                                            onChange={(value) => handleSettingsChange('cardGroupSetting', {span: value}, index, 'wrapperCol')}
                                                             style={{width: '100%'}}
                                                         />
                                                     </Form.Item>
@@ -2373,8 +2176,146 @@ const FormBuilder = () => {
                                             </Row>
                                         </Card>
                                     ))}
-                                    <Button type="dashed" onClick={addCardGroup} block icon={<PlusOutlined />}>
+                                    <Button type="dashed" onClick={addCardGroup} block icon={<PlusOutlined/>}>
                                         Add Card Group
+                                    </Button>
+                                </>
+                            )
+                        },
+                        {
+                            key: "pagination",
+                            label: "Pagination",
+                            children: (
+                                <>
+                                    <Row gutter={16}>
+                                        <Col span={12}>
+                                            <Form.Item label="Page Size">
+                                                <InputNumber
+                                                    value={formSettings.paginationSettings?.pageSize}
+                                                    onChange={(value) => handleSettingsChange('paginationSettings', value, undefined, 'pageSize')}
+                                                    min={1}
+                                                    style={{width: '100%'}}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item label="Page Size Options">
+                                                <Select
+                                                    mode="tags"
+                                                    tokenSeparators={[',']}
+                                                    value={formSettings.paginationSettings?.pageSizeOptions || []}
+                                                    onChange={(values) => {
+                                                        // Convert string values to strings and ensure they're valid numbers
+                                                        const validValues = values
+                                                        .map(val => String(val).trim())
+                                                        .filter(val => val && !isNaN(val));
+                                                        handleSettingsChange('paginationSettings', validValues, undefined, 'pageSizeOptions');
+                                                    }}
+                                                    placeholder="Add page size options (e.g., 10, 20, 50)"
+                                                    style={{width: '100%'}}
+                                                />
+                                                <div style={{fontSize: '12px', color: '#8c8c8c', marginTop: '4px'}}>
+                                                    Type numbers and press Enter or comma to add values
+                                                </div>
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                    <Row gutter={16}>
+                                        <Col span={12}>
+                                            <Form.Item label="Show Size Changer" valuePropName="checked">
+                                                <Switch
+                                                    checked={formSettings.paginationSettings?.showSizeChanger}
+                                                    onChange={(checked) => handleSettingsChange('paginationSettings', checked, undefined, 'showSizeChanger')}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item label="Show Quick Jumper" valuePropName="checked">
+                                                <Switch
+                                                    checked={formSettings.paginationSettings?.showQuickJumper}
+                                                    onChange={(checked) => handleSettingsChange('paginationSettings', checked, undefined, 'showQuickJumper')}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                </>
+                            )
+                        },
+                        {
+                            key: "globalFilters",
+                            label: "Global Filters",
+                            children: (
+                                <>
+                                    {(formSettings.globalFilters || []).map((filter, index) => (
+                                        <Card key={filter.id || index} size="small" title={`Filter ${index + 1}: ${filter.title || 'New Filter'}`} style={{marginBottom: 16}} extra={<Button icon={<DeleteOutlined/>} danger type="text" onClick={() => handleSettingsChange('globalFilters', null, index)}/>}>
+                                            <Row gutter={16}>
+                                                <Col span={12}>
+                                                    <Form.Item label="Filter Title">
+                                                        <Input value={filter.title} onChange={(e) => handleSettingsChange('globalFilters', e.target.value, index, 'title')} placeholder="e.g., Search by Name"/>
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item label="Filter Type">
+                                                        <Select value={filter.type} onChange={(value) => handleSettingsChange('globalFilters', value, index, 'type')}>
+                                                            <Select.Option value="text">Text Search</Select.Option>
+                                                            <Select.Option value="select">Select Dropdown</Select.Option>
+                                                            <Select.Option value="dateRange">Date Range</Select.Option>
+                                                        </Select>
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                            <Form.Item label="Field(s) to Filter">
+                                                <Select
+                                                    mode="multiple"
+                                                    allowClear
+                                                    style={{width: '100%'}}
+                                                    placeholder="Select fields to filter"
+                                                    value={typeof filter.field === 'string' ? filter.field.split(',').map(s => s.trim()).filter(s => s) : (filter.field || [])}
+                                                    onChange={(value) => handleSettingsChange('globalFilters', value, index, 'field')}
+                                                    options={formFields.map(f => ({label: f.title || f.dataIndex, value: f.dataIndex}))}
+                                                />
+                                            </Form.Item>
+                                            {filter.type === 'select' && (
+                                                <Form.List name={['globalFilters', index, 'options']}>
+                                                    {(fields, {add, remove}) => (
+                                                        <>
+                                                            <Text strong style={{marginBottom: 8, display: 'block'}}>Options for Select Filter:</Text>
+                                                            {fields.map((optField, optIndex) => (
+                                                                <Card key={optField.key} size="small" style={{marginBottom: 8, background: '#f9f9f9'}} title={`Option ${optIndex + 1}`}>
+                                                                    <Row gutter={8}>
+                                                                        <Col span={10}>
+                                                                            <Form.Item name={[optField.name, 'label']} label="Label" rules={[{required: true}]}>
+                                                                                <Input placeholder="Display Label" onChange={(e) => handleSettingsChange('globalFilters', {...(formSettings.globalFilters[index].options[optIndex]), label: e.target.value, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4()}, index, 'options', {optIndex: optIndex, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4(), label: e.target.value, value: formSettings.globalFilters[index].options[optIndex]?.value})}/>
+                                                                            </Form.Item>
+                                                                        </Col>
+                                                                        <Col span={10}>
+                                                                            <Form.Item name={[optField.name, 'value']} label="Value" rules={[{required: true}]}>
+                                                                                <Input placeholder="Stored Value" onChange={(e) => handleSettingsChange('globalFilters', {...(formSettings.globalFilters[index].options[optIndex]), value: e.target.value, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4()}, index, 'options', {optIndex: optIndex, id: formSettings.globalFilters[index].options[optIndex]?.id || uuidv4(), label: formSettings.globalFilters[index].options[optIndex]?.label, value: e.target.value})}/>
+                                                                            </Form.Item>
+                                                                        </Col>
+                                                                        <Col span={4} style={{display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '30px'}}>
+                                                                            <Button icon={<DeleteOutlined/>} danger type="text" onClick={() => {
+                                                                                remove(optField.name);
+                                                                                handleSettingsChange('globalFilters', {optIndex: optIndex}, index, 'options', null);
+                                                                            }}/>
+                                                                        </Col>
+                                                                    </Row>
+                                                                </Card>
+                                                            ))}
+                                                            <Button type="dashed" onClick={() => {
+                                                                add({label: '', value: ''});
+                                                                handleSettingsChange('globalFilters', {label: 'New Option', value: 'new_option', id: uuidv4()}, index, 'options');
+                                                            }} block icon={<PlusOutlined/>}>
+                                                                Add Option
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </Form.List>
+                                            )}
+                                        </Card>
+                                    ))}
+                                    <Button type="dashed" onClick={() => handleSettingsChange('globalFilters', {id: uuidv4(), title: 'New Filter', field: [], type: 'text', options: []})} block icon={<PlusOutlined/>}>
+                                        Add Global Filter
                                     </Button>
                                 </>
                             )
@@ -2384,32 +2325,55 @@ const FormBuilder = () => {
             </Form>
         );
     };
-
+    
     return (
         <Card>
             <Title level={2}>Form Builder</Title>
             <Text>Design your user management form structure and generate code</Text>
-
+            
             {/* Template selection */}
-            <div style={{ marginBottom: 24 }}>
+            <div style={{marginBottom: 24}}>
                 <Card title="Form Template" size="small">
-                    <div style={{ display: 'flex', overflowX: 'auto', gap: 16, padding: '8px 0' }}>
+                    <div style={{display: 'flex', overflowX: 'auto', gap: 16, padding: '8px 0'}}>
                         {formTemplates.map(template => (
                             <Card
                                 key={template.id}
                                 hoverable
                                 style={{
                                     width: 200,
-                                    border: selectedTemplate === template.id ? '2px solid #006964' : '1px solid #f0f0f0',
-                                    // background: selectedTemplate === template.id ? '#e6f7ff' : '#fff'
+                                    border: selectedTemplate === template.id ? '2px solid #006964' : '1px solid #f0f0f0'
                                 }}
                                 size="small"
+                                actions={[
+                                    <EyeOutlined
+                                        key="view"
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            handleViewPage(template.name);
+                                        }}
+                                        title="View Page"
+                                    />,
+                                    <EditOutlined
+                                        key="edit"
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            handleTemplateSelect(template.id);
+                                        }}
+                                    />,
+                                    <DeleteOutlined
+                                        key="del"
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            handleDeleteTemplate(template.id);
+                                        }}
+                                    />
+                                ]}
                                 onClick={() => handleTemplateSelect(template.id)}
                             >
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                                    <div style={{ fontSize: 24 }}>{template.icon}</div>
-                                    <div style={{ fontWeight: 'bold' }}>{template.name}</div>
-                                    <div style={{ fontSize: 12, color: '#666', textAlign: 'center' }}>{template.description}</div>
+                                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8}}>
+                                    <div style={{fontSize: 24}}>{template.icon}</div>
+                                    <div style={{fontWeight: 'bold'}}>{template.name}</div>
+                                    <div style={{fontSize: 12, color: '#666', textAlign: 'center'}}>{template.description}</div>
                                     {selectedTemplate === template.id && (
                                         <Tag color="#006964">Selected</Tag>
                                     )}
@@ -2419,7 +2383,7 @@ const FormBuilder = () => {
                     </div>
                 </Card>
             </div>
-
+            
             <Tabs
                 defaultActiveKey="1"
                 items={[
@@ -2433,21 +2397,21 @@ const FormBuilder = () => {
                         label: 'Fields',
                         children: (
                             <>
-                                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-                                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAddField}>
+                                <div style={{marginBottom: '16px', display: 'flex', justifyContent: 'space-between'}}>
+                                    <Button type="primary" icon={<PlusOutlined/>} onClick={handleAddField}>
                                         Add Field
                                     </Button>
                                     <Tooltip title="Add common field presets">
-                                        <Button icon={<ThunderboltOutlined />} type="default">
+                                        <Button icon={<ThunderboltOutlined/>} type="default">
                                             Field Presets
                                         </Button>
                                     </Tooltip>
                                 </div>
-
+                                
                                 {/* Field Presets Section */}
-                                <div style={{ marginBottom: '16px' }}>
-                                    <Card size="small" title="Common Field Presets" style={{ marginBottom: '16px' }}>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                <div style={{marginBottom: '16px'}}>
+                                    <Card size="small" title="Common Field Presets" style={{marginBottom: '16px'}}>
+                                        <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
                                             {fieldPresets.map(preset => (
                                                 <Button
                                                     key={preset.name}
@@ -2460,7 +2424,7 @@ const FormBuilder = () => {
                                         </div>
                                     </Card>
                                 </div>
-
+                                
                                 {renderFieldsTable()}
                             </>
                         )
@@ -2469,153 +2433,46 @@ const FormBuilder = () => {
                         key: '3',
                         label: 'Preview',
                         children: (
-                            <div>
-                                <Alert
-                                    message="Form Preview"
-                                    description="This is a preview of how your form will look for data entry."
-                                    type="info"
-                                    showIcon
-                                    style={{ marginBottom: 16 }}
+                            <Card>
+                                <CrudTable
+                                    title={formSettings.title || 'Preview'}
+                                    data={previewData}
+                                    setData={setPreviewData}
+                                    onAdd={(curr, set) => async (record) => set([...curr, {id: Date.now(), ...record}])}
+                                    onEdit={(curr, set) => async (key, record) => {
+                                        const newData = curr.map(item => item.id === key ? {...item, ...record} : item);
+                                        set(newData);
+                                    }}
+                                    onDelete={(curr, set) => async (keys) => {
+                                        set(curr.filter(item => !keys.includes(item.id)));
+                                    }}
+                                    onExport={() => {}}
+                                    loading={false}
+                                    customColumns={computeCrudOptions()}
+                                    rowkeys={['id']}
                                 />
-
-                                {/* Render fields NOT in any card group first */}
-                                {(() => {
-                                    const ungroupedFields = formFields.filter(field =>
-                                        !field.cardGroup ||
-                                        !(formSettings.cardGroupSetting || []).find(g => g.key === field.cardGroup)
-                                    );
-                                    if (ungroupedFields.length > 0) {
-                                        return (
-                                            <Card title={formSettings.modalTitle || "Form (Ungrouped Fields)"} style={{ marginBottom: 16 }}>
-                                                <Form
-                                                    layout={formSettings.layout}
-                                                    labelCol={{ span: formSettings.labelCol?.span || 6 }}
-                                                    wrapperCol={{ span: formSettings.wrapperCol?.span || 18 }}
-                                                >
-                                                    <Row gutter={[16, 16]}>
-                                                        {ungroupedFields.map(field => (
-                                                            <Col
-                                                                key={field.id}
-                                                                xs={24}
-                                                                sm={formSettings.gridColumns > 1 ? 12 : 24}
-                                                                md={24 / (formSettings.gridColumns || 1)}
-                                                            >
-                                                                <Form.Item
-                                                                    label={field.title}
-                                                                    required={field.rules?.some(rule => rule.required)}
-                                                                    tooltip={field.rules?.some(rule => rule.required) ? "This field is required" : "This field is optional"}
-                                                                >
-                                                                    <FieldTypeExample type={field.type} />
-                                                                </Form.Item>
-                                                            </Col>
-                                                        ))}
-                                                    </Row>
-                                                </Form>
-                                            </Card>
-                                        );
-                                    }
-                                    return null;
-                                })()}
-
-                                {/* Render fields within their respective card groups */}
-                                {(formSettings.cardGroupSetting || []).map(group => {
-                                    const groupFields = formFields.filter(field => field.cardGroup === group.key);
-                                    if (groupFields.length === 0 && !(formFields.filter(field => !field.cardGroup || !(formSettings.cardGroupSetting || []).find(g => g.key === field.cardGroup)).length > 0)) {
-                                        // If no ungrouped fields and this group is empty, show a general message if it's the only thing to show
-                                        if ((formSettings.cardGroupSetting || []).length === 1) {
-                                            return <Empty key="empty-groups" description="No fields defined or assigned to groups for preview." />;
-                                        }
-                                        return null; // Don't render empty groups if other content exists
-                                    }
-                                    if (groupFields.length === 0) return null; // Skip rendering this specific group if it has no fields
-
-                                    const currentLayout = group.layout || formSettings.layout;
-                                    const currentLabelCol = group.labelCol?.span || formSettings.labelCol?.span || 6;
-                                    const currentWrapperCol = group.wrapperCol?.span || formSettings.wrapperCol?.span || 18;
-                                    const currentGridColumns = group.gridColumns || formSettings.gridColumns || 1;
-
-                                    return (
-                                        <Card
-                                            key={group.key}
-                                            title={group.title || group.key}
-                                            style={{ marginBottom: 16 }}
-                                            extra={group.description ? <Text type="secondary">{group.description}</Text> : null}
-                                        >
-                                            <Form
-                                                layout={currentLayout}
-                                                labelCol={{ span: currentLabelCol }}
-                                                wrapperCol={{ span: currentWrapperCol }}
-                                            >
-                                                <Row gutter={[16, 16]}>
-                                                    {groupFields.map(field => (
-                                                        <Col
-                                                            key={field.id}
-                                                            xs={24}
-                                                            sm={currentGridColumns > 1 ? 12 : 24}
-                                                            md={24 / currentGridColumns}
-                                                        >
-                                                            <Form.Item
-                                                                label={field.title}
-                                                                required={field.rules?.some(rule => rule.required)}
-                                                                tooltip={field.rules?.some(rule => rule.required) ? "This field is required" : "This field is optional"}
-                                                            >
-                                                                <FieldTypeExample type={field.type} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                    ))}
-                                                </Row>
-                                            </Form>
-                                        </Card>
-                                    );
-                                })}
-
-                                {/* Show Empty state if no fields and no groups with fields */}
-                                {formFields.length === 0 && (!formSettings.cardGroupSetting || formSettings.cardGroupSetting.length === 0) && (
-                                    <Empty description="No fields defined for preview." />
-                                )}
-
-                                {/* Common Submit/Cancel buttons at the end */}
-                                {(formFields.length > 0) && (
-                                  <Form
-                                      layout={formSettings.layout}
-                                      labelCol={{ span: formSettings.labelCol?.span || 6 }}
-                                      wrapperCol={{ span: formSettings.wrapperCol?.span || 18 }}
-                                  >
-                                      <Form.Item wrapperCol={{
-                                          offset: formSettings.layout === 'horizontal' ? (formSettings.labelCol?.span || 6) : 0,
-                                          span: formSettings.wrapperCol?.span || 18
-                                      }}>
-                                          <Button type="primary" htmlType="submit" onClick={() => message.info('Preview submit clicked!')}>
-                                              Submit
-                                          </Button>
-                                          <Button style={{ marginLeft: 8 }} onClick={() => message.info('Preview cancel clicked!')}>
-                                              Cancel
-                                          </Button>
-                                      </Form.Item>
-                                  </Form>
-                                )}
-                            </div>
+                            </Card>
                         )
                     }
                 ]}
             />
-
-            <Divider />
-
-            <div style={{ textAlign: 'right' }}>
+            
+            <Divider/>
+            
+            <div style={{textAlign: 'right'}}>
                 <Space>
-                    <Button onClick={handleSaveDesign} icon={<DatabaseOutlined />} type="default">
+                    <Button onClick={handleSaveDesign} icon={<DatabaseOutlined/>} type="default">
                         Save Form Design
                     </Button>
                     <FormCodeGenerator
                         formFields={formFields}
                         formSettings={formSettings}
                         formTitle={formSettings.title}
-                        tableName={formSettings.title.toLowerCase().replace(/\s+/g, '_')}
+                        tableName={(formSettings.title || '').toLowerCase().replace(/\s+/g, '_')}
                     />
                 </Space>
             </div>
-
+            
             {renderFieldForm()}
         </Card>
     );

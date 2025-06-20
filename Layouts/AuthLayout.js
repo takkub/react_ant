@@ -1,6 +1,6 @@
 'use client';
 import { SessionProvider } from 'next-auth/react';
-import {ConfigProvider} from 'antd';
+import {ConfigProvider, App} from 'antd';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import React from "react";
 import { WSOLTheme, darkTheme } from "../theme/theme";
@@ -11,7 +11,9 @@ export default function LoginLayout({ children }) {
         <ConfigProvider theme={theme === "light" ? WSOLTheme : darkTheme}>
             <AntdRegistry>
                 <SessionProvider>
-                    {children}
+                    <App>
+                        {children}
+                    </App>
                 </SessionProvider>
             </AntdRegistry>
         </ConfigProvider>

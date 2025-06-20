@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useMemo } from 'react'; // Added useMemo
 import {
     Table, Button, Space, Modal, Form, Input,
-    Select, DatePicker, Checkbox, message, Card,
+    Select, DatePicker, Checkbox, Card,
     Row, Col, Tooltip, Dropdown, Typography, // Removed Tag
-    Popconfirm, Radio
+    Popconfirm, Radio, App
 } from 'antd';
 import {
     PlusOutlined, DeleteOutlined,
@@ -34,6 +34,7 @@ const CrudTable = ({
     const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
     const [editingKey, setEditingKey] = useState(null);
     const [form] = Form.useForm();
+    const { message } = App.useApp();
     const [filterValues, setFilterValues] = useState({});
     const [filteredData, setFilteredData] = useState(data);
     const [searchText, setSearchText] = useState('');
@@ -515,7 +516,7 @@ const CrudTable = ({
         return columns;
     };
 
-    const finalColumns = useMemo(() => buildColumns(), [customColumns.columns, rowkeys]); // Memoize finalColumns
+    const finalColumns = useMemo(() => buildColumns(), [customColumns.columns, rowkeys, buildColumns]); // Memoize finalColumns
 
     // Render filter components
     const renderFilters = () => {

@@ -4,7 +4,7 @@ import { SaveOutlined, StepBackwardOutlined, UserOutlined } from "@ant-design/ic
 import { Button, Card, Col, Divider, Form, Input, Row, Select, Space } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-
+const { Option } = Select;
 export default function ProfilePage() {
     const router = useRouter();
     const [form] = Form.useForm();
@@ -25,13 +25,12 @@ export default function ProfilePage() {
         branch: ""
     }
 
+    // Set default form values once on mount
     useEffect(() => {
-        if (user) {
-            form.setFieldsValue({
-                ...user
-            })
-        }
-    }, [])
+        form.setFieldsValue({
+            ...user
+        });
+    }, [form])
 
     const onFinish = values => {
         console.log(values);
