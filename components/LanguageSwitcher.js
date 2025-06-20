@@ -48,7 +48,7 @@ const LanguageSwitcher = () => {
 
   return (
     <Tooltip>
-      <Dropdown overlay={menu} trigger={["hover"]}>
+      <Dropdown menu={menu} trigger={["hover"]}>
         <span style={{ cursor: "pointer", display: "inline-block" }}>
           <Image
             src={currentLangData?.icon || "/flags/en.png"}

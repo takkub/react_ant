@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { TitleProvider } from "@/components/TitleContext";
 import NetworkStatusNotifier from "@/components/NetworkStatusNotifier";
 import { ThemeProvider } from "../store/context/ThemeContext";
+import { AntdRegistry } from '@ant-design/nextjs-registry';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,9 +19,11 @@ export default function RootLayout({ children }) {
             <body className={inter.className}>
                 <NetworkStatusNotifier />
                 <ThemeProvider>
-                <TitleProvider>
-                    {children}
-                </TitleProvider>
+                <AntdRegistry>
+                  <TitleProvider>
+                      {children}
+                  </TitleProvider>
+                </AntdRegistry>
                 </ThemeProvider>
             </body>
         </html>
