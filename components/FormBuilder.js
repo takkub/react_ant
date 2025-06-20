@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     Card, Button, Form, Input, Select, Switch, Typography, Space, Divider,
-    Tag, Table, Modal, Tabs, Tooltip, message, Drawer, Row, Col, Empty,
+    Tag, Table, Modal, Tabs, Tooltip, Drawer, Row, Col, Empty,
     Radio, Segmented, Badge, Alert, DatePicker, Checkbox,
-    InputNumber
+    InputNumber, App
 } from 'antd';
 import {
     PlusOutlined, DeleteOutlined, CopyOutlined, CodeOutlined, DownloadOutlined, 
@@ -573,16 +573,28 @@ const FormBuilder = () => {
     const defaultFormTemplates = [
         {
             id: 'blank',
-            name: 'Blank Template',
+            name: 'Blank Form',
             icon: <FileAddOutlined />,
-            description: 'Start from a blank form',
+            description: 'Start with a blank form and add your own fields',
             fields: [],
             settings: {
                 title: 'New Form',
                 layout: 'horizontal',
                 labelCol: { span: 6 },
                 wrapperCol: { span: 18 },
-                gridColumns: 1
+                modalTitle: 'Data Form',
+                pageTitle: 'Data Management',
+                gridColumns: 1,
+                cardGroupSetting: [],
+                paginationSettings: {
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    showQuickJumper: true
+                },
+                globalFilters: [
+                    { id: uuidv4(), title: 'Search', field: ['name'], type: 'text', options: [] }
+                ]
             }
         },
         {
@@ -834,33 +846,8 @@ const FormBuilder = () => {
                     { id: uuidv4(), title: 'Filter by Report Type', field: ['reportType'], type: 'select', options: [ { label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' } ] }
                 ]
             }
-        },
-        {
-            id: 'blank',
-            name: 'Blank Form',
-            icon: <FileAddOutlined />,
-            description: 'Start with a blank form and add your own fields',
-            fields: [],
-            settings: {
-                title: 'New Form',
-                layout: 'horizontal',
-                labelCol: { span: 6 },
-                wrapperCol: { span: 18 },
-                modalTitle: 'Data Form',
-                pageTitle: 'Data Management',
-                gridColumns: 1,
-                cardGroupSetting: [],
-                paginationSettings: {
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                    showQuickJumper: true
-                },
-                globalFilters: [
-                    { id: uuidv4(), title: 'Search', field: ['name'], type: 'text', options: [] }
-                ]
-            }
         }
+
     ];
 
     const [formTemplates, setFormTemplates] = useState(defaultFormTemplates);
@@ -876,6 +863,7 @@ const FormBuilder = () => {
     const [fieldFormVisible, setFieldFormVisible] = useState(false);
     const [currentField, setCurrentField] = useState(null);
     const [form] = Form.useForm();
+    const { message } = App.useApp();
 
     // Wizard state
     const [selectedTemplate, setSelectedTemplate] = useState(defaultFormTemplates[0].id);
@@ -2038,6 +2026,10 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
         }
     };
 
+    const handleUpdateFieldCardGroup = useCallback((fieldId, groupKey) => {
+        setFormFields(prevFields => prevFields.map(f => f.id === fieldId ? { ...f, cardGroup: groupKey || null } : f));
+    }, []);
+
     // Field list table
     const renderFieldsTable = () => {
         const columns = [
@@ -2080,7 +2072,16 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
                 title: 'Card Group',
                 dataIndex: 'cardGroup',
                 key: 'cardGroup',
-                render: (cardGroup) => cardGroup || 'None'
+                render: (cardGroup, record) => (
+                    <Select
+                        value={cardGroup}
+                        allowClear
+                        style={{ width: 150 }}
+                        placeholder="None"
+                        onChange={(val) => handleUpdateFieldCardGroup(record.id, val)}
+                        options={(formSettings.cardGroupSetting || []).map(g => ({ label: g.title || g.key, value: g.key }))}
+                    />
+                )
             },
             {
                 title: 'Actions',
@@ -2351,6 +2352,114 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
                             )
                         },
                         {
+                            key: "cardGroups",
+                            label: "Card Groups",
+                            children: (
+                                <>
+                                    <Paragraph type="secondary">
+                                        Define groups of fields to be displayed within separate cards in the form. This is useful for organizing complex forms.
+                                    </Paragraph>
+                                    {(formSettings.cardGroupSetting || []).map((group, index) => (
+                                        <Card
+                                            key={index}
+                                            title={`Card Group: ${group.title || group.key}`}
+                                            size="small"
+                                            style={{ marginBottom: 16 }}
+                                            extra={
+                                                <Button
+                                                    icon={<DeleteOutlined />}
+                                                    onClick={() => handleSettingsChange('cardGroupSetting', null, index)}
+                                                    danger
+                                                    type="text"
+                                                    title="Remove Card Group"
+                                                />
+                                            }
+                                        >
+                                            <Row gutter={16}>
+                                                <Col span={12}>
+                                                    <Form.Item label="Group Key (Unique ID)">
+                                                        <Input
+                                                            value={group.key}
+                                                            onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'key')}
+                                                            placeholder="e.g., personalDetails, addressInfo"
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item label="Group Title">
+                                                        <Input
+                                                            value={group.title}
+                                                            onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'title')}
+                                                            placeholder="e.g., Personal Details"
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                            <Form.Item label="Group Description">
+                                                <Input.TextArea
+                                                    value={group.description}
+                                                    onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'description')}
+                                                    placeholder="Optional description for the card group"
+                                                    rows={2}
+                                                />
+                                            </Form.Item>
+                                            <Form.Item label="Group Layout">
+                                                <Select
+                                                    value={group.layout}
+                                                    onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'layout')}
+                                                    options={[
+                                                        { label: 'Horizontal', value: 'horizontal' },
+                                                        { label: 'Vertical', value: 'vertical' },
+                                                        { label: 'Inline', value: 'inline' }
+                                                    ]}
+                                                />
+                                            </Form.Item>
+                                            <Form.Item label="Group Grid Layout Columns">
+                                                <Segmented
+                                                    block
+                                                    options={[
+                                                        { label: (<Tooltip title="Single Column"><BarsOutlined /> 1</Tooltip>), value: 1 },
+                                                        { label: (<Tooltip title="Two Columns"><LayoutOutlined /> 2</Tooltip>), value: 2 },
+                                                        { label: (<Tooltip title="Three Columns"><TableOutlined /> 3</Tooltip>), value: 3 },
+                                                        { label: (<Tooltip title="Four Columns"><AppstoreOutlined /> 4</Tooltip>), value: 4 }
+                                                    ]}
+                                                    value={group.gridColumns || 1}
+                                                    onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'gridColumns')}
+                                                />
+                                            </Form.Item>
+                                            <Row gutter={16}>
+                                                <Col span={12}>
+                                                    <Form.Item label="Group Label Column Width">
+                                                        <InputNumber
+                                                            min={1}
+                                                            max={24}
+                                                            value={group.labelCol?.span}
+                                                            onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'labelCol')}
+                                                            style={{width: '100%'}}
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Form.Item label="Group Wrapper Column Width">
+                                                        <InputNumber
+                                                            min={1}
+                                                            max={24}
+                                                            value={group.wrapperCol?.span}
+                                                            onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'wrapperCol')}
+                                                            style={{width: '100%'}}
+                                                        />
+                                                    </Form.Item>
+                                                </Col>
+                                            </Row>
+                                        </Card>
+                                    ))}
+                                    <Button type="dashed" onClick={addCardGroup} block icon={<PlusOutlined />}>
+                                        Add Card Group
+                                    </Button>
+                                </>
+                            )
+                        },
+                        {
                             key: "pagination",
                             label: "Pagination",
                             children: (
@@ -2482,113 +2591,6 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
                                 </>
                             )
                         },
-                        {
-                            key: "cardGroups",
-                            label: "Card Groups",
-                            children: (
-                                <>
-                                    <Paragraph type="secondary">
-                                        Define groups of fields to be displayed within separate cards in the form. This is useful for organizing complex forms.
-                                    </Paragraph>
-                                    {(formSettings.cardGroupSetting || []).map((group, index) => (
-                                        <Card
-                                            key={index}
-                                            title={`Card Group: ${group.title || group.key}`}
-                                            size="small"
-                                            style={{ marginBottom: 16 }}
-                                            extra={
-                                                <Button
-                                                    icon={<DeleteOutlined />}
-                                                    onClick={() => handleSettingsChange('cardGroupSetting', null, index)}
-                                                    danger
-                                                    type="text"
-                                                    title="Remove Card Group"
-                                                />
-                                            }
-                                        >
-                                            <Row gutter={16}>
-                                                <Col span={12}>
-                                                    <Form.Item label="Group Key (Unique ID)">
-                                                        <Input
-                                                            value={group.key}
-                                                            onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'key')}
-                                                            placeholder="e.g., personalDetails, addressInfo"
-                                                        />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item label="Group Title">
-                                                        <Input
-                                                            value={group.title}
-                                                            onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'title')}
-                                                            placeholder="e.g., Personal Details"
-                                                        />
-                                                    </Form.Item>
-                                                </Col>
-                                            </Row>
-                                            <Form.Item label="Group Description">
-                                                <Input.TextArea
-                                                    value={group.description}
-                                                    onChange={(e) => handleSettingsChange('cardGroupSetting', e.target.value, index, 'description')}
-                                                    placeholder="Optional description for the card group"
-                                                    rows={2}
-                                                />
-                                            </Form.Item>
-                                            <Form.Item label="Group Layout">
-                                                <Select
-                                                    value={group.layout}
-                                                    onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'layout')}
-                                                    options={[
-                                                        { label: 'Horizontal', value: 'horizontal' },
-                                                        { label: 'Vertical', value: 'vertical' },
-                                                        { label: 'Inline', value: 'inline' }
-                                                    ]}
-                                                />
-                                            </Form.Item>
-                                            <Form.Item label="Group Grid Layout Columns">
-                                                <Segmented
-                                                    block
-                                                    options={[
-                                                        { label: (<Tooltip title="Single Column"><BarsOutlined /> 1</Tooltip>), value: 1 },
-                                                        { label: (<Tooltip title="Two Columns"><LayoutOutlined /> 2</Tooltip>), value: 2 },
-                                                        { label: (<Tooltip title="Three Columns"><TableOutlined /> 3</Tooltip>), value: 3 },
-                                                        { label: (<Tooltip title="Four Columns"><AppstoreOutlined /> 4</Tooltip>), value: 4 }
-                                                    ]}
-                                                    value={group.gridColumns || 1}
-                                                    onChange={(value) => handleSettingsChange('cardGroupSetting', value, index, 'gridColumns')}
-                                                />
-                                            </Form.Item>
-                                            <Row gutter={16}>
-                                                <Col span={12}>
-                                                    <Form.Item label="Group Label Column Width">
-                                                        <InputNumber
-                                                            min={1}
-                                                            max={24}
-                                                            value={group.labelCol?.span}
-                                                            onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'labelCol')}
-                                                            style={{width: '100%'}}
-                                                        />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={12}>
-                                                    <Form.Item label="Group Wrapper Column Width">
-                                                        <InputNumber
-                                                            min={1}
-                                                            max={24}
-                                                            value={group.wrapperCol?.span}
-                                                            onChange={(value) => handleSettingsChange('cardGroupSetting', { span: value }, index, 'wrapperCol')}
-                                                            style={{width: '100%'}}
-                                                        />
-                                                    </Form.Item>
-                                                </Col>
-                                            </Row>
-                                        </Card>
-                                    ))}
-                                    <Button type="dashed" onClick={addCardGroup} block icon={<PlusOutlined />}>
-                                        Add Card Group
-                                    </Button>
-                                </>
-                            )
                         }
                     ]}
                 />

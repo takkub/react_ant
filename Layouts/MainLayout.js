@@ -1,7 +1,7 @@
 'use client';
 import '@/app/i18n';
 import { SessionProvider } from 'next-auth/react';
-import { ConfigProvider, Layout } from 'antd';
+import { ConfigProvider, Layout, App } from 'antd';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import React, { useState } from "react";
 import { WSOLTheme, darkTheme } from "@/theme/theme";
@@ -18,6 +18,7 @@ export default function MainLayout({ children }) {
         <ConfigProvider theme={theme === "light" ? WSOLTheme : darkTheme}>
             <AntdRegistry>
                 <SessionProvider>
+                    <App>
                     <Layout style={{ minHeight: '100vh' }}>
                         <DrawerProvider>
                             <SidebarComponent collapsed={collapsed} setCollapsed={setCollapsed} />
@@ -30,6 +31,7 @@ export default function MainLayout({ children }) {
                             <MainDrawer />
                         </DrawerProvider>
                     </Layout>
+                    </App>
                 </SessionProvider>
             </AntdRegistry>
         </ConfigProvider>
