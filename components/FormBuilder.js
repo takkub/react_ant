@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Card, Button, Form, Input, Select, Switch, Typography, Space, Divider,
     Tag, Table, Modal, Tabs, Tooltip, message, Drawer, Row, Col, Empty,
@@ -572,6 +572,20 @@ const FormBuilder = () => {
     // Default templates used if database fetch fails
     const defaultFormTemplates = [
         {
+            id: 'blank',
+            name: 'Blank Template',
+            icon: <FileAddOutlined />,
+            description: 'Start from a blank form',
+            fields: [],
+            settings: {
+                title: 'New Form',
+                layout: 'horizontal',
+                labelCol: { span: 6 },
+                wrapperCol: { span: 18 },
+                gridColumns: 1
+            }
+        },
+        {
             id: 'user',
             name: 'User Management',
             icon: <UserOutlined />,
@@ -871,41 +885,46 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
     // Preview state
     const [previewData, setPreviewData] = useState([]);
 
-    // Fetch templates from database on mount
+    const fetchTemplates = useCallback(async (selectId) => {
+        try {
+            const res = await api.get('form-designs');
+            const dbTemplates = res?.data?.length
+                ? res.data.map((t) => ({
+                      id: t.id?.toString() || t.name,
+                      name: t.name,
+                      icon: <FileAddOutlined />,
+                      description: t.description || '',
+                      fields: t.fields
+                          ? t.fields
+                          : t.fields_data
+                              ? JSON.parse(t.fields_data)
+                              : [],
+                      settings: t.settings
+                          ? t.settings
+                          : t.settings_data
+                              ? JSON.parse(t.settings_data)
+                              : {},
+                  }))
+                : [];
+
+            const combined = [...defaultFormTemplates, ...dbTemplates];
+            setFormTemplates(combined);
+
+            const target =
+                combined.find((t) => t.id === (selectId || selectedTemplate)) ||
+                combined[0];
+            setSelectedTemplate(target.id);
+            setFormFields(JSON.parse(JSON.stringify(target.fields)));
+            setFormSettings(JSON.parse(JSON.stringify(target.settings)));
+        } catch (err) {
+            console.error('Failed to load templates from DB:', err);
+            setFormTemplates(defaultFormTemplates);
+        }
+    }, [defaultFormTemplates, selectedTemplate]);
+
     useEffect(() => {
-        const fetchTemplates = async () => {
-            try {
-                const res = await api.get('form-designs');
-                if (res?.data?.length) {
-                    const templates = res.data.map((t) => ({
-                        id: t.id?.toString() || t.name,
-                        name: t.name,
-                        icon: <FileAddOutlined />,
-                        description: t.description || '',
-                        fields: t.fields
-                            ? t.fields
-                            : t.fields_data
-                                ? JSON.parse(t.fields_data)
-                                : [],
-                        settings: t.settings
-                            ? t.settings
-                            : t.settings_data
-                                ? JSON.parse(t.settings_data)
-                                : {},
-                    }));
-
-                    setFormTemplates(templates);
-                    setSelectedTemplate(templates[0].id);
-                    setFormFields(JSON.parse(JSON.stringify(templates[0].fields)));
-                    setFormSettings(JSON.parse(JSON.stringify(templates[0].settings)));
-                }
-            } catch (err) {
-                console.error('Failed to load templates from DB:', err);
-            }
-        };
-
         fetchTemplates();
-    }, []);
+    }, [fetchTemplates]);
 
     const computeCrudOptions = () => {
         const buildCrudColumns = (fields) => {
@@ -1106,6 +1125,27 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
             console.error('Error selecting template:', error);
             message.error('Failed to change template');
         }
+    };
+
+    const handleDeleteTemplate = (templateId) => {
+        Modal.confirm({
+            title: 'Delete Template?',
+            content: 'This will permanently remove the template.',
+            onOk: async () => {
+                try {
+                    const res = await api.delete('form-designs', { id: templateId });
+                    if (res && res.success) {
+                        message.success(res.message || 'Template deleted');
+                        await fetchTemplates('blank');
+                    } else {
+                        message.error(res?.message || 'Failed to delete template');
+                    }
+                } catch (err) {
+                    console.error('Error deleting template:', err);
+                    message.error('Failed to delete template');
+                }
+            }
+        });
     };
 
     // Field type options
@@ -1659,11 +1699,20 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
         console.log("Payload to save:", formDesignPayload);
 
         try {
-            // Assuming api.post handles the /api prefix and returns parsed JSON response
-            const response = await api.post('form-designs', formDesignPayload);
+            let response;
+            if (!isNaN(Number(selectedTemplate))) {
+                response = await api.put('form-designs', {
+                    body: formDesignPayload,
+                    where: { id: Number(selectedTemplate) }
+                });
+            } else {
+                response = await api.post('form-designs', formDesignPayload);
+            }
 
             if (response && response.success) {
                 message.success(response.message || 'Form design saved successfully!');
+                const newId = response.data?.id || selectedTemplate;
+                await fetchTemplates(newId.toString());
             } else {
                 message.error(response?.message || 'Failed to save form design. Unknown error.');
             }
@@ -2563,9 +2612,28 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
                                 style={{
                                     width: 200,
                                     border: selectedTemplate === template.id ? '2px solid #006964' : '1px solid #f0f0f0',
-                                    // background: selectedTemplate === template.id ? '#e6f7ff' : '#fff'
                                 }}
                                 size="small"
+                                actions={
+                                    template.id !== 'blank'
+                                        ? [
+                                              <EditOutlined
+                                                  key="edit"
+                                                  onClick={e => {
+                                                      e.stopPropagation();
+                                                      handleTemplateSelect(template.id);
+                                                  }}
+                                              />,
+                                              <DeleteOutlined
+                                                  key="del"
+                                                  onClick={e => {
+                                                      e.stopPropagation();
+                                                      handleDeleteTemplate(template.id);
+                                                  }}
+                                              />,
+                                          ]
+                                        : []
+                                }
                                 onClick={() => handleTemplateSelect(template.id)}
                             >
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
