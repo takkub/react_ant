@@ -477,7 +477,7 @@ export default function ${componentName}() {
         document.body.removeChild(element);
     };
 
-    const handleCreateTable = async () => {
+    const handleSyncTable = async () => {
         try {
             const schema = {};
             const getColumnType = (fieldType) => {
@@ -523,13 +523,13 @@ export default function ${componentName}() {
 
             const res = await api.post('create-table', { tableName: sanitizedTableName, schema });
             if (res.success) {
-                message.success(res.message || 'Table created successfully');
+                message.success(res.message || 'Table synced successfully');
             } else {
-                message.error(res.message || 'Failed to create table');
+                message.error(res.message || 'Failed to sync table');
             }
         } catch (error) {
-            console.error('Failed to create table:', error);
-            message.error('Failed to create table');
+            console.error('Failed to sync table:', error);
+            message.error('Failed to sync table');
         }
     };
     
@@ -625,9 +625,9 @@ export default function ${componentName}() {
                                         <Button
                                             type="primary"
                                             icon={<DatabaseOutlined />}
-                                            onClick={handleCreateTable}
+                                            onClick={handleSyncTable}
                                         >
-                                            Create Table
+                                            Sync Table
                                         </Button>
                                     </Space>
                                     <SyntaxHighlighter language="sql" style={tomorrow} showLineNumbers>

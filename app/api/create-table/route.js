@@ -1,4 +1,4 @@
-import { createTable } from "@/lib/mysqldb";
+import { createTable, alterTable } from "@/lib/mysqldb";
 import { checkPayload } from "@/lib/utils";
 
 export const POST = async (req) => {
@@ -7,9 +7,14 @@ export const POST = async (req) => {
         if (!tableName || !schema) {
             return new Response(JSON.stringify({ success: false, message: 'Missing tableName or schema' }), { status: 400 });
         }
-        const result = await createTable(tableName, schema);
-        const statusCode = result.status ? 200 : 400;
-        return new Response(JSON.stringify({ success: result.status, message: result.message }), { status: statusCode });
+        const createResult = await createTable(tableName, schema);
+        if (!createResult.status) {
+            return new Response(JSON.stringify({ success: false, message: createResult.message }), { status: 400 });
+        }
+
+        const updateResult = await alterTable(tableName, schema);
+        const statusCode = updateResult.status ? 200 : 400;
+        return new Response(JSON.stringify({ success: updateResult.status, message: updateResult.message }), { status: statusCode });
     } catch (error) {
         console.error('❌ Error creating table API:', error);
         return new Response(JSON.stringify({ success: false, message: 'Internal Server Error' }), { status: 500 });
