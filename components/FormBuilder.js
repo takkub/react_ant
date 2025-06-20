@@ -30,6 +30,7 @@ const FormCodeGenerator = ({formFields, formSettings, formTitle, tableName}) => 
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [activeTab, setActiveTab] = useState('1');
     const sanitizedTableName = tableName || formTitle?.toLowerCase().replace(/\s+/g, '_') || 'custom_form';
+    const { message } = App.useApp();
     
     // Function to generate the SQL CREATE TABLE statement
     const generateSqlCode = () => {
@@ -475,6 +476,62 @@ export default function ${componentName}() {
         element.click();
         document.body.removeChild(element);
     };
+
+    const handleCreateTable = async () => {
+        try {
+            const schema = {};
+            const getColumnType = (fieldType) => {
+                switch (fieldType) {
+                    case 'input':
+                        return 'VARCHAR(255)';
+                    case 'textArea':
+                        return 'TEXT';
+                    case 'email':
+                        return 'VARCHAR(255)';
+                    case 'number':
+                        return 'INT';
+                    case 'date':
+                        return 'DATE';
+                    case 'datetime':
+                        return 'DATETIME';
+                    case 'dateRange':
+                        return 'VARCHAR(255)';
+                    case 'radio':
+                        return 'VARCHAR(50)';
+                    case 'select':
+                        return 'VARCHAR(100)';
+                    case 'checkbox':
+                        return 'VARCHAR(255)';
+                    case 'tags':
+                        return 'JSON';
+                    case 'boolean':
+                        return 'TINYINT(1)';
+                    default:
+                        return 'VARCHAR(255)';
+                }
+            };
+
+            formFields.forEach(field => {
+                const columnType = getColumnType(field.type);
+                const isRequired = field.rules?.some(rule => rule.required);
+                const nullableStr = isRequired ? 'NOT NULL' : 'NULL';
+                schema[field.dataIndex || field.name] = `${columnType} ${nullableStr}`;
+            });
+
+            schema['createdAt'] = 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
+            schema['updatedAt'] = 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP';
+
+            const res = await api.post('create-table', { tableName: sanitizedTableName, schema });
+            if (res.success) {
+                message.success(res.message || 'Table created successfully');
+            } else {
+                message.error(res.message || 'Failed to create table');
+            }
+        } catch (error) {
+            console.error('Failed to create table:', error);
+            message.error('Failed to create table');
+        }
+    };
     
     return (
         <>
@@ -564,6 +621,13 @@ export default function ${componentName}() {
                                             onClick={() => downloadCode(generateSqlCode(), `${sanitizedTableName}.sql`)}
                                         >
                                             Download
+                                        </Button>
+                                        <Button
+                                            type="primary"
+                                            icon={<DatabaseOutlined />}
+                                            onClick={handleCreateTable}
+                                        >
+                                            Create Table
                                         </Button>
                                     </Space>
                                     <SyntaxHighlighter language="sql" style={tomorrow} showLineNumbers>
