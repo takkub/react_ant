@@ -569,8 +569,8 @@ export default function ${componentName}() {
 
 // FormBuilder - An easy-to-use form generation tool
 const FormBuilder = () => {
-    // Available form templates
-    const formTemplates = [
+    // Default templates used if database fetch fails
+    const defaultFormTemplates = [
         {
             id: 'user',
             name: 'User Management',
@@ -849,21 +849,63 @@ const FormBuilder = () => {
         }
     ];
 
+    const [formTemplates, setFormTemplates] = useState(defaultFormTemplates);
+
     // Form builder state - use deep cloning to break potential circular references
     const [currentFieldFormTab, setCurrentFieldFormTab] = useState('basic');
-    const [formFields, setFormFields] = useState(() => JSON.parse(JSON.stringify(formTemplates[0].fields)));
-    const [formSettings, setFormSettings] = useState(() => JSON.parse(JSON.stringify(formTemplates[0].settings)));
+    const [formFields, setFormFields] = useState(() =>
+        JSON.parse(JSON.stringify(defaultFormTemplates[0].fields))
+    );
+    const [formSettings, setFormSettings] = useState(() =>
+        JSON.parse(JSON.stringify(defaultFormTemplates[0].settings))
+    );
     const [fieldFormVisible, setFieldFormVisible] = useState(false);
     const [currentField, setCurrentField] = useState(null);
     const [form] = Form.useForm();
 
     // Wizard state
-    const [selectedTemplate, setSelectedTemplate] = useState(formTemplates[0].id);
+    const [selectedTemplate, setSelectedTemplate] = useState(defaultFormTemplates[0].id);
 const [currentFieldType, setCurrentFieldType] = useState(null);
 const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Moved here
 
     // Preview state
     const [previewData, setPreviewData] = useState([]);
+
+    // Fetch templates from database on mount
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            try {
+                const res = await api.get('form-designs');
+                if (res?.data?.length) {
+                    const templates = res.data.map((t) => ({
+                        id: t.id?.toString() || t.name,
+                        name: t.name,
+                        icon: <FileAddOutlined />,
+                        description: t.description || '',
+                        fields: t.fields
+                            ? t.fields
+                            : t.fields_data
+                                ? JSON.parse(t.fields_data)
+                                : [],
+                        settings: t.settings
+                            ? t.settings
+                            : t.settings_data
+                                ? JSON.parse(t.settings_data)
+                                : {},
+                    }));
+
+                    setFormTemplates(templates);
+                    setSelectedTemplate(templates[0].id);
+                    setFormFields(JSON.parse(JSON.stringify(templates[0].fields)));
+                    setFormSettings(JSON.parse(JSON.stringify(templates[0].settings)));
+                }
+            } catch (err) {
+                console.error('Failed to load templates from DB:', err);
+            }
+        };
+
+        fetchTemplates();
+    }, []);
 
     const computeCrudOptions = () => {
         const buildCrudColumns = (fields) => {
@@ -990,7 +1032,7 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
     // Watch for field type changes
     useEffect(() => {
         const getFormDesign = async () => {
-            const {data} = await api.get('/form-designs');
+            const { data } = await api.get('form-designs');
             if (data && data.length > 0) {
                 const design = data.find(d => d.id === selectedTemplate);
                 if (design) {
