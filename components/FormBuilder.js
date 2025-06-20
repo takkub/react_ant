@@ -476,10 +476,11 @@ export default function ${componentName}() {
         element.click();
         document.body.removeChild(element);
     };
-
     const handleSyncTable = async () => {
         try {
-            const schema = {};
+            const schema = {
+                id: 'INT AUTO_INCREMENT PRIMARY KEY',
+            };
             const getColumnType = (fieldType) => {
                 switch (fieldType) {
                     case 'input':
