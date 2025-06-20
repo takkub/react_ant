@@ -50,7 +50,7 @@ export default function AutoFormPage() {
         } finally {
             setDataLoading(false);
         }
-    }, []);
+    }, [message]);
 
     useEffect(() => {
         const fetchFormDesignAndThenData = async () => {
@@ -138,7 +138,7 @@ export default function AutoFormPage() {
         };
 
         fetchFormDesignAndThenData();
-    }, [slugFormName, setTitle, setIcon, fetchData]);
+    }, [slugFormName, setTitle, setIcon, fetchData, message]);
 
     const handleAdd = useCallback((currentData, currentSetData, tableNameForApi) => async (newRecord) => {
         if (!tableNameForApi) { message.error("Cannot add record: table name not defined."); return; }
@@ -155,7 +155,7 @@ export default function AutoFormPage() {
                 message.error('Failed to add record. Please try again.');
             }
         }
-    }, []);
+    }, [message]);
 
     const handleEdit = useCallback((currentData, currentSetData, tableNameForApi) => async (key, updatedRecord) => {
         if (!tableNameForApi) { message.error("Cannot edit record: table name not defined."); return; }
@@ -173,7 +173,7 @@ export default function AutoFormPage() {
             console.error('Error updating record:', error);
             message.error('Failed to update record. Please try again.');
         }
-    }, []);
+    }, [message]);
 
     const handleDelete = useCallback((currentData, currentSetData, tableNameForApi) => async (keys) => {
         if (!tableNameForApi) { message.error("Cannot delete records: table name not defined."); return; }
@@ -186,7 +186,7 @@ export default function AutoFormPage() {
             console.error('Error deleting records:', error);
             message.error('Failed to delete records. Please try again.');
         }
-    }, []);
+    }, [message]);
 
     const handleExport = useCallback((currentCrudOptions, tableNameForApi) => (allData, selectedKeys) => {
         if (!tableNameForApi) { message.error("Cannot export: table name not defined."); return; }
@@ -229,7 +229,7 @@ export default function AutoFormPage() {
             console.error('Error exporting data:', error);
             message.error('Failed to export data. Please try again.');
         }
-    }, []);
+    }, [message]);
 
     if (pageLoading) {
         return <Card className="p-4"><Typography.Title level={3}>Loading form design: {slugFormName}...</Typography.Title></Card>;

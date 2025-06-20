@@ -750,7 +750,7 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
 
     useEffect(() => {
         setPreviewData(generatePreviewData());
-    }, [formFields]);
+    }, [formFields, generatePreviewData]);
     
     useEffect(() => {
     
@@ -790,7 +790,7 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
             }
         }
 
-    }, [form, fieldFormVisible, currentFieldType]);
+    }, [form, fieldFormVisible, currentFieldType, message, selectedTemplate]);
 
     // Handle template selection
     const handleTemplateSelect = (templateId) => {
@@ -1305,7 +1305,7 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
         if (needsOptions && options.length === 0 && fieldFormVisible) {
             message.info('This field type requires options. Please add them in the Options tab.');
         }
-    }, [fieldFormVisible, form]);
+    }, [fieldFormVisible, form, message]);
 
     // Function to handle saving the form design
     const handleSaveDesign = async () => {
@@ -2453,7 +2453,7 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
                         formFields={formFields}
                         formSettings={formSettings}
                         formTitle={formSettings.title}
-                        tableName={formSettings.title.toLowerCase().replace(/\s+/g, '_')}
+                        tableName={(formSettings.title || '').toLowerCase().replace(/\s+/g, '_')}
                     />
                 </Space>
             </div>

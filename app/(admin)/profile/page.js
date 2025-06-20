@@ -31,7 +31,7 @@ export default function ProfilePage() {
                 ...user
             })
         }
-    }, [])
+    }, [form, user])
 
     const onFinish = values => {
         console.log(values);
