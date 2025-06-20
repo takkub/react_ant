@@ -1410,7 +1410,7 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
 
         try {
             let response;
-            if (!isNaN(Number(selectedTemplate))) {
+            if (selectedTemplate && !isNaN(Number(selectedTemplate))) {
                 response = await api.put('form-designs', {
                     body: formDesignPayload,
                     where: { id: Number(selectedTemplate) }
