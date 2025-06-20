@@ -19,7 +19,7 @@ const LanguageSwitcher = () => {
     const initialLang = savedLang || i18n.language || "en";
     setCurrentLanguage(initialLang);
     i18n.changeLanguage(initialLang);
-  }, []);
+  }, [i18n]);
 
   const handleMenuClick = ({ key }) => {
     setCurrentLanguage(key);

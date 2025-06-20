@@ -516,7 +516,7 @@ const CrudTable = ({
         return columns;
     };
 
-    const finalColumns = useMemo(() => buildColumns(), [customColumns.columns, rowkeys]); // Memoize finalColumns
+    const finalColumns = useMemo(() => buildColumns(), [customColumns.columns, rowkeys, buildColumns]); // Memoize finalColumns
 
     // Render filter components
     const renderFilters = () => {
