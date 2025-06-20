@@ -14,7 +14,7 @@ import {
     MailOutlined,
     NumberOutlined, CalendarOutlined, CheckSquareOutlined, TagsOutlined, DownOutlined,
     InfoCircleOutlined, PhoneOutlined, QuestionCircleOutlined,
-    DatabaseOutlined, ShoppingCartOutlined, LineChartOutlined
+    DatabaseOutlined, ShoppingCartOutlined, LineChartOutlined, EyeOutlined
 } from '@ant-design/icons';
 import {v4 as uuidv4} from 'uuid';
 import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter';
@@ -22,11 +22,10 @@ import {tomorrow} from 'react-syntax-highlighter/dist/esm/styles/prism';
 import api from "@/lib/api";
 import dayjs from 'dayjs';
 import CrudTable from '@/components/CrudTable';
-
+import {useRouter} from "next/navigation";
 const {Title, Text, Paragraph} = Typography;
 const {TextArea} = Input;
 
-// FormCodeGenerator component - now included in FormBuilder
 const FormCodeGenerator = ({formFields, formSettings, formTitle, tableName}) => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [activeTab, setActiveTab] = useState('1');
@@ -591,7 +590,7 @@ const FormBuilder = () => {
     const [currentField, setCurrentField] = useState(null);
     const [form] = Form.useForm();
     const {message} = App.useApp();
-    
+    const router = useRouter();
     const [selectedTemplate, setSelectedTemplate] = useState('');
     const [currentFieldType, setCurrentFieldType] = useState(null);
     const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Moved here
@@ -719,6 +718,12 @@ const FormBuilder = () => {
                 showQuickJumper: true
             }
         };
+    };
+    const handleViewPage = (templateName) => {
+        if (!templateName) return;
+        // Convert template name to URL format (lowercase with underscores)
+        const urlPath = templateName.toLowerCase().replace(/\s+/g, '_');
+        router.push(`/${urlPath}`);
     };
     
     // Handle template selection
@@ -2275,6 +2280,14 @@ const FormBuilder = () => {
                                 }}
                                 size="small"
                                 actions={[
+                                    <EyeOutlined
+                                        key="view"
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            handleViewPage(template.name);
+                                        }}
+                                        title="View Page"
+                                    />,
                                     <EditOutlined
                                         key="edit"
                                         onClick={e => {
