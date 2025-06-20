@@ -21,11 +21,9 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import api from "@/lib/api"; // Added import for the API helper
 import dayjs from 'dayjs';
-
+import CrudTable from '@/components/CrudTable';
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
-
-
 
 // FormCodeGenerator component - now included in FormBuilder
 const FormCodeGenerator = ({ formFields, formSettings, formTitle, tableName }) => {
@@ -2591,7 +2589,6 @@ const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Move
                                 </>
                             )
                         },
-                        }
                     ]}
                 />
             </Form>
