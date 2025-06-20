@@ -25,13 +25,12 @@ export default function ProfilePage() {
         branch: ""
     }
 
+    // Set default form values once on mount
     useEffect(() => {
-        if (user) {
-            form.setFieldsValue({
-                ...user
-            })
-        }
-    }, [form, user])
+        form.setFieldsValue({
+            ...user
+        });
+    }, [form])
 
     const onFinish = values => {
         console.log(values);
