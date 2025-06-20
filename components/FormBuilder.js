@@ -274,7 +274,7 @@ export const DELETE = async (req) => {
     
     // Generate component name based on table name
     const componentName = formTitle
-      .replace(/\s+/g, '')
+      ?.replace(/\s+/g, '')
       .replace(/[^a-zA-Z0-9]/g, '')
       .replace(/^./, str => str.toUpperCase());
 

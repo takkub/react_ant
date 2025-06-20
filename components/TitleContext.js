@@ -28,7 +28,7 @@ export const useTitleContext = (titleConfig) => {
     if (titleConfig && context.setTitle) {
       context.setTitle(titleConfig);
     }
-  }, [context, titleConfig]);
+  }, []);
   
   return context;
 };
