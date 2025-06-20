@@ -10,7 +10,7 @@ import { useParams } from 'next/navigation';
 export default function AutoFormPage() {
     const params = useParams();
     const slugFormName = params.form ? params.form.join('/') : 'default_form_slug';
-    const { setTitle, setIcon } = useTitleContext();
+    useTitleContext({ title: slugFormName, icon: <span className="text-2xl">📝</span> });
     const [data, setData] = useState([]);
     const [crudOptions, setCrudOptions] = useState(null);
     const [pageTitle, setPageTitle] = useState('Loading Form...');
@@ -56,7 +56,6 @@ export default function AutoFormPage() {
                 message.error('Form name (slug) not specified in URL.');
                 setError('Form name (slug) not specified in URL.');
                 setPageTitle('Error: No Form Slug Specified');
-                setTitle('Error');
                 setCrudOptions(null);
                 setPageLoading(false);
                 return;
@@ -109,8 +108,6 @@ export default function AutoFormPage() {
 
                     setCrudOptions(parsedOptions);
                     setPageTitle(designPageTitle);
-                    setTitle(designPageTitle);
-                    //setIcon(<DatabaseOutlined />);
 
                     await fetchData(determinedTableName);
                     setPageLoading(false);
@@ -120,7 +117,6 @@ export default function AutoFormPage() {
                     message.error(`Form design '${slugFormName}' not found.`);
                     setError(`Form design '${slugFormName}' not found.`);
                     setPageTitle(`Error: Form '${slugFormName}' Not Found`);
-                    setTitle('Error');
                     setCrudOptions(null);
                     setPageLoading(false);
                 }
@@ -129,13 +125,12 @@ export default function AutoFormPage() {
                 message.error('Failed to fetch form design.');
                 setError('Failed to fetch form design.');
                 setPageTitle('Error Loading Form Design');
-                setTitle('Error');
                 setCrudOptions(null);
                 setPageLoading(false);
             }
         };
         fetchFormDesignAndThenData();
-    }, [slugFormName, setTitle, setIcon, fetchData, message]);
+    }, [slugFormName, fetchData, message]);
 
     const handleAdd = useCallback((currentData, currentSetData, tableNameForApi) => async (newRecord) => {
         if (!tableNameForApi) { message.error("Cannot add record: table name not defined."); return; }
