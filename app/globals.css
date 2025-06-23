@@ -12,3 +12,15 @@ body {
   overflow-x: hidden;
   font-family: "Prompt", sans-serif;
 }
+
+.drag-handle {
+  cursor: move;
+}
+
+.drag-over-row td {
+  background-color: #e6f7ff;
+}
+
+.dragging-row {
+  opacity: 0.5;
+}
