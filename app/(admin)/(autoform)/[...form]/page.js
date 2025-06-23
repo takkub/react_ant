@@ -69,7 +69,7 @@ export default function AutoFormPage() {
             let determinedTableName = slugFormName;
 
             try {
-                const designResponse = await api.get('form-designs', { name: slugFormName });
+                const designResponse = await api.get('form-designs', { table: slugFormName });
                 console.log('Form Design API response:', designResponse);
 
                 if (designResponse.data && designResponse.data.length > 0) {

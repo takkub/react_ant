@@ -1405,7 +1405,8 @@ const FormBuilder = () => {
             name: formSettings.title || 'Untitled Form Design',
             fields_data: formFields,
             settings_data: formSettings,
-            crud_options_data: crudTableOptions // Added crud_options_data
+            crud_options_data: crudTableOptions,
+            table: (formSettings.title || 'form_designs').toLowerCase().replace(/\s+/g, '_'),
         };
         console.log("Payload to save:", formDesignPayload);
         
