@@ -1,33 +1,30 @@
 'use client';
-import React, { useState } from 'react';
+import React from 'react';
 import { Button, Card, Row, Col, Typography } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
 
-const fieldOptions = [
-  { id: 'input', label: 'Input' },
-  { id: 'select', label: 'Select' },
-  { id: 'date', label: 'Date Picker' },
-];
+const DndLayoutBuilder = ({ fields = [], layouts, setLayouts }) => {
+  const [draggingField, setDraggingField] = React.useState(null);
+  const [internalLayouts, setInternalLayouts] = React.useState([]);
 
-const DndLayoutBuilder = () => {
-  const [layouts, setLayouts] = useState([]);
-  const [draggingField, setDraggingField] = useState(null);
+  const actualLayouts = layouts ?? internalLayouts;
+  const updateLayouts = setLayouts ?? setInternalLayouts;
 
   const addLayout = (cols) => {
-    setLayouts((prev) => [
+    updateLayouts((prev) => [
       ...prev,
       { id: uuidv4(), cols, fields: Array.from({ length: cols }, () => []) },
     ]);
   };
 
   const removeLayout = (id) => {
-    setLayouts((prev) => prev.filter((l) => l.id !== id));
+    updateLayouts((prev) => prev.filter((l) => l.id !== id));
   };
 
   const handleDrop = (layoutIndex, colIndex) => {
     if (!draggingField) return;
-    setLayouts((prev) =>
+    updateLayouts((prev) =>
       prev.map((l, i) => {
         if (i !== layoutIndex) return l;
         const newFields = l.fields.map((col, j) =>
@@ -53,19 +50,19 @@ const DndLayoutBuilder = () => {
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {fieldOptions.map((field) => (
+        {fields.map((field) => (
           <Card
             key={field.id}
             draggable
             onDragStart={() => setDraggingField(field)}
             style={{ width: 120, textAlign: 'center', cursor: 'grab' }}
           >
-            {field.label}
+            {field.title || field.label || field.name}
           </Card>
         ))}
       </div>
 
-      {layouts.map((layout, layoutIndex) => (
+      {actualLayouts.map((layout, layoutIndex) => (
         <Card
           key={layout.id}
           type="inner"

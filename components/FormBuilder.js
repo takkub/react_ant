@@ -22,6 +22,7 @@ import {tomorrow} from 'react-syntax-highlighter/dist/esm/styles/prism';
 import api from "@/lib/api";
 import dayjs from 'dayjs';
 import CrudTable from '@/components/CrudTable';
+import DndLayoutBuilder from '@/components/DndLayoutBuilder';
 import {useRouter} from "next/navigation";
 const {Title, Text, Paragraph} = Typography;
 const {TextArea} = Input;
@@ -662,6 +663,9 @@ const FormBuilder = () => {
 
     // Preview state
     const [previewData, setPreviewData] = useState([]);
+
+    // Layout builder state
+    const [layouts, setLayouts] = useState([]);
 
     // Drag and drop state
     const [draggingFieldId, setDraggingFieldId] = useState(null);
@@ -2486,6 +2490,17 @@ const FormBuilder = () => {
                     },
                     {
                         key: '3',
+                        label: 'Layout',
+                        children: (
+                            <DndLayoutBuilder
+                                fields={formFields}
+                                layouts={layouts}
+                                setLayouts={setLayouts}
+                            />
+                        )
+                    },
+                    {
+                        key: '4',
                         label: 'Preview',
                         children: (
                             <Card>
