@@ -14,7 +14,7 @@ import {
     MailOutlined,
     NumberOutlined, CalendarOutlined, CheckSquareOutlined, TagsOutlined, DownOutlined,
     InfoCircleOutlined, PhoneOutlined, QuestionCircleOutlined,
-    DatabaseOutlined, ShoppingCartOutlined, LineChartOutlined, EyeOutlined
+    DatabaseOutlined, ShoppingCartOutlined, LineChartOutlined, EyeOutlined, MenuOutlined
 } from '@ant-design/icons';
 import {v4 as uuidv4} from 'uuid';
 import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter';
@@ -659,9 +659,13 @@ const FormBuilder = () => {
     const [selectedTemplate, setSelectedTemplate] = useState('');
     const [currentFieldType, setCurrentFieldType] = useState(null);
     const [currentSettingsTab, setCurrentSettingsTab] = useState('general'); // Moved here
-    
+
     // Preview state
     const [previewData, setPreviewData] = useState([]);
+
+    // Drag and drop state
+    const [draggingFieldId, setDraggingFieldId] = useState(null);
+    const [dragOverFieldId, setDragOverFieldId] = useState(null);
     
     const fetchTemplates = useCallback(async (selectId) => {
         try {
@@ -1753,10 +1757,47 @@ const FormBuilder = () => {
     const handleUpdateFieldCardGroup = useCallback((fieldId, groupKey) => {
         setFormFields(prevFields => prevFields.map(f => f.id === fieldId ? {...f, cardGroup: groupKey || null} : f));
     }, []);
+
+    // Drag and drop handlers
+    const handleDragStart = (id) => {
+        setDraggingFieldId(id);
+    };
+
+    const handleDragOver = (e, id) => {
+        e.preventDefault();
+        if (id !== dragOverFieldId) {
+            setDragOverFieldId(id);
+        }
+    };
+
+    const handleDrop = (id) => {
+        if (draggingFieldId === null || id === draggingFieldId) return;
+        setFormFields(prev => {
+            const newFields = [...prev];
+            const from = newFields.findIndex(f => f.id === draggingFieldId);
+            const to = newFields.findIndex(f => f.id === id);
+            const [item] = newFields.splice(from, 1);
+            newFields.splice(to, 0, item);
+            return newFields;
+        });
+        setDraggingFieldId(null);
+        setDragOverFieldId(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggingFieldId(null);
+        setDragOverFieldId(null);
+    };
     
     // Field list table
     const renderFieldsTable = () => {
         const columns = [
+            {
+                title: '',
+                dataIndex: 'sort',
+                width: 40,
+                render: () => <MenuOutlined className="drag-handle" />,
+            },
             {
                 title: 'Field Name',
                 dataIndex: 'dataIndex',
@@ -1843,6 +1884,19 @@ const FormBuilder = () => {
                 rowKey="id"
                 pagination={false}
                 size="small"
+                onRow={(record) => ({
+                    draggable: true,
+                    onDragStart: () => handleDragStart(record.id),
+                    onDragOver: (e) => handleDragOver(e, record.id),
+                    onDrop: () => handleDrop(record.id),
+                    onDragEnd: handleDragEnd,
+                    className:
+                        record.id === dragOverFieldId
+                            ? 'drag-over-row'
+                            : record.id === draggingFieldId
+                                ? 'dragging-row'
+                                : '',
+                })}
             />
         );
     };
