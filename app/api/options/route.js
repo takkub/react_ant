@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 export const GET = async (req) => {
   try {
     const { table, labelField, valueField } = await checkPayload('get', req);
+    console.log('Fetching options for table:', table, 'labelField:', labelField, 'valueField:', valueField);
     if (!table || !labelField || !valueField) {
       return new Response(
         JSON.stringify({ success: false, message: 'Missing required parameters' }),

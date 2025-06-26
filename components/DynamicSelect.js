@@ -22,8 +22,8 @@ const DynamicSelect = ({ optionsConfig, initialOptions = [], ...props }) => {
             labelField: optionsConfig.labelField,
             valueField: optionsConfig.valueField,
           });
-          if (res.data && res.data.success) {
-            setOptions(res.data.data || []);
+          if (res.data && res.success) {
+            setOptions(res.data || []);
           }
         } catch (err) {
           console.error('Failed to load options:', err);
