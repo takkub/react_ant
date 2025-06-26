@@ -278,6 +278,14 @@ export const DELETE = async (req) => {
                 if (field.options && field.options.length > 0) {
                     formField.options = field.options;
                 }
+                if (field.options_table) {
+                    formField.optionsConfig = {
+                        mode: 'table',
+                        table: field.options_table.table,
+                        labelField: field.options_table.label,
+                        valueField: field.options_table.value
+                    };
+                }
                 if (field.cardGroup) {
                     formField.cardGroup = field.cardGroup;
                 }
@@ -741,6 +749,14 @@ const FormBuilder = () => {
                 };
                 if (field.options && field.options.length > 0) {
                     formField.options = field.options;
+                }
+                if (field.options_table) {
+                    formField.optionsConfig = {
+                        mode: 'table',
+                        table: field.options_table.table,
+                        labelField: field.options_table.label,
+                        valueField: field.options_table.value
+                    };
                 }
                 if (field.cardGroup) {
                     formField.cardGroup = field.cardGroup;
@@ -1398,6 +1414,14 @@ const FormBuilder = () => {
                 };
                 if (field.options && field.options.length > 0) {
                     formField.options = field.options;
+                }
+                if (field.options_table) {
+                    formField.optionsConfig = {
+                        mode: 'table',
+                        table: field.options_table.table,
+                        labelField: field.options_table.label,
+                        valueField: field.options_table.value
+                    };
                 }
                 if (field.cardGroup) {
                     formField.cardGroup = field.cardGroup;
