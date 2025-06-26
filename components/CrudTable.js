@@ -31,6 +31,7 @@ import {
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
+import DynamicSelect from './DynamicSelect';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -615,9 +616,10 @@ const CrudTable = ({
         break;
       case 'select':
         formItemComponent = (
-          <Select
+          <DynamicSelect
             disabled={isDisabled}
-            options={field.options || []}
+            initialOptions={field.options || []}
+            optionsConfig={field.optionsConfig}
             allowClear
             showSearch={field.showSearch || false}
             optionFilterProp={field.optionFilterProp || 'children'}
@@ -760,11 +762,12 @@ const CrudTable = ({
               return (
                 <Col key={index} xs={24} sm={12} md={6} lg={4}>
                   <Form.Item className="mb-0" style={{ marginBottom: 8 }}>
-                    <Select
+                    <DynamicSelect
                       placeholder={`Select ${filter.title}`}
                       allowClear
                       style={{ width: '100%' }}
-                      options={filter.options}
+                      initialOptions={filter.options}
+                      optionsConfig={filter.optionsConfig}
                       value={filterValues[fieldKey]}
                       onChange={value => {
                         setFilterValues({
