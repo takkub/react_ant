@@ -278,12 +278,12 @@ export const DELETE = async (req) => {
                 if (field.options && field.options.length > 0) {
                     formField.options = field.options;
                 }
-                if (field.options_table) {
+                if (field.optionsConfig?.mode === 'table') {
                     formField.optionsConfig = {
                         mode: 'table',
-                        table: field.options_table.table,
-                        labelField: field.options_table.label,
-                        valueField: field.options_table.value
+                        table: field.optionsConfig.table,
+                        labelField: field.optionsConfig.labelField,
+                        valueField: field.optionsConfig.valueField
                     };
                 }
                 if (field.cardGroup) {
@@ -729,11 +729,11 @@ const FormBuilder = () => {
                     column.sorter = true;
                 }
                 if (field.type === 'date' || field.type === 'datetime') {
-                    column.render = (text) => text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '';
+                    column.render = ` (text) => { return text ? dayjs(text).format('YYYY-MM-DD HH:mm') : ''; }`;
                 }
                 if ((field.type === 'select' || field.type === 'radio') && field.options?.length > 0) {
                     column.filters = field.options.map(opt => ({text: opt.label, value: opt.value}));
-                    column.onFilter = (value, record) => record[field.dataIndex || field.name] === value;
+                    column.onFilter = ` (value, record) => record['${field.dataIndex || field.name}'] === value `;
                 }
                 return column;
             });
@@ -750,18 +750,27 @@ const FormBuilder = () => {
                 if (field.options && field.options.length > 0) {
                     formField.options = field.options;
                 }
-                if (field.options_table) {
+                if (field.optionsConfig?.mode === 'table') {
                     formField.optionsConfig = {
                         mode: 'table',
-                        table: field.options_table.table,
-                        labelField: field.options_table.label,
-                        valueField: field.options_table.value
+                        table: field.optionsConfig.table,
+                        labelField: field.optionsConfig.labelField,
+                        valueField: field.optionsConfig.valueField
                     };
                 }
                 if (field.cardGroup) {
                     formField.cardGroup = field.cardGroup;
                 }
-                
+                // Include other relevant properties from field if CrudTable's getFormItems uses them
+                // For example: rows, format, checkboxLabel, disabled
+                if (field.rows) formField.rows = field.rows;
+                if (field.format) formField.format = field.format;
+                if (field.checkboxLabel) formField.checkboxLabel = field.checkboxLabel;
+                // 'disabled' is often a function (modalMode) => ..., which can't be directly stringified for all cases.
+                // If 'disabled' is a simple boolean in formFields, it can be included.
+                if (typeof field.disabled === 'boolean') {
+                    formField.disabled = field.disabled;
+                }
                 return formField;
             });
         };
@@ -1059,13 +1068,8 @@ const FormBuilder = () => {
                 optionsConfig: { mode: 'manual' }
             };
 
-            if (fieldCopy.options_table) {
-                formValues.optionsConfig = {
-                    mode: 'table',
-                    table: fieldCopy.options_table.table,
-                    labelField: fieldCopy.options_table.label,
-                    valueField: fieldCopy.options_table.value
-                };
+            if (fieldCopy.optionsConfig) {
+                formValues.optionsConfig = fieldCopy.optionsConfig;
                 if (Array.isArray(fieldCopy.options)) {
                     formValues.options = fieldCopy.options;
                 }
@@ -1119,17 +1123,14 @@ const FormBuilder = () => {
 
             // Clear old option-related fields before setting new ones
             delete fieldToSave.options;
-            delete fieldToSave.options_table;
+            delete fieldToSave.optionsConfig;
+
+            fieldToSave.optionsConfig = optionsConfig;
 
             if (optionsConfig.mode === 'table') {
                 if (Array.isArray(values.options) && values.options.length > 0) {
                     fieldToSave.options = values.options;
                 }
-                fieldToSave.options_table = {
-                    table: optionsConfig.table,
-                    label: optionsConfig.labelField,
-                    value: optionsConfig.valueField
-                };
             } else if (optionsConfig.mode === 'json') {
                 try {
                     fieldToSave.options = JSON.parse(optionsConfig.json || '[]');
@@ -1415,13 +1416,8 @@ const FormBuilder = () => {
                 if (field.options && field.options.length > 0) {
                     formField.options = field.options;
                 }
-                if (field.options_table) {
-                    formField.optionsConfig = {
-                        mode: 'table',
-                        table: field.options_table.table,
-                        labelField: field.options_table.label,
-                        valueField: field.options_table.value
-                    };
+                if (field.optionsConfig?.mode === 'table') {
+                    formField.optionsConfig = field.optionsConfig;
                 }
                 if (field.cardGroup) {
                     formField.cardGroup = field.cardGroup;
@@ -2098,7 +2094,7 @@ const FormBuilder = () => {
                                     newSettings.cardGroupSetting[index][subKey] = value;
                                 }
                             }
-                        } else if (index !== undefined && value === null) {
+                        } else if ( index !== undefined && value === null) {
                             // Removing a card group
                             newSettings.cardGroupSetting = newSettings.cardGroupSetting.filter((_, i) => i !== index);
                         } else if (value && typeof value === 'object' && !subKey) {
