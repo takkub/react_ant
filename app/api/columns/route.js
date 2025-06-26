@@ -1,9 +1,9 @@
 import { getColumns } from "@/lib/mysqldb";
 import { checkPayload } from "@/lib/utils";
-
+export const dynamic = 'force-dynamic';
 export const GET = async (req) => {
     try {
-        const { table, schema } = await checkPayload('get', req);
+        const { table } = await checkPayload('get', req);
         if (!table) {
             return new Response(JSON.stringify({
                 success: false,
@@ -12,7 +12,6 @@ export const GET = async (req) => {
         }
 
         const result = await getColumns(table);
-        console.log('✅ Columns fetched successfully:', result);
         if (result.status) {
             return new Response(JSON.stringify({
                 success: true,

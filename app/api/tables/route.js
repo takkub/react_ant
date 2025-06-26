@@ -1,5 +1,5 @@
 import { getTables } from "@/lib/mysqldb";
-
+export const dynamic = 'force-dynamic';
 export const GET = async (req) => {
     try {
         const result = await getTables();
