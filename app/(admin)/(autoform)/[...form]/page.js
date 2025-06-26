@@ -1,6 +1,6 @@
 'use client';
 import React, {useEffect, useState, useCallback} from 'react';
-import {Card, Typography, App} from 'antd';
+import {Card, Typography,message, App} from 'antd';
 import CrudTable from '@/components/CrudTable';
 import {useTitleContext} from "@/components/TitleContext";
 import dayjs from 'dayjs';
@@ -18,7 +18,6 @@ export default function AutoFormPage() {
     const [dataLoading, setDataLoading] = useState(false);
     const [error, setError] = useState(null);
     const [actualTableNameForApi, setActualTableNameForApi] = useState(null);
-    const { message } = App.useApp();
 
     const fetchData = useCallback(async (tableNameForApi) => {
         if (!tableNameForApi) {

@@ -50,5 +50,6 @@ This project is a simple Next.js application that demonstrates building an admin
 - `npm run lint` – run ESLint on the project.
 
 ## License
+For open source projects, say how it is licensed.
 
 This project is provided as‑is for demonstration purposes.

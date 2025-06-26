@@ -3,7 +3,7 @@ import React, {useState, useEffect, useCallback} from 'react';
 import {
     Card, Button, Form, Input, Select, Switch, Typography, Space, Divider,
     Tag, Table, Modal, Tabs, Tooltip, Drawer, Row, Col, Empty,
-    Radio, Segmented, Badge, Alert, DatePicker, Checkbox,
+    Radio, Segmented, Badge, Alert,message, DatePicker, Checkbox,
     InputNumber, App
 } from 'antd';
 import {
@@ -30,7 +30,6 @@ const FormCodeGenerator = ({formFields, formSettings, formTitle, tableName}) => 
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [activeTab, setActiveTab] = useState('1');
     const sanitizedTableName = tableName || formTitle?.toLowerCase().replace(/\s+/g, '_') || 'custom_form';
-    const { message } = App.useApp();
     
     // Function to generate the SQL CREATE TABLE statement
     const generateSqlCode = () => {
@@ -458,14 +457,14 @@ export default function ${componentName}() {
     );
 }`;
     };
-    
+
     // Copy code to clipboard
     const copyToClipboard = (content) => {
         navigator.clipboard.writeText(content)
         .then(() => message.success('Code copied to clipboard!'))
         .catch(() => message.error('Failed to copy code.'));
     };
-    
+
     // Download code
     const downloadCode = (content, filename) => {
         const element = document.createElement('a');
@@ -533,7 +532,7 @@ export default function ${componentName}() {
             message.error('Failed to sync table');
         }
     };
-    
+
     return (
         <>
             <Button
@@ -543,7 +542,7 @@ export default function ${componentName}() {
             >
                 Generate Code
             </Button>
-            
+
             <Modal
                 title="Generated Code"
                 open={isModalVisible}
@@ -654,7 +653,6 @@ const FormBuilder = () => {
     const [fieldFormVisible, setFieldFormVisible] = useState(false);
     const [currentField, setCurrentField] = useState(null);
     const [form] = Form.useForm();
-    const {message} = App.useApp();
     const router = useRouter();
     const [selectedTemplate, setSelectedTemplate] = useState('');
     const [currentFieldType, setCurrentFieldType] = useState(null);
@@ -958,6 +956,7 @@ const FormBuilder = () => {
                 type: 'input',
                 rules: [{required: true, message: 'This field is required!'}],
                 options: [],
+                optionsConfig: { mode: 'manual' },
                 filterable: true,
                 sortable: true
             };
@@ -1029,21 +1028,44 @@ const FormBuilder = () => {
             }
             
             // Create a proper deep copy to avoid reference issues
-            // Using JSON.parse(JSON.stringify()) to break all potential circular references
             const fieldCopy = JSON.parse(JSON.stringify(field));
             setCurrentField(fieldCopy);
-            
-            // Set form values, explicitly extracting only the properties we need
-            form.setFieldsValue({
+
+            const formValues = {
                 dataIndex: fieldCopy.dataIndex,
                 title: fieldCopy.title,
                 type: fieldCopy.type,
                 required: fieldCopy.rules?.some(rule => rule.required) || false,
                 filterable: fieldCopy.filterable || false,
                 sortable: fieldCopy.sortable || false,
-                options: Array.isArray(fieldCopy.options) ? fieldCopy.options : [],
-                cardGroup: fieldCopy.cardGroup || null
-            });
+                cardGroup: fieldCopy.cardGroup || null,
+                options: [],
+                optionsConfig: { mode: 'manual' }
+            };
+
+            if (fieldCopy.options_table) {
+                formValues.optionsConfig = {
+                    mode: 'table',
+                    table: fieldCopy.options_table.table,
+                    labelField: fieldCopy.options_table.label,
+                    valueField: fieldCopy.options_table.value
+                };
+                if (Array.isArray(fieldCopy.options)) {
+                    formValues.options = fieldCopy.options;
+                }
+            } else if (Array.isArray(fieldCopy.options)) {
+                // Cannot distinguish between manual and JSON, so default to manual.
+                // This preserves the data, and it remains editable.
+                formValues.options = fieldCopy.options;
+                formValues.optionsConfig = {
+                    mode: 'manual',
+                    // Pre-fill JSON field in case user wants to switch to it.
+                    json: JSON.stringify(fieldCopy.options, null, 2)
+                };
+            }
+            
+            // Set form values
+            form.setFieldsValue(formValues);
             
             setFieldFormVisible(true);
         } catch (error) {
@@ -1072,11 +1094,36 @@ const FormBuilder = () => {
                 rules: [
                     ...(values.required ? [{required: true, message: `Please input ${values.title.trim()}!`}] : [])
                 ],
-                options: Array.isArray(values.options) ? [...values.options] : [],
                 filterable: Boolean(values.filterable),
                 sortable: Boolean(values.sortable),
                 cardGroup: values.cardGroup
             };
+
+            const optionsConfig = values.optionsConfig || { mode: 'manual' };
+
+            // Clear old option-related fields before setting new ones
+            delete fieldToSave.options;
+            delete fieldToSave.options_table;
+
+            if (optionsConfig.mode === 'table') {
+                if (Array.isArray(values.options) && values.options.length > 0) {
+                    fieldToSave.options = values.options;
+                }
+                fieldToSave.options_table = {
+                    table: optionsConfig.table,
+                    label: optionsConfig.labelField,
+                    value: optionsConfig.valueField
+                };
+            } else if (optionsConfig.mode === 'json') {
+                try {
+                    fieldToSave.options = JSON.parse(optionsConfig.json || '[]');
+                } catch (e) {
+                    message.error('Invalid JSON format for options.');
+                    fieldToSave.options = [];
+                }
+            } else { // 'manual'
+                fieldToSave.options = Array.isArray(values.options) ? values.options : [];
+            }
             
             // Use functional updates to ensure we're using latest state
             setFormFields(prevFields => {
@@ -1586,121 +1633,221 @@ const FormBuilder = () => {
                                         }
                                     </span>
                                 ),
-                                children: (
-                                    <Form.List name="options">
-                                        {(fields, {add, remove}) => {
-                                            const selectedType = form.getFieldValue('type');
-                                            const showOptions = ['select', 'radio', 'tags', 'checkbox'].includes(selectedType);
-                                            
-                                            if (!showOptions) {
-                                                return (
-                                                    <Empty
-                                                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                        description={
-                                                            <span>
-                                                                Options are only available for Select, Radio, Checkbox, and Tags field types.
-                                                                <br/>
-                                                                <Button
-                                                                    type="link"
-                                                                    onClick={() => setCurrentFieldFormTab('basic')}
-                                                                >
-                                                                    Change field type
-                                                                </Button>
-                                                            </span>
+                                children: (() => {
+                                    const optionsConfig = Form.useWatch('optionsConfig', form);
+                                    const optionsMode = optionsConfig?.mode || 'manual';
+                                    const selectedTable = optionsConfig?.table;
+
+                                    const [tables, setTables] = useState([]);
+                                    const [columns, setColumns] = useState([]);
+
+                                    useEffect(() => {
+                                        const fieldType = form.getFieldValue('type');
+                                        const needsOptions = ['select', 'radio', 'tags', 'checkbox'].includes(fieldType);
+                                        if (needsOptions && optionsMode === 'table') {
+                                            api.get('tables').then(res => {
+                                                setTables(res?.data || []);
+                                            }).catch(err => {
+                                                console.error("Failed to fetch tables", err);
+                                                message.error("Failed to fetch tables.");
+                                            });
+                                        }
+                                    }, [optionsMode, form.getFieldValue('type')]);
+
+                                    useEffect(() => {
+                                        const fieldType = form.getFieldValue('type');
+                                        const needsOptions = ['select', 'radio', 'tags', 'checkbox'].includes(fieldType);
+                                        if (needsOptions && optionsMode === 'table' && selectedTable) {
+                                            api.get(`columns`,{table:selectedTable}).then(res => {
+                                                setColumns(res?.data || []);
+                                            }).catch(err => {
+                                                console.error(`Failed to fetch columns for ${selectedTable}`, err);
+                                                message.error(`Failed to fetch columns for ${selectedTable}.`);
+                                            });
+                                        } else {
+                                            setColumns([]);
+                                        }
+                                    }, [optionsMode, selectedTable, form.getFieldValue('type')]);
+
+                                    const selectedType = form.getFieldValue('type');
+                                    const showOptions = ['select', 'radio', 'tags', 'checkbox'].includes(selectedType);
+
+                                    if (!showOptions) {
+                                        return (
+                                            <Empty
+                                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                description={
+                                                    <span>
+                                                        Options are only available for Select, Radio, Checkbox, and Tags field types.
+                                                        <br />
+                                                        <Button
+                                                            type="link"
+                                                            onClick={() => setCurrentFieldFormTab('basic')}
+                                                        >
+                                                            Change field type
+                                                        </Button>
+                                                    </span>
+                                                }
+                                            />
+                                        );
+                                    }
+
+                                    return (
+                                        <>
+                                            <Form.Item label="Options Source">
+                                                <Radio.Group
+                                                    value={optionsMode}
+                                                    onChange={e => {
+                                                        const newMode = e.target.value;
+                                                        const currentConfig = form.getFieldValue('optionsConfig') || {};
+                                                        form.setFieldsValue({ optionsConfig: { ...currentConfig, mode: newMode, table: undefined, labelField: undefined, valueField: undefined, json: undefined } });
+                                                        if (newMode === 'manual' && !form.getFieldValue('options')?.length) {
+                                                            form.setFieldValue('options', [{ label: 'Option 1', value: 'option1' }]);
+                                                        } else {
+                                                            form.setFieldValue('options', []);
                                                         }
-                                                    />
-                                                );
-                                            }
-                                            
-                                            return (
+                                                    }}
+                                                >
+                                                    <Radio.Button value="manual">Manual</Radio.Button>
+                                                    <Radio.Button value="table">From Table</Radio.Button>
+                                                    <Radio.Button value="json">From JSON</Radio.Button>
+                                                </Radio.Group>
+                                            </Form.Item>
+
+                                            <Form.Item name="optionsConfig" hidden><Input /></Form.Item>
+
+                                            {optionsMode === 'manual' && (
+                                                <Form.List name="options">
+                                                    {(fields, { add, remove }) => (
+                                                        <>
+                                                            <Alert
+                                                                message="Manually define options"
+                                                                description="Add, edit or remove options that will be available to users."
+                                                                type="info"
+                                                                showIcon
+                                                                style={{ marginBottom: 16 }}
+                                                            />
+                                                            {fields.length === 0 ? (
+                                                                <Empty
+                                                                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                                    description="No options added yet"
+                                                                    style={{ margin: '20px 0' }}
+                                                                >
+                                                                    <Button
+                                                                        type="primary"
+                                                                        onClick={() => add({ label: 'New Option', value: 'newOption' })}
+                                                                        icon={<PlusOutlined />}
+                                                                    >
+                                                                        Add First Option
+                                                                    </Button>
+                                                                </Empty>
+                                                            ) : (
+                                                                <div style={{ maxHeight: '400px', overflow: 'auto', padding: '8px 0' }}>
+                                                                    {fields.map((field, index) => (
+                                                                        <Card
+                                                                            key={field.key}
+                                                                            size="small"
+                                                                            style={{ marginBottom: 8 }}
+                                                                            title={`Option ${index + 1}`}
+                                                                            extra={<Button icon={<DeleteOutlined />} onClick={() => remove(field.name)} danger type="text" />}
+                                                                        >
+                                                                            <Row gutter={16}>
+                                                                                <Col span={12}>
+                                                                                    <Form.Item {...field} name={[field.name, 'label']} rules={[{ required: true, message: 'Missing label' }]} label="Label" tooltip="Text shown to users">
+                                                                                        <Input placeholder="Display text" />
+                                                                                    </Form.Item>
+                                                                                </Col>
+                                                                                <Col span={12}>
+                                                                                    <Form.Item {...field} name={[field.name, 'value']} rules={[{ required: true, message: 'Missing value' }]} label="Value" tooltip="Value stored in database">
+                                                                                        <Input placeholder="Stored value" />
+                                                                                    </Form.Item>
+                                                                                </Col>
+                                                                            </Row>
+                                                                        </Card>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            <Form.Item style={{ marginTop: 16 }}>
+                                                                <Button type="dashed" onClick={() => add({ label: '', value: '' })} icon={<PlusOutlined />} block>Add Option</Button>
+                                                            </Form.Item>
+                                                        </>
+                                                    )}
+                                                </Form.List>
+                                            )}
+
+                                            {optionsMode === 'table' && (
                                                 <>
                                                     <Alert
-                                                        message={`Configure options for your ${
-                                                            selectedType === 'select' ? 'dropdown' :
-                                                                selectedType === 'radio' ? 'radio buttons' :
-                                                                    'tags'
-                                                        }`}
-                                                        description="Add, edit or remove options that will be available to users"
+                                                        message="Fetch options from a database table"
+                                                        description="Select a table, then choose which columns to use for the option label and value."
                                                         type="info"
                                                         showIcon
-                                                        style={{marginBottom: 16}}
+                                                        style={{ marginBottom: 16 }}
                                                     />
-                                                    
-                                                    {fields.length === 0 ? (
-                                                        <Empty
-                                                            image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                            description="No options added yet"
-                                                            style={{margin: '20px 0'}}
-                                                        >
-                                                            <Button
-                                                                type="primary"
-                                                                onClick={() => add({label: 'New Option', value: 'newOption'})}
-                                                                icon={<PlusOutlined/>}
-                                                            >
-                                                                Add First Option
-                                                            </Button>
-                                                        </Empty>
-                                                    ) : (
-                                                        <div style={{maxHeight: '400px', overflow: 'auto', padding: '8px 0'}}>
-                                                            {fields.map((field, index) => (
-                                                                <Card
-                                                                    key={field.key}
-                                                                    size="small"
-                                                                    style={{marginBottom: 8}}
-                                                                    title={`Option ${index + 1}`}
-                                                                    extra={
-                                                                        <Button
-                                                                            icon={<DeleteOutlined/>}
-                                                                            onClick={() => remove(field.name)}
-                                                                            danger
-                                                                            type="text"
-                                                                        />
-                                                                    }
-                                                                >
-                                                                    <Row gutter={16}>
-                                                                        <Col span={12}>
-                                                                            <Form.Item
-                                                                                {...field}
-                                                                                name={[field.name, 'label']}
-                                                                                rules={[{required: true, message: 'Missing label'}]}
-                                                                                label="Label"
-                                                                                tooltip="Text shown to users"
-                                                                            >
-                                                                                <Input placeholder="Display text"/>
-                                                                            </Form.Item>
-                                                                        </Col>
-                                                                        <Col span={12}>
-                                                                            <Form.Item
-                                                                                {...field}
-                                                                                name={[field.name, 'value']}
-                                                                                rules={[{required: true, message: 'Missing value'}]}
-                                                                                label="Value"
-                                                                                tooltip="Value stored in database"
-                                                                            >
-                                                                                <Input placeholder="Stored value"/>
-                                                                            </Form.Item>
-                                                                        </Col>
-                                                                    </Row>
-                                                                </Card>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    
-                                                    <Form.Item style={{marginTop: 16}}>
-                                                        <Button
-                                                            type="dashed"
-                                                            onClick={() => add({label: '', value: ''})}
-                                                            icon={<PlusOutlined/>}
-                                                            block
-                                                        >
-                                                            Add Option
-                                                        </Button>
+                                                    <Form.Item name={['optionsConfig', 'table']} label="Table" rules={[{ required: true, message: 'Please select a table' }]}>
+                                                        <Select
+                                                            showSearch
+                                                            loading={tables.length === 0}
+                                                            placeholder="Select a table"
+                                                            options={(tables || []).map(t => ({ label: t.TABLE_NAME, value: t.TABLE_NAME }))}
+                                                            onChange={() => {
+                                                                const config = form.getFieldValue('optionsConfig');
+                                                                form.setFieldsValue({ optionsConfig: { ...config, labelField: undefined, valueField: undefined } });
+                                                            }}
+                                                        />
+                                                    </Form.Item>
+                                                    <Form.Item noStyle shouldUpdate={(prev, curr) => prev.optionsConfig?.table !== curr.optionsConfig?.table}>
+                                                        {() => form.getFieldValue(['optionsConfig', 'table']) ? (
+                                                            <Row gutter={16}>
+                                                                <Col span={12}>
+                                                                    <Form.Item name={['optionsConfig', 'valueField']} label="Value Field" rules={[{ required: true, message: 'Please select a value field' }]}>
+                                                                        <Select showSearch loading={columns.length === 0 && !!selectedTable} placeholder="Select field for value" options={(columns || []).map(c => ({ label: c.COLUMN_NAME, value: c.COLUMN_NAME }))} />
+                                                                    </Form.Item>
+                                                                </Col>
+                                                                <Col span={12}>
+                                                                    <Form.Item name={['optionsConfig', 'labelField']} label="Label Field" rules={[{ required: true, message: 'Please select a label field' }]}>
+                                                                        <Select showSearch loading={columns.length === 0 && !!selectedTable} placeholder="Select field for label" options={(columns || []).map(c => ({ label: c.COLUMN_NAME, value: c.COLUMN_NAME }))} />
+                                                                    </Form.Item>
+                                                                </Col>
+                                                            </Row>
+                                                        ) : null}
                                                     </Form.Item>
                                                 </>
-                                            );
-                                        }}
-                                    </Form.List>
-                                )
+                                            )}
+
+                                            {optionsMode === 'json' && (
+                                                <>
+                                                    <Alert
+                                                        message="Provide options as a JSON array"
+                                                        description='The format must be an array of objects, with each object having a "label" and "value" key. e.g. [{"label": "Active", "value": "active"}]'
+                                                        type="info"
+                                                        showIcon
+                                                        style={{ marginBottom: 16 }}
+                                                    />
+                                                    <Form.Item
+                                                        name={['optionsConfig', 'json']}
+                                                        label="JSON Options"
+                                                        rules={[{
+                                                            validator: async (_, value) => {
+                                                                if (!value) return;
+                                                                try {
+                                                                    const parsed = JSON.parse(value);
+                                                                    if (!Array.isArray(parsed)) throw new Error('Must be a JSON array.');
+                                                                    const isValid = parsed.every(item => typeof item === 'object' && item !== null && 'label' in item && 'value' in item);
+                                                                    if (!isValid) throw new Error('Each item must be an object with "label" and "value" keys.');
+                                                                } catch (e) {
+                                                                    throw new Error(e.message || 'Invalid JSON format.');
+                                                                }
+                                                            }
+                                                        }]}
+                                                    >
+                                                        <TextArea rows={8} placeholder='[{"label": "Test 1", "value": "test1"}, {"label": "Test 2", "value": "test2"}]' />
+                                                    </Form.Item>
+                                                </>
+                                            )}
+                                        </>
+                                    );
+                                })()
                             }
                         ]}
                     />
@@ -2102,30 +2249,25 @@ const FormBuilder = () => {
                                         />
                                     </Form.Item>
                                     
-                                    <Row gutter={16}>
-                                        <Col span={12}>
-                                            <Form.Item label="Label Column Width (Form & Ungrouped Fields)">
-                                                <Input
-                                                    type="number"
-                                                    min={1}
-                                                    max={24}
-                                                    value={formSettings.labelCol?.span}
-                                                    onChange={(e) => handleSettingsChange('labelCol', {span: parseInt(e.target.value)})}
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={12}>
-                                            <Form.Item label="Wrapper Column Width (Form & Ungrouped Fields)">
-                                                <Input
-                                                    type="number"
-                                                    min={1}
-                                                    max={24}
-                                                    value={formSettings.wrapperCol?.span}
-                                                    onChange={(e) => handleSettingsChange('wrapperCol', {span: parseInt(e.target.value)})}
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
+                                    <Form.Item label="Label Column Width (Form & Ungrouped Fields)">
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            max={24}
+                                            value={formSettings.labelCol?.span}
+                                            onChange={(e) => handleSettingsChange('labelCol', {span: parseInt(e.target.value)})}
+                                        />
+                                    </Form.Item>
+                                    
+                                    <Form.Item label="Wrapper Column Width (Form & Ungrouped Fields)">
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            max={24}
+                                            value={formSettings.wrapperCol?.span}
+                                            onChange={(e) => handleSettingsChange('wrapperCol', {span: parseInt(e.target.value)})}
+                                        />
+                                    </Form.Item>
                                 </>
                             )
                         },

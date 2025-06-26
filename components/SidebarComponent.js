@@ -1,5 +1,5 @@
 import { Layout, Menu } from "antd";
-import { DashboardOutlined, LogoutOutlined, SettingOutlined, UserOutlined } from "@ant-design/icons";
+import { DashboardOutlined,InfoCircleOutlined,UserOutlined } from "@ant-design/icons";
 import { useSession } from 'next-auth/react';
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -55,44 +55,71 @@ export default function SidebarComponent({ collapsed, setCollapsed }) {
         );
     }
 
-    const items = [
+  const items = [
+    {
+      key: '1',
+      icon: <DashboardOutlined />,
+      label: 'Dashboard',
+      onClick: () => router.push('/dashboard'),
+    },
+    {
+      key: '2',
+      icon: <InfoCircleOutlined />,
+      label: 'ข้อมูลหลัก',
+      children: [
         {
-            key: '1',
-            icon: <DashboardOutlined />,
-            label: 'Dashboard',
-            onClick: () => router.push('/dashboard')
+          key: 'master-branch-detail',
+          label: 'ข้อมูลสาขา',
+          onClick: () => router.push('/master/master-branch-detail'),
         },
         {
-            key: '2',
-            icon: <UserOutlined />,
-            label: 'Users',
-            onClick: () => router.push('/form-builder')
+          key: 'master-category',
+          label: 'ข้อมูลหมวดหมู่สินค้า',
+          onClick: () => router.push('/master/master-category'),
         },
         {
-            key: '3',
-            icon: <UserOutlined />,
-            label: 'Auto Form',
-            onClick: () => router.push('/autoform/test')
+          key: 'master-sub-category',
+          label: 'ข้อมูลหมวดหมู่ย่อยสินค้า',
+          onClick: () => router.push('/master/master-sub-category'),
         },
-        //{
-        //    key: '3',
-        //    icon: <SettingOutlined />,
-        //    label: 'Settings',
-        //    children: [
-        //        { key: 'setting1', label: 'Sub Setting', icon: <SettingOutlined />, },
-        //    ]
-        //},
-        //{
-        //    key: '4',
-        //    icon: <LogoutOutlined />,
-        //    label: t('UserManagement'),
-        //    children: [
-        //        { key: 'users', label: 'Users', icon: <SettingOutlined />,onClick: () => router.push('/user-management/users')},
-        //        { key: 'roles', label: 'Roles', icon: <SettingOutlined />,onClick: () => router.push('/user-management/roles') },
-        //        { key: 'permissions', label: 'Permissions', icon: <SettingOutlined />,onClick: () => router.push('/user-management/permissions') },
-        //    ],
-        //},
-    ];
+        {
+          key: 'master-product',
+          label: 'ข้อมูลสินค้า',
+          onClick: () => router.push('/master/master-product'),
+        },
+      ],
+    },
+    {
+      key: '3',
+      icon: <UserOutlined />,
+      label: 'Users',
+      onClick: () => router.push('/form-builder'),
+    },
+    {
+      key: '4',
+      icon: <UserOutlined />,
+      label: 'Auto Form',
+      onClick: () => router.push('/autoform/test'),
+    },
+    //{
+    //    key: '3',
+    //    icon: <SettingOutlined />,
+    //    label: 'Settings',
+    //    children: [
+    //        { key: 'setting1', label: 'Sub Setting', icon: <SettingOutlined />, },
+    //    ]
+    //},
+    //{
+    //    key: '4',
+    //    icon: <LogoutOutlined />,
+    //    label: t('UserManagement'),
+    //    children: [
+    //        { key: 'users', label: 'Users', icon: <SettingOutlined />,onClick: () => router.push('/user-management/users')},
+    //        { key: 'roles', label: 'Roles', icon: <SettingOutlined />,onClick: () => router.push('/user-management/roles') },
+    //        { key: 'permissions', label: 'Permissions', icon: <SettingOutlined />,onClick: () => router.push('/user-management/permissions') },
+    //    ],
+    //},
+  ];
 
     return (
         <Sider

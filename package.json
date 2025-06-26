@@ -2,11 +2,17 @@
   "name": "nextjs-admin",
   "version": "0.1.0",
   "private": true,
+  "description": "ระบบ Admin ที่พัฒนาด้วย Next.js สำหรับ WSOL (Web System Online)",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml --env-file .env.development  up --build -d",
+    "docker:prod": "docker-compose -f docker-compose.yml --env-file .env.production  up --build -d",
+    "docker:mysql": "docker-compose -f docker-compose.mysql.yml up --build  -d",
+    "docker:mysql:dev": "docker-compose -f docker-compose.mysql.yml --env-file .env.development up --build  -d",
+    "docker:mysql:prod": "docker-compose -f docker-compose.mysql.yml --env-file .env.production up --build  -d"
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.1",
@@ -27,6 +33,7 @@
     "react-highlight-words": "^0.20.0",
     "react-i18next": "^15.5.1",
     "react-syntax-highlighter": "^15.6.1",
+    "recharts": "^2.15.3",
     "sharp": "^0.34.1",
     "typescript": "^5.8.3",
     "uuid": "^11.1.0",
