@@ -273,7 +273,12 @@ export const DELETE = async (req) => {
                     dataIndex: field.dataIndex || field.name,
                     label: field.title || field.label, // Ensure label is included for form fields
                     type: field.type,
-                    rules: field.rules || [{required: true, message: `Please input ${field.title || field.label}!`}]
+                    rules: (field.rules || [{required: true, message: `Please input ${field.title || field.label}!`}]).map(r => {
+                        if (r.pattern instanceof RegExp) {
+                            return {...r, pattern: `__REGEXP_${r.pattern.source}__`};
+                        }
+                        return r;
+                    })
                 };
                 
                 if (field.options && field.options.length > 0) {
@@ -333,7 +338,8 @@ export default function ${componentName}() {
                 layout: '${otherFormSettings?.layout || "horizontal"}',
                 gridColumns: ${otherFormSettings?.gridColumns || 1}
             },
-            fields: ${JSON.stringify(formatFormFields(formFields), null, 8)},
+            fields: ${JSON.stringify(formatFormFields(formFields), null, 8)
+                .replace(/"__REGEXP_([^_]+)__"/g, (_, p1) => `new RegExp(${JSON.stringify(p1)})`)},
             cardGroupSetting: ${JSON.stringify(cardGroupSetting || [], null, 8)}
         },
         filters: ${JSON.stringify(formSettings.globalFilters?.map(f => ({title: f.title, field: f.field || [], type: f.type, options: f.options})) || [], null, 8)},
@@ -1850,11 +1856,16 @@ const FormBuilder = () => {
                 title: 'Options',
                 dataIndex: 'options',
                 key: 'options',
-                render: (options) => options?.length > 0 ? (
-                    <Tooltip title={options.map(o => `${o.label} (${o.value})`).join(', ')}>
-                        <Tag color="#006964">{options.length} options</Tag>
-                    </Tooltip>
-                ) : null
+                render: (options, record) => {
+                    if (record.optionsConfig?.mode === 'table' && record.optionsConfig.table) {
+                        return <Tag color="#722ed1">{record.optionsConfig.table}</Tag>;
+                    }
+                    return options?.length > 0 ? (
+                        <Tooltip title={options.map(o => `${o.label} (${o.value})`).join(', ')}>
+                            <Tag color="#006964">{options.length} options</Tag>
+                        </Tooltip>
+                    ) : null;
+                }
             },
             {
                 title: 'Card Group',
