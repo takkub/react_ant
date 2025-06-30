@@ -3,14 +3,14 @@ import React, { useState } from 'react';
 import { Layout, Typography, Select, Row, Col, Space } from 'antd';
 import { useTitleContext } from '@/components/TitleContext';
 import { DashboardOutlined } from '@ant-design/icons';
-import CashierAndRetailPage from './cashierAndRetail/page';
+import CashierRetailPage from './cashier-retail/page';
 import MenuPage from './menu/page';
 import RetailPage from './retail/page';
 import PromotionPage from './promotion/page';
 import MallSalesPage from './mallSales/page';
-import CashierAndRetailPerHourPage from './cashierAndRetailPerHour/page';
+import CashierRetailPerHourPage from './cashier-retail-perHour/page';
 
-const { Header, Footer } = Layout;
+const { Header } = Layout;
 const { Title, Text } = Typography;
 const { Option } = Select;
 
@@ -23,8 +23,8 @@ export default function DashboardPage() {
   const renderContent = () => {
     return (
       <>
-        <CashierAndRetailPerHourPage />
-        <CashierAndRetailPage />
+        <CashierRetailPerHourPage />
+        <CashierRetailPage />
         <MallSalesPage />
         <RetailPage />
         <PromotionPage />
@@ -61,9 +61,6 @@ export default function DashboardPage() {
       </Header>
       {/* Content Dashboard */}
       {renderContent()}
-      <Footer style={{ textAlign: 'center', color: '#aaa' }}>
-        Copyright©2025 Sabuy Solutions Co., Ltd. Version App. V.1.0.0.1
-      </Footer>
     </Layout>
   );
 }

@@ -1,10 +1,12 @@
 import './globals.css';
 import React from "react";
+import { Inter } from 'next/font/google';
 import { TitleProvider } from "@/components/TitleContext";
 import NetworkStatusNotifier from "@/components/NetworkStatusNotifier";
 import { ThemeProvider } from "../store/context/ThemeContext";
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
     title: 'Admin Dashboard',
@@ -14,7 +16,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
     return (
         <html lang="en">
-            <body>
+            <body className={inter.className}>
                 <NetworkStatusNotifier />
                 <ThemeProvider>
                 <AntdRegistry>

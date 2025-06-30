@@ -991,14 +991,35 @@ export default function MasterBranchDetailPage() {
       ],
     },
 
-    filters: [
-      {
-        title: 'Search',
-        field: ['name'],
-        type: 'text',
-        options: [],
-      },
-    ],
+    filters: {
+      fields: [
+        {
+          title: 'สถานะ',
+          field: ['status'],
+          type: 'select',
+          options: [
+            {
+              label: 'ใช้งาน',
+              value: 'active',
+            },
+            {
+              label: 'ไม่ใช้งาน',
+              value: 'inactive',
+            },
+            {
+              label: 'ยกเลิก',
+              value: 'cancel',
+            },
+          ],
+        },
+        {
+          title: 'ค้นหา',
+          field: ['branch_name_thai', 'branch_name_eng'],
+          type: 'text',
+          options: [],
+        },
+      ],
+    },
     pagination: {
       pageSize: 10,
       showSizeChanger: true,

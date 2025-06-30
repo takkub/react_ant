@@ -67,7 +67,7 @@ export const darkTheme = {
 };
 export const WSOLTheme = {
   token: {
-    colorPrimary: '#006964',
+    colorPrimary: '#ff0000',
     colorInfo: '#006964',
     colorPrimaryBgHover: '#b7d433',
     wireframe: false,
@@ -77,7 +77,7 @@ export const WSOLTheme = {
   },
   components: {
     Layout: {
-      headerBg: '#006964',
+      headerBg: '#ff0000',
       siderBg: '#fff',
     },
     Menu: {
