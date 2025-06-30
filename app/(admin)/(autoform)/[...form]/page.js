@@ -104,6 +104,7 @@ export default function AutoFormPage() {
                         message.warn('Form design is incomplete. Displaying with default structure.');
                         setError('Form design is incomplete (missing crud_options_data).');
                     }
+                    console.log('Parsed column options:', parsedOptions.columns);
 
                     setCrudOptions(parsedOptions);
                     setPageTitle(designPageTitle);

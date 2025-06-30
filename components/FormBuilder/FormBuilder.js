@@ -22,7 +22,7 @@ import {tomorrow} from 'react-syntax-highlighter/dist/esm/styles/prism';
 import api from "@/lib/api";
 import dayjs from 'dayjs';
 import CrudTable from '@/components/CrudTable';
-import FieldOptionsTab from "./FieldOptionsTab";
+import FieldOptionsTab from "@/components/FormBuilder/FieldOptionsTab";
 import {useRouter} from "next/navigation";
 const {Title, Text, Paragraph} = Typography;
 const {TextArea} = Input;

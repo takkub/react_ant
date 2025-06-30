@@ -1,1 +1,1 @@
-export { default } from './FormBuilder';
+export { default } from '@/components/FormBuilder/FormBuilder';
