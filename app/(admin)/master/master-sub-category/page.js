@@ -19,13 +19,11 @@ export default function MasterSubCategory() {
         title: 'รหัสหมวดหมู่ย่อย',
         dataIndex: 'sub_category_id',
         key: 'sub_category_id',
-        filterable: true,
       },
       {
         title: 'สถานะ',
         dataIndex: 'status',
         key: 'status',
-        filterable: true,
         filters: [],
         onFilter: (value, record) => record.status === value,
       },
@@ -33,13 +31,11 @@ export default function MasterSubCategory() {
         title: 'ชื่อภาษาไทย',
         dataIndex: 'sub_category_name_thai',
         key: 'sub_category_name_thai',
-        filterable: true,
       },
       {
         title: 'ชื่อภาษาอังกฤษ',
         dataIndex: 'sub_category_name_eng',
         key: 'sub_category_name_eng',
-        filterable: true,
       },
     ],
     form: {

@@ -247,8 +247,7 @@ export const DELETE = async (req) => {
                 let column = {
                     title: field.title || field.label,
                     dataIndex: field.dataIndex || field.name,
-                    key: field.dataIndex || field.name,
-                    filterable: true
+                    key: field.dataIndex || field.name
                 };
                 
                 // Add special handlers for specific field types
@@ -729,8 +728,7 @@ const FormBuilder = () => {
                 let column = {
                     title: field.title || field.label || field.name,
                     dataIndex: field.dataIndex || field.name,
-                    key: field.dataIndex || field.name,
-                    filterable: field.filterable !== undefined ? field.filterable : true
+                    key: field.dataIndex || field.name
                 };
                 if (field.sortable) {
                     column.sorter = true;
@@ -913,7 +911,6 @@ const FormBuilder = () => {
             title: 'Name',
             type: 'input',
             rules: [{required: true, message: 'Please input name!'}],
-            filterable: true,
             sortable: true,
             icon: <UserOutlined/>
         },
@@ -926,7 +923,6 @@ const FormBuilder = () => {
                 {required: true, message: 'Please input email!'},
                 {type: 'email', message: 'Please enter a valid email!'}
             ],
-            filterable: true,
             sortable: true,
             icon: <MailOutlined/>
         },
@@ -936,7 +932,6 @@ const FormBuilder = () => {
             title: 'Phone',
             type: 'input',
             rules: [{required: false, message: 'Please input phone number!'}],
-            filterable: true,
             sortable: true,
             icon: <PhoneOutlined/>
         },
@@ -951,7 +946,6 @@ const FormBuilder = () => {
                 {label: 'Pending', value: 'pending'}
             ],
             rules: [{required: true, message: 'Please select status!'}],
-            filterable: true,
             sortable: true,
             icon: <CheckCircleOutlined/>
         },
@@ -961,7 +955,6 @@ const FormBuilder = () => {
             title: 'Date Created',
             type: 'date',
             rules: [],
-            filterable: true,
             sortable: true,
             icon: <CalendarOutlined/>
         },
@@ -971,7 +964,6 @@ const FormBuilder = () => {
             title: 'Description',
             type: 'textArea',
             rules: [],
-            filterable: false,
             sortable: false,
             icon: <FileTextOutlined/>
         }
@@ -989,7 +981,6 @@ const FormBuilder = () => {
                 rules: [],
                 options: [],
                 optionsConfig: { mode: 'manual' },
-                filterable: true,
                 sortable: true
             };
             
@@ -1015,7 +1006,6 @@ const FormBuilder = () => {
                 type: preset.type,
                 rules: Array.isArray(preset.rules) ? [...preset.rules] : [],
                 options: Array.isArray(preset.options) ? [...preset.options] : [],
-                filterable: Boolean(preset.filterable),
                 sortable: Boolean(preset.sortable)
             };
             
@@ -1078,7 +1068,6 @@ const FormBuilder = () => {
                     return undefined;
                 })(),
                 patternMessage: fieldCopy.rules?.find(r => r.pattern)?.message,
-                filterable: fieldCopy.filterable || false,
                 sortable: fieldCopy.sortable || false,
                 cardGroup: fieldCopy.cardGroup || null,
                 options: [],
@@ -1129,7 +1118,6 @@ const FormBuilder = () => {
                 title: values.title.trim(),
                 type: values.type,
                 rules: [],
-                filterable: Boolean(values.filterable),
                 sortable: Boolean(values.sortable),
                 cardGroup: values.cardGroup
             };
@@ -1424,8 +1412,7 @@ const FormBuilder = () => {
                 let column = {
                     title: field.title || field.label || field.name,
                     dataIndex: field.dataIndex || field.name,
-                    key: field.dataIndex || field.name,
-                    filterable: field.filterable !== undefined ? field.filterable : true
+                    key: field.dataIndex || field.name
                 };
                 if (field.sortable) {
                     column.sorter = true; // For antd's basic sort. Generated page.js might have specific functions.
@@ -1576,7 +1563,6 @@ const FormBuilder = () => {
                         emailMessage: '',
                         pattern: '',
                         patternMessage: '',
-                        filterable: true,
                         sortable: true,
                         options: []
                     }}
@@ -1685,15 +1671,6 @@ const FormBuilder = () => {
                                                     name="required"
                                                     valuePropName="checked"
                                                     label="Required"
-                                                >
-                                                    <Switch/>
-                                                </Form.Item>
-                                            </Col>
-                                            <Col span={8}>
-                                                <Form.Item
-                                                    name="filterable"
-                                                    valuePropName="checked"
-                                                    label="Filterable"
                                                 >
                                                     <Switch/>
                                                 </Form.Item>

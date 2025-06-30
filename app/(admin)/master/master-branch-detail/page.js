@@ -19,37 +19,31 @@ export default function MasterBranchDetailPage() {
         title: 'รหัสสาขา',
         dataIndex: 'branch_id',
         key: 'branch_id',
-        filterable: true,
       },
       {
         title: 'ชื่อสาขา',
         dataIndex: 'branch_name_thai',
         key: 'branch_name_thai',
-        filterable: true,
       },
       {
         title: 'รายละเอียดสาขา',
         dataIndex: 'branch_detail',
         key: 'branch_detail',
-        filterable: true,
       },
       {
         title: 'ผู้จัดการ',
         dataIndex: 'manager',
         key: 'manager',
-        filterable: true,
       },
       {
         title: 'เบอร์โทรศัพท์',
         dataIndex: 'phone_number',
         key: 'phone_number',
-        filterable: true,
       },
       {
         title: 'สถานะ',
         dataIndex: 'status',
         key: 'status',
-        filterable: true,
         filters: [
           {
             text: 'ใช้งาน',
@@ -70,13 +64,11 @@ export default function MasterBranchDetailPage() {
         title: 'ผู้บันทึก',
         dataIndex: 'created_by',
         key: 'created_by',
-        filterable: true,
       },
       {
         title: 'วันที่บันทึกล่าสุด',
         dataIndex: 'created_at',
         key: 'created_at',
-        filterable: true,
         render: text => {
           return text ? dayjs(text).format('YYYY-MM-DD') : '';
         },

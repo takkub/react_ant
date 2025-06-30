@@ -20,20 +20,17 @@ export default function MasterProduct() {
         title: 'รหัสสินค้า',
         dataIndex: 'product_id',
         key: 'product_id',
-        filterable: true,
       },
       {
         title: 'ชื่อภาษาไทย',
         dataIndex: 'product_name_thai',
         key: 'product_name_thai',
-        filterable: true,
       },
 
       {
         title: 'หมวดหมู่ย่อย',
         dataIndex: 'sub_category',
         key: 'sub_category',
-        filterable: true,
         filters: [
           {
             text: 'Option 1',
@@ -50,7 +47,6 @@ export default function MasterProduct() {
         title: 'สถานะ',
         dataIndex: 'status',
         key: 'status',
-        filterable: true,
         filters: [
           {
             text: 'Active',
@@ -71,13 +67,11 @@ export default function MasterProduct() {
         title: 'ผู้บันทึก',
         dataIndex: 'created_by',
         key: 'created_by',
-        filterable: true,
       },
       {
         title: 'วันที่บันทึกล่าสุด',
         dataIndex: 'created_at',
         key: 'created_at',
-        filterable: true,
         render: text => {
           return text ? dayjs(text).format('YYYY-MM-DD') : '';
         },
