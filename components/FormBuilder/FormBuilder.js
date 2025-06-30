@@ -980,7 +980,7 @@ const FormBuilder = () => {
                 dataIndex: '',
                 title: '',
                 type: 'input',
-                rules: [{required: true, message: 'This field is required!'}],
+                rules: [],
                 options: [],
                 optionsConfig: { mode: 'manual' },
                 filterable: true,
@@ -1062,6 +1062,16 @@ const FormBuilder = () => {
                 title: fieldCopy.title,
                 type: fieldCopy.type,
                 required: fieldCopy.rules?.some(rule => rule.required) || false,
+                requiredMessage: fieldCopy.rules?.find(rule => rule.required)?.message,
+                emailMessage: fieldCopy.rules?.find(rule => rule.type === 'email')?.message,
+                pattern: (() => {
+                    const rule = fieldCopy.rules?.find(r => r.pattern);
+                    if (rule && rule.pattern instanceof RegExp) {
+                        return rule.pattern.source;
+                    }
+                    return undefined;
+                })(),
+                patternMessage: fieldCopy.rules?.find(r => r.pattern)?.message,
                 filterable: fieldCopy.filterable || false,
                 sortable: fieldCopy.sortable || false,
                 cardGroup: fieldCopy.cardGroup || null,
@@ -1112,13 +1122,35 @@ const FormBuilder = () => {
                 dataIndex: values.dataIndex.trim(),
                 title: values.title.trim(),
                 type: values.type,
-                rules: [
-                    ...(values.required ? [{required: true, message: `Please input ${values.title.trim()}!`}] : [])
-                ],
+                rules: [],
                 filterable: Boolean(values.filterable),
                 sortable: Boolean(values.sortable),
                 cardGroup: values.cardGroup
             };
+
+            if (values.required) {
+                fieldToSave.rules.push({
+                    required: true,
+                    message: values.requiredMessage?.trim() || `Please input ${values.title.trim()}!`
+                });
+            }
+            if (values.type === 'email') {
+                fieldToSave.rules.push({
+                    type: 'email',
+                    message: values.emailMessage?.trim() || 'Please enter a valid email!'
+                });
+            }
+            if (values.pattern) {
+                try {
+                    const regex = new RegExp(values.pattern);
+                    fieldToSave.rules.push({
+                        pattern: regex,
+                        message: values.patternMessage?.trim() || 'Invalid format.'
+                    });
+                } catch (err) {
+                    message.error('Invalid regular expression pattern');
+                }
+            }
 
             const optionsConfig = values.optionsConfig || { mode: 'manual' };
 
@@ -1534,6 +1566,10 @@ const FormBuilder = () => {
                     initialValues={{
                         type: 'input',
                         required: true,
+                        requiredMessage: '',
+                        emailMessage: '',
+                        pattern: '',
+                        patternMessage: '',
                         filterable: true,
                         sortable: true,
                         options: []
@@ -1636,35 +1672,57 @@ const FormBuilder = () => {
                                     </span>
                                 ),
                                 children: (
-                                    <Row gutter={16}>
-                                        <Col span={8}>
-                                            <Form.Item
-                                                name="required"
-                                                valuePropName="checked"
-                                                label="Required"
-                                            >
-                                                <Switch/>
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={8}>
-                                            <Form.Item
-                                                name="filterable"
-                                                valuePropName="checked"
-                                                label="Filterable"
-                                            >
-                                                <Switch/>
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={8}>
-                                            <Form.Item
-                                                name="sortable"
-                                                valuePropName="checked"
-                                                label="Sortable"
-                                            >
-                                                <Switch/>
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
+                                    <>
+                                        <Row gutter={16}>
+                                            <Col span={8}>
+                                                <Form.Item
+                                                    name="required"
+                                                    valuePropName="checked"
+                                                    label="Required"
+                                                >
+                                                    <Switch/>
+                                                </Form.Item>
+                                            </Col>
+                                            <Col span={8}>
+                                                <Form.Item
+                                                    name="filterable"
+                                                    valuePropName="checked"
+                                                    label="Filterable"
+                                                >
+                                                    <Switch/>
+                                                </Form.Item>
+                                            </Col>
+                                            <Col span={8}>
+                                                <Form.Item
+                                                    name="sortable"
+                                                    valuePropName="checked"
+                                                    label="Sortable"
+                                                >
+                                                    <Switch/>
+                                                </Form.Item>
+                                            </Col>
+                                        </Row>
+                                        <Form.Item noStyle shouldUpdate={(prev, curr) => prev.required !== curr.required || prev.title !== curr.title}>
+                                            {() => form.getFieldValue('required') ? (
+                                                <Form.Item name="requiredMessage" label="Required Message">
+                                                    <Input placeholder={`Please input ${form.getFieldValue('title') || 'value'}!`} />
+                                                </Form.Item>
+                                            ) : null}
+                                        </Form.Item>
+                                        <Form.Item noStyle shouldUpdate={(prev, curr) => prev.type !== curr.type}>
+                                            {() => form.getFieldValue('type') === 'email' ? (
+                                                <Form.Item name="emailMessage" label="Invalid Email Message">
+                                                    <Input placeholder="Please enter a valid email!" />
+                                                </Form.Item>
+                                            ) : null}
+                                        </Form.Item>
+                                        <Form.Item name="pattern" label="Pattern (RegExp)">
+                                            <Input placeholder="e.g. ^[0-9]+$" />
+                                        </Form.Item>
+                                        <Form.Item name="patternMessage" label="Pattern Message">
+                                            <Input placeholder="Invalid format" />
+                                        </Form.Item>
+                                    </>
                                 )
                             }
                         ]}
