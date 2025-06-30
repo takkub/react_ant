@@ -18,6 +18,83 @@ export default function AutoFormPage() {
     const [dataLoading, setDataLoading] = useState(false);
     const [error, setError] = useState(null);
     const [actualTableNameForApi, setActualTableNameForApi] = useState(null);
+    const [fieldsOptionsData, setFieldsOptionsData] = useState({}); // เก็บข้อมูล options ของแต่ละ field
+
+    // ฟังก์ชันสำหรับดึงข้อมูล options ของ fields
+    const fetchFieldsOptions = useCallback(async (formFields) => {
+        if (!formFields || !Array.isArray(formFields)) return {};
+        
+        const optionsData = {};
+        const fetchPromises = [];
+
+        formFields.forEach(field => {
+            if (field.optionsConfig && field.optionsConfig.mode === 'table' &&
+                field.optionsConfig.table && field.optionsConfig.labelField && field.optionsConfig.valueField) {
+                const fetchPromise = api.get('autoform', {
+                    table: field.optionsConfig.table
+                }).then(response => {
+                    console.log(`Fetched options for field ${field.dataIndex}:`, response.data);
+                    if (response.data) {
+                        optionsData[field.dataIndex] = response.data.map(item => ({
+                            label: item[field.optionsConfig.labelField],
+                            value: item[field.optionsConfig.valueField],
+                            originalData: item
+                        }));
+                    }
+                }).catch(error => {
+                    console.error(`Error fetching options for field ${field.dataIndex}:`, error);
+                    optionsData[field.dataIndex] = [];
+                });
+                
+                fetchPromises.push(fetchPromise);
+            }
+        });
+
+        if (fetchPromises.length > 0) {
+            await Promise.all(fetchPromises);
+        }
+
+        return optionsData;
+    }, []);
+
+    // ฟังก์ชันสำหรับสร้าง render function สำหรับ column ที่มี options
+    const createColumnRenderer = useCallback((field, optionsData) => {
+        if (!optionsData || !optionsData[field.dataIndex]) {
+            return undefined;
+        }
+
+        return (value, record) => {
+            const option = optionsData[field.dataIndex].find(opt =>
+                opt.value === value || opt.value == value
+            );
+            return option ? option.label : value;
+        };
+    }, []);
+
+    // ฟังก์ชันสำหรับประมวลผล columns และเพิ่ม render functions
+    const processColumnsWithOptions = useCallback((columns, formFields, optionsData) => {
+        if (!columns || !Array.isArray(columns)) return columns;
+
+        return columns.map(column => {
+            const field = formFields?.find(f => f.dataIndex === column.dataIndex);
+            
+            if (field && field.optionsConfig && field.optionsConfig.mode === 'table' &&
+                optionsData[field.dataIndex]) {
+                
+                return {
+                    ...column,
+                    render: createColumnRenderer(field, optionsData),
+                    filters: optionsData[field.dataIndex].map(opt => ({
+                        text: opt.label,
+                        value: opt.value
+                    })),
+                    onFilter: (value, record) => record[column.dataIndex] === value
+                };
+            }
+
+            return column;
+        });
+    }, [createColumnRenderer]);
 
     const fetchData = useCallback(async (tableNameForApi) => {
         if (!tableNameForApi) {
@@ -104,7 +181,29 @@ export default function AutoFormPage() {
                         message.warn('Form design is incomplete. Displaying with default structure.');
                         setError('Form design is incomplete (missing crud_options_data).');
                     }
-                    console.log('Parsed column options:', parsedOptions.columns);
+
+                    // ดึงข้อมูล options สำหรับ fields ที่มี optionsConfig mode = 'table'
+                    let fieldsData = [];
+                    if (design.fields_data) {
+                        try {
+                            fieldsData = JSON.parse(design.fields_data);
+                        } catch (e) {
+                            console.error('Error parsing fields_data:', e);
+                        }
+                    }
+
+                    console.log('Fields data:', fieldsData);
+                    
+                    // ดึงข้อมูล options
+                    const optionsData = await fetchFieldsOptions(fieldsData);
+                    setFieldsOptionsData(optionsData);
+                    console.log('Fetched options data:', optionsData);
+
+                    // ประมวลผล columns พร้อม render functions
+                    const processedColumns = processColumnsWithOptions(parsedOptions.columns, fieldsData, optionsData);
+                    parsedOptions.columns = processedColumns;
+
+                    console.log('Processed column options:', parsedOptions.columns);
 
                     setCrudOptions(parsedOptions);
                     setPageTitle(designPageTitle);
@@ -130,7 +229,7 @@ export default function AutoFormPage() {
             }
         };
         fetchFormDesignAndThenData();
-    }, [slugFormName, fetchData, message]);
+    }, [slugFormName, fetchData, message, fetchFieldsOptions, processColumnsWithOptions]);
 
     const handleAdd = useCallback((currentData, currentSetData, tableNameForApi) => async (newRecord) => {
         if (!tableNameForApi) { message.error("Cannot add record: table name not defined."); return; }
@@ -252,4 +351,3 @@ export default function AutoFormPage() {
         </Card>
     );
 }
-
