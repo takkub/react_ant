@@ -79,14 +79,12 @@ export default function SidebarComponent({ collapsed, setCollapsed }) {
       label: 'ข้อมูลหลัก',
       children: [
         {
-          key: 'master-branch-detail',
+          key: 'master-branch',
           label: 'ข้อมูลสาขา',
-          icon: selectedKeys.includes('master-branch-detail') ? (
-            <CaretRightOutlined />
-          ) : null,
+          icon: selectedKeys.includes('master-branch') ? <CaretRightOutlined /> : null,
           onClick: () => {
-            setSelectedKeys(['master-branch-detail']);
-            router.push('/master/master-branch-detail');
+            setSelectedKeys(['master-branch']);
+            router.push('/Master/Branch');
           },
         },
         {
@@ -95,7 +93,7 @@ export default function SidebarComponent({ collapsed, setCollapsed }) {
           icon: selectedKeys.includes('master-category') ? <CaretRightOutlined /> : null,
           onClick: () => {
             setSelectedKeys(['master-category']);
-            router.push('/master/master-category');
+            router.push('/Master/Category');
           },
         },
         {
@@ -106,7 +104,7 @@ export default function SidebarComponent({ collapsed, setCollapsed }) {
           ) : null,
           onClick: () => {
             setSelectedKeys(['master-sub-category']);
-            router.push('/master/master-sub-category');
+            router.push('/Master/SubCategory');
           },
         },
         {
@@ -115,7 +113,16 @@ export default function SidebarComponent({ collapsed, setCollapsed }) {
           icon: selectedKeys.includes('master-product') ? <CaretRightOutlined /> : null,
           onClick: () => {
             setSelectedKeys(['master-product']);
-            router.push('/master/master-product');
+            router.push('/Master/Product');
+          },
+        },
+        {
+          key: 'master-client',
+          label: 'ข้อมูลจุดขายแคชเชียร์',
+          icon: selectedKeys.includes('master-client') ? <CaretRightOutlined /> : null,
+          onClick: () => {
+            setSelectedKeys(['master-client']);
+            router.push('/Master/Client');
           },
         },
       ],

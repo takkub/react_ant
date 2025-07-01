@@ -69,8 +69,14 @@ const CrudTable = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(paginationOptions.pageSize || 10);
   const pageSizeOptions = paginationOptions.pageSizeOptions || ['10', '20', '50', '100'];
-  const showSizeChanger = paginationOptions.showSizeChanger !== undefined ? paginationOptions.showSizeChanger : true;
-  const showQuickJumper = paginationOptions.showQuickJumper !== undefined ? paginationOptions.showQuickJumper : true;
+  const showSizeChanger =
+    paginationOptions.showSizeChanger !== undefined
+      ? paginationOptions.showSizeChanger
+      : true;
+  const showQuickJumper =
+    paginationOptions.showQuickJumper !== undefined
+      ? paginationOptions.showQuickJumper
+      : true;
 
   // Calculate paginated data
   const paginatedData = useMemo(() => {
@@ -243,9 +249,10 @@ const CrudTable = ({
           try {
             if (formMode === 'add') {
               const result = await onAdd(values);
-              if (result && result.success === false) {
+              if (result && result.success === false && result.status === 400) {
+                const errorCode = result.code || 'ADD_ERROR';
                 Modal.error({
-                  title: 'เกิดข้อผิดพลาด',
+                  title: `เกิดข้อผิดพลาด (${errorCode})`,
                   content: result.message || 'ไม่สามารถบันทึกข้อมูลได้',
                   centered: true,
                   okText: 'ตกลง',
@@ -259,9 +266,10 @@ const CrudTable = ({
               });
             } else if (formMode === 'edit') {
               const result = await onEdit(editingKey, values);
-              if (result && result.success === false) {
+              if (result && result.success === false && result.status === 400) {
+                const errorCode = result.code || 'EDIT_ERROR';
                 Modal.error({
-                  title: 'เกิดข้อผิดพลาด',
+                  title: `เกิดข้อผิดพลาด (${errorCode})`,
                   content: result.message || 'ไม่สามารถแก้ไขข้อมูลได้',
                   centered: true,
                   okText: 'ตกลง',
@@ -277,9 +285,43 @@ const CrudTable = ({
             setIsFormVisible(false);
             form.resetFields();
           } catch (err) {
+            // Extract error code and message
+            let errorCode = 'UNKNOWN';
+            let errorMessage = 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
+
+            switch (true) {
+              case !!err.response:
+                // HTTP error response
+                errorCode = err.response.status || 'HTTP_ERROR';
+                errorMessage =
+                  err.response.data?.message ||
+                  err.message ||
+                  'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
+                break;
+              case !!err.request:
+                // Network error
+                errorCode = 'NETWORK_ERROR';
+                errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+                break;
+              case !!err.code:
+                // Error with code property
+                errorCode = err.code;
+                errorMessage = err.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
+                break;
+              case !!err.name:
+                // JavaScript error with name
+                errorCode = err.name;
+                errorMessage = err.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
+                break;
+              default:
+                // Fallback
+                errorMessage = err.toString();
+                break;
+            }
+
             Modal.error({
-              title: 'เกิดข้อผิดพลาด',
-              content: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล',
+              title: `เกิดข้อผิดพลาด (${errorCode})`,
+              content: `${errorMessage}`,
               centered: true,
               okText: 'ตกลง',
             });
@@ -337,13 +379,65 @@ const CrudTable = ({
 
   const handleDelete = async keys => {
     if (Array.isArray(keys) && keys.length > 0) {
-      await onDelete(keys);
-      setSelectedRowKeys([]);
-      Modal.success({
-        title: 'ลบข้อมูลสำเร็จ',
-        centered: true,
-        okText: 'ตกลง',
-      });
+      try {
+        const result = await onDelete(keys);
+        if (result && result.success === false && result.status === 400) {
+          const errorCode = result.code || 'DELETE_ERROR';
+          Modal.error({
+            title: `เกิดข้อผิดพลาด (${errorCode})`,
+            content: result.message || 'ไม่สามารถลบข้อมูลได้',
+            centered: true,
+            okText: 'ตกลง',
+          });
+          return;
+        }
+        setSelectedRowKeys([]);
+        Modal.success({
+          title: 'ลบข้อมูลสำเร็จ',
+          centered: true,
+          okText: 'ตกลง',
+        });
+      } catch (err) {
+        // Extract error code and message
+        let errorCode = 'UNKNOWN';
+        let errorMessage = 'เกิดข้อผิดพลาดในการลบข้อมูล';
+
+        switch (true) {
+          case !!err.response:
+            // HTTP error response
+            errorCode = err.response.status || 'HTTP_ERROR';
+            errorMessage =
+              err.response.data?.message || err.message || 'เกิดข้อผิดพลาดในการลบข้อมูล';
+            break;
+          case !!err.request:
+            // Network error
+            errorCode = 'NETWORK_ERROR';
+            errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+            break;
+          case !!err.code:
+            // Error with code property
+            errorCode = err.code;
+            errorMessage = err.message || 'เกิดข้อผิดพลาดในการลบข้อมูล';
+            break;
+          case !!err.name:
+            // JavaScript error with name
+            errorCode = err.name;
+            errorMessage = err.message || 'เกิดข้อผิดพลาดในการลบข้อมูล';
+            break;
+          default:
+            // Fallback
+            errorMessage = err.toString();
+            break;
+        }
+
+        Modal.error({
+          title: `เกิดข้อผิดพลาด (${errorCode})`,
+          content: `${errorMessage}`,
+          centered: true,
+          okText: 'ตกลง',
+        });
+        console.error('Delete failed:', err);
+      }
     }
   };
 
@@ -752,7 +846,7 @@ const CrudTable = ({
   // Render filter components
   const renderFilters = () => {
     return (
-      <Row gutter={8} className="mb-4" justify="end">
+      <Row gutter={8} align="middle" justify="end">
         {tableFilterFields.map((filter, index) => {
           const fields = Array.isArray(filter.field) ? filter.field : [filter.field];
           const fieldKey = fields[0];
@@ -760,10 +854,10 @@ const CrudTable = ({
           switch (filter.type) {
             case 'select':
               return (
-                <Col key={index} xs={24} sm={12} md={6} lg={4}>
-                  <Form.Item className="mb-0" style={{ marginBottom: 8 }}>
+                <Col key={index} xs={24} sm={12} md={6} lg={8}>
+                  <Form.Item className="mb-0" style={{ marginBottom: 0 }}>
                     <DynamicSelect
-                      placeholder={`Select ${filter.title}`}
+                      placeholder={`${filter.title}`}
                       allowClear
                       style={{ width: '100%' }}
                       initialOptions={filter.options}
@@ -782,7 +876,7 @@ const CrudTable = ({
             case 'dateRange':
               return (
                 <Col key={index} xs={24} sm={12} md={8} lg={6}>
-                  <Form.Item className="mb-0" style={{ marginBottom: 8 }}>
+                  <Form.Item className="mb-0" style={{ marginBottom: 0 }}>
                     <RangePicker
                       style={{ width: '100%' }}
                       value={filterValues[fieldKey]}
@@ -798,10 +892,10 @@ const CrudTable = ({
               );
             case 'text':
               return (
-                <Col key={index} xs={24} sm={12} md={6} lg={4}>
-                  <Form.Item className="mb-0" style={{ marginBottom: 8 }}>
+                <Col key={index} xs={24} sm={12} md={6} lg={10}>
+                  <Form.Item className="mb-0" style={{ marginBottom: 0 }}>
                     <Input
-                      placeholder={`Search ${filter.title}`}
+                      placeholder={`${filter.title}`}
                       prefix={<SearchOutlined />}
                       allowClear
                       value={searchText}
@@ -865,20 +959,18 @@ const CrudTable = ({
                       </Button>
                     </Space>
                   </Row>
-                  <Row>
-                    <Space direction="horizontal">
-                      <Col>
-                        <Dropdown menu={exportMenu} trigger={['click']}>
-                          <Button icon={<DownloadOutlined />} className="mr-8">
-                            Export
-                          </Button>
-                        </Dropdown>
-                      </Col>
-                    </Space>
+                  <Row align="middle" style={{ display: 'flex' }}>
+                    <Col flex="auto" style={{ marginRight: 10 }}>
+                      {tableFilterFields.length > 0 && renderFilters()}
+                    </Col>
+                    <Dropdown menu={exportMenu} trigger={['click']}>
+                      <Button icon={<DownloadOutlined />} className="mr-8">
+                        Export
+                      </Button>
+                    </Dropdown>
                   </Row>
                 </Space>
               </Col>
-              <Col flex="auto">{tableFilterFields.length > 0 && renderFilters()}</Col>
             </Row>
 
             <Table
